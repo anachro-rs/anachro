@@ -27,8 +27,8 @@ pub enum PubSubResponse<'a> {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Control {
-    seq: u16,
-    response: Result<ControlResponse, ControlError>,
+    pub seq: u16,
+    pub response: Result<ControlResponse, ControlError>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
