@@ -1,0 +1,49 @@
+use std::io::prelude::*;
+use std::net::TcpStream;
+use postcard::to_stdvec_cobs;
+use anachro_icd::{
+    PubSubPath,
+    component::{
+        Component, Control, ControlType,
+        ComponentInfo, PubSub, PubSubType,
+    },
+};
+
+use std::thread::sleep;
+use std::time::Duration;
+
+fn main() {
+    let mut stream = TcpStream::connect("127.0.0.1:8080").unwrap();
+
+    let name = "cool-board";
+    let version = "v0.1.0";
+
+    let connect = to_stdvec_cobs(
+        &Component::Control(Control {
+            seq: 0x0504,
+            ty: ControlType::RegisterComponent(ComponentInfo {
+                name,
+                version,
+            })
+        })
+    ).unwrap();
+
+    stream.write(&connect).unwrap();
+
+    let path = "foo/bar/baz";
+    let payload = b"henlo, welt!";
+
+    for i in 30..40 {
+        let publish = to_stdvec_cobs(
+            &Component::PubSub(PubSub {
+                path: PubSubPath::Long(path),
+                ty: PubSubType::Pub {
+                    payload,
+                    validity_sec_max: i,
+                }
+            })
+        ).unwrap();
+        stream.write(&publish).unwrap();
+        sleep(Duration::from_secs(2));
+    }
+}

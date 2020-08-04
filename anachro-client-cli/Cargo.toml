@@ -1,0 +1,19 @@
+[package]
+name = "anachro-client-cli"
+version = "0.1.0"
+authors = ["James Munns <james.munns@ferrous-systems.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anachro-icd = { path = "../anachro-icd" }
+
+[dependencies.postcard]
+version = "0.5.1"
+features = ["use-std"]
+
+[dependencies.uuid]
+version = "0.8.1"
+default-features = false
+features = ["serde", "v4"]
