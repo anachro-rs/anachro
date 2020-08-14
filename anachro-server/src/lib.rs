@@ -1,14 +1,7 @@
-use postcard::to_stdvec_cobs;
-use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use uuid::Uuid;
+use core::default::Default;
 
-use postcard::from_bytes_cobs;
-use std::collections::{HashMap, HashSet};
-use std::default::Default;
-use std::io::{ErrorKind, Read, Write};
-use std::thread::{sleep, spawn};
-use std::time::{Duration, Instant};
+use postcard::{from_bytes_cobs, to_stdvec_cobs};
+use uuid::Uuid;
 
 use anachro_icd::{
     arbitrator::{self, Arbitrator},
@@ -16,27 +9,30 @@ use anachro_icd::{
     PubSubPath,
 };
 
-#[derive(Default)]
-struct TcpBroker {
-    broker: Broker,
-    session_mgr: SessionManager,
-}
-
 // Thinks in term of uuids
 #[derive(Default)]
-struct Broker {
+pub struct Broker {
     clients: Vec<Client>,
 }
 
 impl Broker {
     fn client_by_id_mut(&mut self, id: &Uuid) -> Result<&mut Client, ()> {
-        self.clients
-            .iter_mut()
-            .find(|c| &c.id == id)
-            .ok_or(())
+        self.clients.iter_mut().find(|c| &c.id == id).ok_or(())
     }
 
-    fn process_msg(&mut self, mut req: Request) -> Result<Vec<Response>, ()> {
+    pub fn register_client(&mut self, id: &Uuid) -> Result<(), ()> {
+        if self.clients.iter_mut().find(|c| &c.id == id).is_none() {
+            self.clients.push(Client {
+                id: id.clone(),
+                state: ClientState::SessionEstablished,
+            });
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    pub fn process_msg(&mut self, mut req: Request) -> Result<Vec<Response>, ()> {
         let mut responses = vec![];
 
         match from_bytes_cobs::<Component>(&mut req.msg) {
@@ -68,10 +64,17 @@ impl Broker {
         Ok(responses)
     }
 
-    fn process_publish(&mut self, path: &PubSubPath, payload: &[u8], source: &Uuid) -> Result<Vec<Response>, ()> {
-        let useful = || self.clients.iter().filter_map(|c| {
-            c.state.as_connected().ok().map(|x| (c, x))
-        });
+    fn process_publish(
+        &mut self,
+        path: &PubSubPath,
+        payload: &[u8],
+        source: &Uuid,
+    ) -> Result<Vec<Response>, ()> {
+        let useful = || {
+            self.clients
+                .iter()
+                .filter_map(|c| c.state.as_connected().ok().map(|x| (c, x)))
+        };
 
         // TODO: Make sure we're not publishing to wildcards
 
@@ -80,7 +83,13 @@ impl Broker {
         let path = match path {
             PubSubPath::Long(lp) => *lp,
             PubSubPath::Short(sid) => {
-                &source_id.1.shortcuts.iter().find(|s| &s.short == sid).ok_or(())?.long
+                &source_id
+                    .1
+                    .shortcuts
+                    .iter()
+                    .find(|s| &s.short == sid)
+                    .ok_or(())?
+                    .long
             }
         };
 
@@ -100,7 +109,10 @@ impl Broker {
                     for short in state.shortcuts.iter() {
                         // NOTE: we use path, NOT subt, as it may contain wildcards
                         if path == &short.long {
-                            println!("Sending 'short_{}':'{:?}' to {}", short.short, payload, client.id);
+                            println!(
+                                "Sending 'short_{}':'{:?}' to {}",
+                                short.short, payload, client.id
+                            );
                             let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg {
                                 path: PubSubPath::Short(short.short),
                                 payload,
@@ -134,7 +146,15 @@ impl Broker {
     }
 }
 
-fn matches(subscr: &str, publ: &str) -> bool {
+/// ## Examples
+///
+/// ```
+/// assert!(matches(
+///  "/+/temperature/#"
+///  "/dev_1/temperature/front"
+/// ));
+/// ```
+pub fn matches(subscr: &str, publ: &str) -> bool {
     if subscr.is_empty() || publ.is_empty() {
         return false;
     }
@@ -144,13 +164,9 @@ fn matches(subscr: &str, publ: &str) -> bool {
 
     loop {
         match (s_iter.next(), p_iter.next()) {
-            (Some(subp), Some(pubp)) => match subp {
-                "#" => return true,
-                "+" => {},
-                i if i == pubp => {},
-                _ => return false,
-            }
-            (None, None) => return true,
+            (Some("+"), Some(_)) => continue,
+            (Some(lhs), Some(rhs)) if lhs == rhs => continue,
+            (Some("#"), _) | (None, None) => return true,
             _ => return false,
         }
     }
@@ -167,9 +183,7 @@ impl Client {
 
         let next = match ctrl.ty {
             ControlType::RegisterComponent(ComponentInfo { name, version }) => match &self.state {
-                ClientState::SessionEstablished
-                | ClientState::Disconnected
-                | ClientState::Connected(_) => {
+                ClientState::SessionEstablished | ClientState::Connected(_) => {
                     println!("{:?} registered as {}, {}", self.id, name, version);
 
                     let resp = Arbitrator::Control(arbitrator::Control {
@@ -185,14 +199,13 @@ impl Client {
                         msg: resp_bytes,
                     });
 
-                    Some(ClientState::Connected( ConnectedState {
+                    Some(ClientState::Connected(ConnectedState {
                         name: name.to_string(),
                         version: version.to_string(),
                         subscriptions: vec![],
                         shortcuts: vec![],
                     }))
                 }
-                ClientState::FatalError => None,
             },
             ControlType::RegisterPubSubShortId(PubSubShort {
                 long_name,
@@ -212,7 +225,6 @@ impl Client {
                     short: short_id,
                 });
                 None
-
             }
         };
 
@@ -223,21 +235,41 @@ impl Client {
         Ok(response)
     }
 
-    fn process_subscribe(&mut self, path: &PubSubPath) -> Result<(), ()> {
+    fn process_subscribe(&mut self, path: &PubSubPath) -> Result<Response, ()> {
         let state = self.state.as_connected_mut()?;
 
-        match path {
-            PubSubPath::Long(lp) => {
-                state.subscriptions.push(lp.to_string());
-            }
-            PubSubPath::Short(sid) => {
-                state.subscriptions.push(
-                    state.shortcuts.iter().find(|s| &s.short == sid).ok_or(())?.long.to_string()
-                );
-            }
+        // Determine canonical path
+        let path_str = match path {
+            PubSubPath::Long(lp) => lp.to_string(),
+            PubSubPath::Short(sid) => state
+                .shortcuts
+                .iter()
+                .find(|s| &s.short == sid)
+                .ok_or(())?
+                .long
+                .to_string(),
+        };
+
+        // Only push if not a dupe
+        if state
+            .subscriptions
+            .iter()
+            .find(|s| s == &&path_str)
+            .is_none()
+        {
+            state.subscriptions.push(path_str)
         }
 
-        Ok(())
+        let resp = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubAck {
+            path: path.clone(),
+        }));
+
+        let resp_bytes = to_stdvec_cobs(&resp).map_err(drop)?;
+
+        Ok(Response {
+            dest: self.id.clone(),
+            msg: resp_bytes,
+        })
     }
 
     fn process_unsub(&mut self, _path: &PubSubPath) -> Result<(), ()> {
@@ -251,22 +283,20 @@ impl Client {
 enum ClientState {
     SessionEstablished,
     Connected(ConnectedState),
-    Disconnected,
-    FatalError,
 }
 
 impl ClientState {
     fn as_connected(&self) -> Result<&ConnectedState, ()> {
         match self {
             ClientState::Connected(state) => Ok(state),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 
     fn as_connected_mut(&mut self) -> Result<&mut ConnectedState, ()> {
         match self {
             ClientState::Connected(ref mut state) => Ok(state),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -282,134 +312,15 @@ struct ConnectedState {
 #[derive(Debug)]
 struct Shortcut {
     long: String,
-    short: u16
+    short: u16,
 }
 
-// Thinks in terms of uuids
-#[derive(Default)]
-struct SessionManager {
-    new_sessions: Vec<(Uuid, Connect)>,
-    sessions: HashMap<Uuid, Connect>,
+pub struct Request {
+    pub source: Uuid,
+    pub msg: Vec<u8>,
 }
 
-struct Connect {
-    stream: TcpStream,
-    addr: SocketAddr,
-    pending_data: Vec<u8>,
-}
-
-fn main() {
-    let tcpb_1 = Arc::new(Mutex::new(TcpBroker::default()));
-    let tcpb_2 = tcpb_1.clone();
-
-    let hdl = spawn(move || {
-        let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-
-        while let Ok((stream, addr)) = listener.accept() {
-            let uuid = Uuid::new_v4();
-            stream.set_nonblocking(true).unwrap();
-            println!("{:?} connected as {:?}", addr, uuid);
-            let mut lock = tcpb_2.lock().unwrap();
-            lock.session_mgr.new_sessions.push((
-                uuid,
-                Connect {
-                    stream,
-                    addr,
-                    pending_data: vec![],
-                },
-            ));
-        }
-    });
-
-    let mut buf = [0u8; 1024];
-
-    loop {
-        {
-            let TcpBroker {
-                broker,
-                session_mgr:
-                    SessionManager {
-                        new_sessions,
-                        sessions,
-                    },
-            } = &mut *tcpb_1.lock().unwrap();
-
-            // Check for new connections
-            for (uuid, cnct) in new_sessions.drain(..) {
-                sessions.insert(uuid, cnct);
-                broker.clients.push(Client {
-                    id: uuid,
-                    state: ClientState::SessionEstablished,
-                });
-            }
-
-            let mut bad_keys = HashSet::new();
-            let mut responses = vec![];
-
-            // As a session manager, catch up with any messages
-            for (key, connect) in sessions.iter_mut() {
-                match connect.stream.read(&mut buf) {
-                    Ok(n) if n > 0 => {
-                        connect.pending_data.extend_from_slice(&buf[..n]);
-                    }
-                    // Ignore empty reports
-                    Ok(_) => {}
-                    Err(e) if e.kind() == ErrorKind::WouldBlock => {}
-
-                    // Evict on bad messages
-                    Err(e) => {
-                        println!("{:?} is bad because: {:?}. Removing", key, e);
-                        bad_keys.insert(key.clone());
-                    }
-                }
-
-                // Process any messages
-                while let Some(p) = connect.pending_data.iter().position(|c| *c == 0x00) {
-                    let mut remainder = connect.pending_data.split_off(p + 1);
-                    core::mem::swap(&mut remainder, &mut connect.pending_data);
-                    let payload = remainder;
-
-                    responses.append(
-                        &mut broker.process_msg(
-                            Request {
-                                source: key.clone(),
-                                msg: payload,
-                            },
-                        )
-                        .unwrap(),
-                    );
-                }
-            }
-
-            for msg in responses {
-                let mut fail = false;
-                if let Some(conn) = sessions.get_mut(&msg.dest) {
-                    fail = conn.stream.write(&msg.msg).is_err();
-                }
-                if fail {
-                    bad_keys.insert(msg.dest.clone());
-                }
-            }
-
-            // Do evictions
-            for bk in bad_keys.iter() {
-                sessions.remove(bk);
-            }
-        }
-
-        println!("Sleeping...");
-        sleep(Duration::from_millis(1000));
-    }
-
-    hdl.join().unwrap();
-}
-
-struct Request {
-    source: Uuid,
-    msg: Vec<u8>,
-}
-
-struct Response {
-    dest: Uuid,
-    msg: Vec<u8>,
+pub struct Response {
+    pub dest: Uuid,
+    pub msg: Vec<u8>,
 }

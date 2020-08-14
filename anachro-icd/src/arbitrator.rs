@@ -13,6 +13,10 @@ pub enum Arbitrator<'a> {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum PubSubResponse<'a> {
+    SubAck {
+        #[serde(borrow)]
+        path: PubSubPath<'a>,
+    },
     SubMsg {
         #[serde(borrow)]
         path: PubSubPath<'a>,
