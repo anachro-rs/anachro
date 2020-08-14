@@ -52,7 +52,6 @@ fn main() {
                 path: PubSubPath::Long(path),
                 ty: PubSubType::Pub {
                     payload,
-                    validity_sec_max: i,
                 }
             })
         ).unwrap();

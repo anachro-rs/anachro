@@ -21,12 +21,10 @@ pub struct PubSub<'a> {
 pub enum PubSubType<'a> {
     Pub {
         payload: &'a [u8],
-        validity_sec_max: u16,
     },
     // TODO: Periodic option for sub? min/max rate?
     Sub,
     Unsub,
-    Get,
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
