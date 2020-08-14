@@ -73,6 +73,8 @@ impl Broker {
             c.state.as_connected().ok().map(|x| (c, x))
         });
 
+        // TODO: Make sure we're not publishing to wildcards
+
         // First, find the sender's path
         let source_id = useful().find(|(c, _x)| &c.id == source).ok_or(())?;
         let path = match path {
@@ -93,9 +95,10 @@ impl Broker {
             }
 
             for subt in state.subscriptions.iter() {
-                if path == subt {
+                if matches(subt, path) {
                     // Does the destination have a shortcut for this?
                     for short in state.shortcuts.iter() {
+                        // NOTE: we use path, NOT subt, as it may contain wildcards
                         if path == &short.long {
                             println!("Sending 'short_{}':'{:?}' to {}", short.short, payload, client.id);
                             let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg {
@@ -128,6 +131,28 @@ impl Broker {
         }
 
         Ok(responses)
+    }
+}
+
+fn matches(subscr: &str, publ: &str) -> bool {
+    if subscr.is_empty() || publ.is_empty() {
+        return false;
+    }
+
+    let mut s_iter = subscr.split("/");
+    let mut p_iter = publ.split("/");
+
+    loop {
+        match (s_iter.next(), p_iter.next()) {
+            (Some(subp), Some(pubp)) => match subp {
+                "#" => return true,
+                "+" => {},
+                i if i == pubp => {},
+                _ => return false,
+            }
+            (None, None) => return true,
+            _ => return false,
+        }
     }
 }
 
