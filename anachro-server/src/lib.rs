@@ -149,9 +149,11 @@ impl Broker {
 /// ## Examples
 ///
 /// ```
+/// # use anachro_server::matches;
+/// #
 /// assert!(matches(
-///  "/+/temperature/#"
-///  "/dev_1/temperature/front"
+///  "/+/temperature/#",
+///  "/dev_1/temperature/front",
 /// ));
 /// ```
 pub fn matches(subscr: &str, publ: &str) -> bool {
