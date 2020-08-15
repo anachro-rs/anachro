@@ -12,14 +12,14 @@ use anachro_icd::{
         Arbitrator, Control as AControl, ControlResponse, PubSubError, PubSubResponse, SubMsg,
     },
     component::{Component, ComponentInfo, Control as CControl, ControlType, PubSub, PubSubType, PubSubShort},
-    PubSubPath,
 };
 use uuid::Uuid;
+pub use anachro_icd::{Version, PubSubPath};
 
 pub struct Client {
     state: ClientState,
     name: String,
-    version: String,
+    version: Version,
     ctr: u16,
 }
 
@@ -57,13 +57,17 @@ pub struct Deliverables<'a> {
 }
 
 impl Client {
-    pub fn new(name: String, version: String, ctr_init: u16) -> Self {
+    pub fn new(name: String, version: Version, ctr_init: u16) -> Self {
         Self {
             name,
             version,
             ctr: ctr_init,
             state: ClientState::Created
         }
+    }
+
+    pub fn get_id(&self) -> Option<&Uuid> {
+        Some(&self.state.as_active().ok()?.uuid)
     }
 
     pub fn is_connected(&self) -> bool {
@@ -161,7 +165,7 @@ impl Client {
                     seq: self.ctr,
                     ty: ControlType::RegisterComponent(ComponentInfo {
                         name: &self.name,
-                        version: &self.version,
+                        version: self.version,
                     }),
                 }));
 

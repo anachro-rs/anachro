@@ -1,4 +1,4 @@
-use crate::PubSubPath;
+use crate::{PubSubPath, Version};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -43,7 +43,7 @@ pub enum ControlType<'a> {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ComponentInfo<'a> {
     pub name: &'a str,
-    pub version: &'a str,
+    pub version: Version,
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -60,7 +60,12 @@ mod test {
     #[test]
     fn ser_check() {
         let name = "cool-board";
-        let version = "v0.1.0";
+        let version = Version {
+            major: 0,
+            minor: 1,
+            trivial: 0,
+            misc: 123,
+        };
 
         let msg = Component::Control(Control {
             seq: 0x0504,
@@ -74,8 +79,8 @@ mod test {
                 0x00, // Component::Control
                 0x04, 0x05, // seq
                 0x00, // ControlType::RegisterComponent
-                0x0A, b'c', b'o', b'o', b'l', b'-', b'b', b'o', b'a', b'r', b'd', 0x06, b'v', b'0',
-                b'.', b'1', b'.', b'0',
+                0x0A, b'c', b'o', b'o', b'l', b'-', b'b', b'o', b'a', b'r', b'd',
+                0x00, 0x01, 0x00, 123,
             ]
         );
 

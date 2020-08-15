@@ -10,3 +10,11 @@ pub enum PubSubPath<'a> {
     Long(&'a str),
     Short(u16),
 }
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
+pub struct Version {
+    pub major: u8,
+    pub minor: u8,
+    pub trivial: u8,
+    pub misc: u8,
+}

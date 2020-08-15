@@ -6,8 +6,9 @@ use uuid::Uuid;
 use anachro_icd::{
     arbitrator::{self, Arbitrator, SubMsg},
     component::{Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType},
-    PubSubPath,
 };
+
+pub use anachro_icd::{PubSubPath, Version};
 
 // Thinks in term of uuids
 #[derive(Default)]
@@ -194,7 +195,7 @@ impl Client {
         let next = match ctrl.ty {
             ControlType::RegisterComponent(ComponentInfo { name, version }) => match &self.state {
                 ClientState::SessionEstablished | ClientState::Connected(_) => {
-                    println!("{:?} registered as {}, {}", self.id, name, version);
+                    println!("{:?} registered as {}, {:?}", self.id, name, version);
 
                     let resp = Arbitrator::Control(arbitrator::Control {
                         seq: ctrl.seq,
@@ -211,7 +212,7 @@ impl Client {
 
                     Some(ClientState::Connected(ConnectedState {
                         name: name.to_string(),
-                        version: version.to_string(),
+                        version: version,
                         subscriptions: vec![],
                         shortcuts: vec![],
                     }))
@@ -314,7 +315,7 @@ impl ClientState {
 #[derive(Debug)]
 struct ConnectedState {
     name: String,
-    version: String,
+    version: Version,
     subscriptions: Vec<String>,
     shortcuts: Vec<Shortcut>,
 }

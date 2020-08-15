@@ -1,13 +1,11 @@
 use anachro_icd::{
     arbitrator::Arbitrator,
-    component::{Component, ComponentInfo, Control, ControlType, PubSub, PubSubType},
-    PubSubPath,
+    PubSubPath, Version,
 };
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 use std::io::prelude::*;
 use std::net::TcpStream;
 
-use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use anachro_client::Client;
@@ -47,7 +45,7 @@ fn processor(stream: &mut TcpStream, client: &mut Client, current: &mut Vec<u8>)
                 }
             }
             Ok(_) => break,
-            Err(shh) => {
+            Err(_shh) => {
                 break;
             }
         }
@@ -71,7 +69,11 @@ fn main() {
     let mut stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
-    let mut client = Client::new("cool-board".to_string(), "0.4.1".to_string(), 123);
+    let mut client = Client::new(
+        "cool-board".to_string(),
+        Version { major: 0, minor: 4, trivial: 1, misc: 123 },
+        123
+    );
 
     let mut current = vec![];
 
