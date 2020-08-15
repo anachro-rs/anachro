@@ -4,7 +4,7 @@ use postcard::{from_bytes_cobs, to_stdvec_cobs};
 use uuid::Uuid;
 
 use anachro_icd::{
-    arbitrator::{self, Arbitrator},
+    arbitrator::{self, Arbitrator, SubMsg},
     component::{Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType},
     PubSubPath,
 };
@@ -113,10 +113,10 @@ impl Broker {
                                 "Sending 'short_{}':'{:?}' to {}",
                                 short.short, payload, client.id
                             );
-                            let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg {
+                            let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg( SubMsg {
                                 path: PubSubPath::Short(short.short),
                                 payload,
-                            }));
+                            })));
                             let msg_bytes = to_stdvec_cobs(&msg).map_err(drop)?;
                             responses.push(Response {
                                 dest: client.id.clone(),
@@ -128,10 +128,10 @@ impl Broker {
 
                     println!("Sending '{}':'{:?}' to {}", path, payload, client.id);
 
-                    let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg {
+                    let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg( SubMsg {
                         path: PubSubPath::Long(&path),
                         payload,
-                    }));
+                    })));
                     let msg_bytes = to_stdvec_cobs(&msg).map_err(drop)?;
                     responses.push(Response {
                         dest: client.id.clone(),

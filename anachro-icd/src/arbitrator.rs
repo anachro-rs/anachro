@@ -17,16 +17,14 @@ pub enum PubSubResponse<'a> {
         #[serde(borrow)]
         path: PubSubPath<'a>,
     },
-    SubMsg {
-        #[serde(borrow)]
-        path: PubSubPath<'a>,
-        payload: &'a [u8],
-    },
-    GetMsg {
-        #[serde(borrow)]
-        path: PubSubPath<'a>,
-        payload: &'a [u8],
-    },
+    SubMsg(SubMsg<'a>),
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct SubMsg<'a> {
+    #[serde(borrow)]
+    pub path: PubSubPath<'a>,
+    pub payload: &'a [u8],
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
