@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::PubSubPath;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Component<'a> {
@@ -19,9 +19,7 @@ pub struct PubSub<'a> {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum PubSubType<'a> {
-    Pub {
-        payload: &'a [u8],
-    },
+    Pub { payload: &'a [u8] },
     // TODO: Periodic option for sub? min/max rate?
     Sub,
     Unsub,
@@ -57,7 +55,7 @@ pub struct PubSubShort<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use postcard::{to_stdvec, from_bytes};
+    use postcard::{from_bytes, to_stdvec};
 
     #[test]
     fn ser_check() {
@@ -66,21 +64,18 @@ mod test {
 
         let msg = Component::Control(Control {
             seq: 0x0504,
-            ty: ControlType::RegisterComponent(ComponentInfo {
-                name,
-                version,
-            })
+            ty: ControlType::RegisterComponent(ComponentInfo { name, version }),
         });
 
         let ser_msg = to_stdvec(&msg).unwrap();
         assert_eq!(
             &ser_msg[..],
             &[
-                0x00,       // Component::Control
+                0x00, // Component::Control
                 0x04, 0x05, // seq
-                0x00,       // ControlType::RegisterComponent
-                0x0A, b'c', b'o', b'o', b'l', b'-', b'b', b'o', b'a', b'r', b'd',
-                0x06, b'v', b'0', b'.', b'1', b'.', b'0',
+                0x00, // ControlType::RegisterComponent
+                0x0A, b'c', b'o', b'o', b'l', b'-', b'b', b'o', b'a', b'r', b'd', 0x06, b'v', b'0',
+                b'.', b'1', b'.', b'0',
             ]
         );
 

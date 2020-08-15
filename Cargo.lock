@@ -13,6 +13,7 @@ dependencies = [
 name = "anachro-client-cli"
 version = "0.1.0"
 dependencies = [
+ "anachro-client",
  "anachro-icd",
  "postcard",
  "uuid",

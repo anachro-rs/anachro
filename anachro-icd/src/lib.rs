@@ -1,6 +1,6 @@
-pub mod component;
 pub mod arbitrator;
-use serde::{Serialize, Deserialize};
+pub mod component;
+use serde::{Deserialize, Serialize};
 
 // TODO: Switch to "managed" crate for everything here?
 

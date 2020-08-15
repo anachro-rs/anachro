@@ -95,14 +95,15 @@ fn main() {
                     core::mem::swap(&mut remainder, &mut connect.pending_data);
                     let payload = remainder;
 
+                    println!("From {:?} got {:?}", key, payload);
+
                     responses.append(
-                        &mut broker.process_msg(
-                            Request {
+                        &mut broker
+                            .process_msg(Request {
                                 source: key.clone(),
                                 msg: payload,
-                            },
-                        )
-                        .unwrap(),
+                            })
+                            .unwrap(),
                     );
                 }
             }
@@ -113,12 +114,16 @@ fn main() {
                     fail = conn.stream.write(&msg.msg).is_err();
                 }
                 if fail {
+                    println!("Removing {:?}", msg.dest);
                     bad_keys.insert(msg.dest.clone());
+                } else {
+                    println!("Sent to {:?}", msg.dest);
                 }
             }
 
             // Do evictions
             for bk in bad_keys.iter() {
+                broker.remove_client(&bk).unwrap();
                 sessions.remove(bk);
             }
         }

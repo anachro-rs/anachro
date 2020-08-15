@@ -7,12 +7,14 @@ Thoughts:
 
 */
 
-use uuid::Uuid;
 use anachro_icd::{
-    arbitrator::{Arbitrator, Control as AControl, ControlResponse, PubSubResponse, PubSubError, SubMsg},
-    component::{Component, Control as CControl, ControlType, ComponentInfo},
+    arbitrator::{
+        Arbitrator, Control as AControl, ControlResponse, PubSubError, PubSubResponse, SubMsg,
+    },
+    component::{Component, ComponentInfo, Control as CControl, ControlType, PubSub, PubSubType, PubSubShort},
     PubSubPath,
 };
+use uuid::Uuid;
 
 pub struct Client {
     state: ClientState,
@@ -27,57 +29,146 @@ pub enum ClientState {
     Active(ActiveState),
 }
 
+impl ClientState {
+    fn as_active_mut(&mut self) -> Result<&mut ActiveState, ()> {
+        match self {
+            ClientState::Active(a_state) => Ok(a_state),
+            _ => Err(()),
+        }
+    }
+
+    fn as_active(&self) -> Result<&ActiveState, ()> {
+        match self {
+            ClientState::Active(a_state) => Ok(a_state),
+            _ => Err(()),
+        }
+    }
+}
+
 pub struct ActiveState {
     uuid: Uuid,
     pending_sub: bool,
     pending_short: Option<u16>,
 }
 
-struct Message {
-    path: String,
-    payload: Vec<u8>,
-}
-
 pub struct Deliverables<'a> {
-    broker_response: Option<Component<'a>>,
-    client_response: Option<SubMsg<'a>>,
+    pub broker_response: Option<Component<'a>>,
+    pub client_response: Option<SubMsg<'a>>,
 }
 
 impl Client {
-    pub fn process<'a, 'b: 'a>(&'b mut self, msg: &'a Option<Arbitrator<'a>>) -> Result<Deliverables<'a>, ()> {
+    pub fn new(name: String, version: String, ctr_init: u16) -> Self {
+        Self {
+            name,
+            version,
+            ctr: ctr_init,
+            state: ClientState::Created
+        }
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.state.as_active().is_ok()
+    }
+
+    pub fn subscribe<'a, 'b: 'a>(
+        &mut self,
+        path: PubSubPath<'a>,
+    ) -> Result<Component<'a>, ()> {
+        // Only possible if we are already connected
+        let state = self.state.as_active_mut()?;
+
+        // TODO, we could track multiple pending subs in the
+        // future, at the cost of storing a vec of pending subs
+        if state.pending_sub {
+            return Err(());
+        }
+
+        state.pending_sub = true;
+        Ok(Component::PubSub(PubSub {
+            path,
+            ty: PubSubType::Sub
+        }))
+    }
+
+    pub fn is_subscribe_pending(&self) -> bool {
+        if let Ok(state) = self.state.as_active() {
+            state.pending_sub
+        } else {
+            false
+        }
+    }
+
+    pub fn is_reg_short_pending(&self) -> bool {
+        if let Ok(state) = self.state.as_active() {
+            state.pending_short.is_some()
+        } else {
+            false
+        }
+    }
+
+    pub fn publish<'a, 'b: 'a>(&'b self, path: PubSubPath<'a>, payload: &'a [u8]) -> Result<Component<'a>, ()> {
+        self.state.as_active()?;
+
+        Ok(Component::PubSub(PubSub {
+            path,
+            ty: PubSubType::Pub {
+                payload
+            }
+        }))
+    }
+
+    pub fn register_short<'a, 'b: 'a>(
+        &'b mut self,
+        short: u16,
+        long: &'a str
+    ) -> Result<Component<'a>, ()> {
+        // Only possible if we are already connected
+        let state = self.state.as_active_mut()?;
+
+        if state.pending_short.is_some() {
+            return Err(());
+        }
+
+        state.pending_short = Some(short);
+
+        self.ctr += 1;
+
+        Ok(Component::Control(
+            CControl {
+                seq: self.ctr,
+                ty: ControlType::RegisterPubSubShortId(PubSubShort {
+                    long_name: long,
+                    short_id: short,
+                })
+            }
+        ))
+    }
+
+    pub fn process<'a, 'b: 'a>(
+        &'b mut self,
+        msg: &'a Option<Arbitrator<'a>>,
+    ) -> Result<Deliverables<'a>, ()> {
         let mut response = Deliverables {
             broker_response: None,
             client_response: None,
         };
 
-
-        let next = {
-            let Client {
-                ref mut state,
-                ref name,
-                ref version,
-                ctr,
-            } = self;
-
-            match (state, msg) {
+        let next = match (&mut self.state, msg) {
             (ClientState::Created, _) => {
-                *ctr += 1;
+                self.ctr += 1;
 
                 response.broker_response = Some(Component::Control(CControl {
                     seq: self.ctr,
                     ty: ControlType::RegisterComponent(ComponentInfo {
-                        name,
-                        version,
-                    })
+                        name: &self.name,
+                        version: &self.version,
+                    }),
                 }));
 
                 Some(ClientState::PendingRegistration)
             }
             (ClientState::PendingRegistration, Some(msg)) => {
-                if let Arbitrator::Control(AControl {
-                    seq,
-                    response,
-                }) = msg {
+                if let Arbitrator::Control(AControl { seq, response }) = msg {
                     if *seq != self.ctr {
                         // TODO, restart connection process? Just disregard?
                         return Err(());
@@ -100,7 +191,9 @@ impl Client {
                 // TODO: Some kind of timeout? Just wait forever?
                 None
             }
-            (ClientState::Active(ref mut a_state), Some(Arbitrator::Control(ref ctl))) if ctl.seq == self.ctr => {
+            (ClientState::Active(ref mut a_state), Some(Arbitrator::Control(ref ctl)))
+                if ctl.seq == self.ctr =>
+            {
                 // TODO: Can this generate any kind of response to the user or broker? Update state?
                 a_state.process_control(ctl)?;
                 None
@@ -117,7 +210,7 @@ impl Client {
                 // Todo: any periodic keepalive pings?
                 None
             }
-        }};
+        };
 
         if let Some(new_state) = next {
             self.state = new_state;
@@ -156,7 +249,10 @@ impl ActiveState {
         Ok(())
     }
 
-    fn process_pubsub<'a>(&mut self, msg: &'a Result<PubSubResponse, PubSubError>) -> Result<Option<SubMsg<'a>>, ()> {
+    fn process_pubsub<'a>(
+        &mut self,
+        msg: &'a Result<PubSubResponse, PubSubError>,
+    ) -> Result<Option<SubMsg<'a>>, ()> {
         match msg {
             Ok(PubSubResponse::SubAck { .. }) => {
                 if self.pending_sub {
@@ -167,12 +263,11 @@ impl ActiveState {
                     Err(())
                 }
             }
-            Ok(PubSubResponse::SubMsg(SubMsg { path, payload })) => {
-                Ok(Some(SubMsg { path: path.clone(), payload }))
-            }
-            Err(_) => {
-                Err(())
-            }
+            Ok(PubSubResponse::SubMsg(SubMsg { path, payload })) => Ok(Some(SubMsg {
+                path: path.clone(),
+                payload,
+            })),
+            Err(_) => Err(()),
         }
     }
 }

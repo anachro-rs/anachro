@@ -32,6 +32,12 @@ impl Broker {
         }
     }
 
+    pub fn remove_client(&mut self, id: &Uuid) -> Result<(), ()> {
+        let pos = self.clients.iter().position(|c| &c.id == id).ok_or(())?;
+        self.clients.remove(pos);
+        Ok(())
+    }
+
     pub fn process_msg(&mut self, mut req: Request) -> Result<Vec<Response>, ()> {
         let mut responses = vec![];
 
@@ -113,10 +119,12 @@ impl Broker {
                                 "Sending 'short_{}':'{:?}' to {}",
                                 short.short, payload, client.id
                             );
-                            let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg( SubMsg {
-                                path: PubSubPath::Short(short.short),
-                                payload,
-                            })));
+                            let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(
+                                SubMsg {
+                                    path: PubSubPath::Short(short.short),
+                                    payload,
+                                },
+                            )));
                             let msg_bytes = to_stdvec_cobs(&msg).map_err(drop)?;
                             responses.push(Response {
                                 dest: client.id.clone(),
@@ -128,7 +136,7 @@ impl Broker {
 
                     println!("Sending '{}':'{:?}' to {}", path, payload, client.id);
 
-                    let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg( SubMsg {
+                    let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(SubMsg {
                         path: PubSubPath::Long(&path),
                         payload,
                     })));
