@@ -12,9 +12,4 @@ heapless = "0.5.5"
 
 [dependencies.postcard]
 version = "0.5.1"
-features = ["use-std"]
-
-[dependencies.uuid]
-version = "0.8.1"
-default-features = false
-features = ["serde", "v4"]
+features = ["heapless"]

@@ -1,6 +1,8 @@
+#![no_std]
+
 use core::default::Default;
 
-use postcard::{from_bytes_cobs, to_stdvec_cobs};
+use postcard::{from_bytes_cobs, to_vec_cobs};
 
 use anachro_icd::{
     arbitrator::{self, Arbitrator, SubMsg},
@@ -10,10 +12,17 @@ use anachro_icd::{
 
 pub use anachro_icd::{PubSubPath, Version};
 
+use heapless::{
+    consts,
+    Vec,
+};
+
+type ClientStore = Vec<Client, consts::U8>;
+
 // Thinks in term of uuids
 #[derive(Default)]
 pub struct Broker {
-    clients: Vec<Client>,
+    clients: ClientStore,
 }
 
 impl Broker {
@@ -26,7 +35,7 @@ impl Broker {
             self.clients.push(Client {
                 id: id.clone(),
                 state: ClientState::SessionEstablished,
-            });
+            }).map_err(drop)?;
             Ok(())
         } else {
             Err(())
@@ -35,25 +44,25 @@ impl Broker {
 
     pub fn remove_client(&mut self, id: &Uuid) -> Result<(), ()> {
         let pos = self.clients.iter().position(|c| &c.id == id).ok_or(())?;
-        self.clients.remove(pos);
+        self.clients.swap_remove(pos);
         Ok(())
     }
 
-    pub fn process_msg(&mut self, mut req: Request) -> Result<Vec<Response>, ()> {
-        let mut responses = vec![];
+    pub fn process_msg(&mut self, mut req: Request) -> Result<Vec<Response, consts::U8>, ()> {
+        let mut responses = Vec::new();
 
         match from_bytes_cobs::<Component>(&mut req.msg) {
             Ok(msg) => match msg {
                 Component::Control(mut ctrl) => {
                     let client = self.client_by_id_mut(&req.source)?;
 
-                    client.process_control(&mut ctrl)?.map(|msg| {
-                        responses.push(msg);
-                    });
+                    if let Some(msg) = client.process_control(&mut ctrl)? {
+                        responses.push(msg).map_err(drop)?;
+                    }
                 }
                 Component::PubSub(PubSub { path, ty }) => match ty {
                     PubSubType::Pub { payload } => {
-                        responses.append(&mut self.process_publish(&path, payload, &req.source)?);
+                        responses.extend_from_slice(&self.process_publish(&path, payload, &req.source)?).map_err(drop)?;
                     }
                     PubSubType::Sub => {
                         let client = self.client_by_id_mut(&req.source)?;
@@ -65,7 +74,7 @@ impl Broker {
                     }
                 },
             },
-            Err(e) => println!("{:?} parse error: {:?}", req.source, e),
+            Err(_e) => {}, // println!("{:?} parse error: {:?}", req.source, e),
         }
 
         Ok(responses)
@@ -76,7 +85,7 @@ impl Broker {
         path: &PubSubPath,
         payload: &[u8],
         source: &Uuid,
-    ) -> Result<Vec<Response>, ()> {
+    ) -> Result<Vec<Response, consts::U8>, ()> {
         let useful = || {
             self.clients
                 .iter()
@@ -101,10 +110,10 @@ impl Broker {
             }
         };
 
-        println!("{:?} said '{:?}' to {}", source, payload, path);
+        // println!("{:?} said '{:?}' to {}", source, payload, path);
 
         // Then, find all applicable destinations, max of 1 per destination
-        let mut responses = vec![];
+        let mut responses = Vec::new();
         'client: for (client, state) in useful() {
             if &client.id == source {
                 // Don't send messages back to the sender
@@ -117,36 +126,36 @@ impl Broker {
                     for short in state.shortcuts.iter() {
                         // NOTE: we use path, NOT subt, as it may contain wildcards
                         if path == short.long.as_str() {
-                            println!(
-                                "Sending 'short_{}':'{:?}' to {:?}",
-                                short.short, payload, client.id
-                            );
+                            // println!(
+                            //     "Sending 'short_{}':'{:?}' to {:?}",
+                            //     short.short, payload, client.id
+                            // );
                             let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(
                                 SubMsg {
                                     path: PubSubPath::Short(short.short),
                                     payload,
                                 },
                             )));
-                            let msg_bytes = to_stdvec_cobs(&msg).map_err(drop)?;
+                            let msg_bytes = to_vec_cobs(&msg).map_err(drop)?;
                             responses.push(Response {
                                 dest: client.id.clone(),
                                 msg: msg_bytes,
-                            });
+                            }).map_err(drop)?;
                             continue 'client;
                         }
                     }
 
-                    println!("Sending '{}':'{:?}' to {:?}", path, payload, client.id);
+                    // println!("Sending '{}':'{:?}' to {:?}", path, payload, client.id);
 
                     let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(SubMsg {
                         path: PubSubPath::Long(Path::borrow_from_str(path)),
                         payload,
                     })));
-                    let msg_bytes = to_stdvec_cobs(&msg).map_err(drop)?;
+                    let msg_bytes = to_vec_cobs(&msg).map_err(drop)?;
                     responses.push(Response {
                         dest: client.id.clone(),
                         msg: msg_bytes,
-                    });
+                    }).map_err(drop)?;
                     continue 'client;
                 }
             }
@@ -196,7 +205,7 @@ impl Client {
         let next = match &ctrl.ty {
             ControlType::RegisterComponent(ComponentInfo { name, version }) => match &self.state {
                 ClientState::SessionEstablished | ClientState::Connected(_) => {
-                    println!("{:?} registered as {}, {:?}", self.id, name.as_str(), version);
+                    // println!("{:?} registered as {}, {:?}", self.id, name.as_str(), version);
 
                     let resp = Arbitrator::Control(arbitrator::Control {
                         seq: ctrl.seq,
@@ -205,7 +214,7 @@ impl Client {
                         )),
                     });
 
-                    let resp_bytes = to_stdvec_cobs(&resp).unwrap();
+                    let resp_bytes = to_vec_cobs(&resp).unwrap();
                     response = Some(Response {
                         dest: self.id.clone(),
                         msg: resp_bytes,
@@ -214,8 +223,8 @@ impl Client {
                     Some(ClientState::Connected(ConnectedState {
                         name: name.try_to_owned()?,
                         version: *version,
-                        subscriptions: vec![],
-                        shortcuts: vec![],
+                        subscriptions: Vec::new(),
+                        shortcuts: Vec::new(),
                     }))
                 }
             },
@@ -229,13 +238,13 @@ impl Client {
                 }
                 let state = self.state.as_connected_mut()?;
 
-                println!("{:?} aliased '{}' to {}", self.id, long_name, short_id);
+                // println!("{:?} aliased '{}' to {}", self.id, long_name, short_id);
 
                 // TODO: Dupe check?
                 state.shortcuts.push(Shortcut {
                     long: Path::try_from_str(long_name).unwrap(),
                     short: *short_id,
-                });
+                }).map_err(drop)?;
                 None
             }
         };
@@ -271,14 +280,14 @@ impl Client {
         {
             state.subscriptions.push(
                 Path::try_from_str(path_str).unwrap()
-            );
+            ).map_err(drop)?;
         }
 
         let resp = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubAck {
             path: path.clone(),
         }));
 
-        let resp_bytes = to_stdvec_cobs(&resp).map_err(drop)?;
+        let resp_bytes = to_vec_cobs(&resp).map_err(drop)?;
 
         Ok(Response {
             dest: self.id.clone(),
@@ -319,8 +328,8 @@ impl ClientState {
 struct ConnectedState {
     name: Name<'static>,
     version: Version,
-    subscriptions: Vec<Path<'static>>,
-    shortcuts: Vec<Shortcut>,
+    subscriptions: Vec<Path<'static>, consts::U8>,
+    shortcuts: Vec<Shortcut, consts::U8>,
 }
 
 #[derive(Debug)]
@@ -331,10 +340,11 @@ struct Shortcut {
 
 pub struct Request {
     pub source: Uuid,
-    pub msg: Vec<u8>,
+    pub msg: Vec<u8, consts::U128>,
 }
 
+#[derive(Clone)]
 pub struct Response {
     pub dest: Uuid,
-    pub msg: Vec<u8>,
+    pub msg: Vec<u8, consts::U128>,
 }

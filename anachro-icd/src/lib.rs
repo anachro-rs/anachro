@@ -92,7 +92,7 @@ where
     type Value = ManagedString<'a, T>;
 
     fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        todo!()
+        write!(formatter, "sorry, anachro")
     }
 
     fn visit_borrowed_str<E>(self, value: &'de str) -> Result<Self::Value, E>

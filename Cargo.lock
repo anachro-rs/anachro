@@ -33,7 +33,6 @@ dependencies = [
  "anachro-icd",
  "heapless",
  "postcard",
- "uuid",
 ]
 
 [[package]]
