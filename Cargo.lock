@@ -32,7 +32,6 @@ version = "0.1.0"
 dependencies = [
  "anachro-icd",
  "heapless",
- "postcard",
 ]
 
 [[package]]
