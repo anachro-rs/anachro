@@ -7,11 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-[dependencies.uuid]
-version = "0.8.1"
-default-features = false
-features = ["serde", "v4"]
+heapless = "0.5.5"
 
 [dependencies.serde]
 version = "1.0.114"
@@ -20,4 +16,7 @@ features = ["derive"]
 
 [dev-dependencies.postcard]
 version = "0.5.1"
-features = ["use-std"]
+default-features = false
+
+[features]
+std = ["postcard/use-std"]

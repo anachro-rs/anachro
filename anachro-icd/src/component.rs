@@ -42,7 +42,8 @@ pub enum ControlType<'a> {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ComponentInfo<'a> {
-    pub name: &'a str,
+    #[serde(borrow)]
+    pub name: crate::Name<'a>,
     pub version: Version,
 }
 
@@ -59,7 +60,7 @@ mod test {
 
     #[test]
     fn ser_check() {
-        let name = "cool-board";
+        let name = crate::Name::try_from_str("cool-board").unwrap();
         let version = Version {
             major: 0,
             minor: 1,

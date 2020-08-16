@@ -1,6 +1,6 @@
 use crate::PubSubPath;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use crate::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Arbitrator<'a> {
@@ -52,7 +52,7 @@ mod test {
 
     #[test]
     fn ser_check() {
-        let uuid = Uuid::parse_str("d036e73b-23ec-4f60-accb-0eddb617f471").unwrap();
+        let uuid = Uuid::from_bytes([0xd0, 0x36, 0xe7, 0x3b, 0x23, 0xec, 0x4f, 0x60, 0xac, 0xcb, 0x0e, 0xdd, 0xb6, 0x17, 0xf4, 0x71]);
         let msg = Arbitrator::Control(Control {
             seq: 0x0405,
             response: Ok(ControlResponse::ComponentRegistration(uuid)),

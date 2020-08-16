@@ -7,18 +7,23 @@ Thoughts:
 
 */
 
+#![no_std]
+
 use anachro_icd::{
     arbitrator::{
         Arbitrator, Control as AControl, ControlResponse, PubSubError, PubSubResponse, SubMsg,
     },
     component::{Component, ComponentInfo, Control as CControl, ControlType, PubSub, PubSubType, PubSubShort},
+    Name, Uuid,
 };
-use uuid::Uuid;
 pub use anachro_icd::{Version, PubSubPath};
+// use heapless::{
+//     Vec, consts, String,
+// };
 
 pub struct Client {
     state: ClientState,
-    name: String,
+    name: Name<'static>,
     version: Version,
     ctr: u16,
 }
@@ -57,9 +62,9 @@ pub struct Deliverables<'a> {
 }
 
 impl Client {
-    pub fn new(name: String, version: Version, ctr_init: u16) -> Self {
+    pub fn new(name: &str, version: Version, ctr_init: u16) -> Self {
         Self {
-            name,
+            name: Name::try_from_str(name).unwrap(),
             version,
             ctr: ctr_init,
             state: ClientState::Created
@@ -164,7 +169,7 @@ impl Client {
                 response.broker_response = Some(Component::Control(CControl {
                     seq: self.ctr,
                     ty: ControlType::RegisterComponent(ComponentInfo {
-                        name: &self.name,
+                        name: self.name.clone(),
                         version: self.version,
                     }),
                 }));

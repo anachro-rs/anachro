@@ -5,8 +5,6 @@ name = "anachro-client"
 version = "0.1.0"
 dependencies = [
  "anachro-icd",
- "postcard",
- "uuid",
 ]
 
 [[package]]
@@ -23,9 +21,9 @@ dependencies = [
 name = "anachro-icd"
 version = "0.1.0"
 dependencies = [
+ "heapless",
  "postcard",
  "serde",
- "uuid",
 ]
 
 [[package]]
