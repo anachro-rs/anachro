@@ -17,9 +17,6 @@ use anachro_icd::{
     Name, Uuid,
 };
 pub use anachro_icd::{Version, PubSubPath};
-// use heapless::{
-//     Vec, consts, String,
-// };
 
 pub struct Client {
     state: ClientState,

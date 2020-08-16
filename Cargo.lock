@@ -31,6 +31,7 @@ name = "anachro-server"
 version = "0.1.0"
 dependencies = [
  "anachro-icd",
+ "heapless",
  "postcard",
  "uuid",
 ]

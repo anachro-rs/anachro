@@ -107,7 +107,7 @@ impl<'a, T> ManagedString<'a, T>
 where
     T: ArrayLength<u8>
 {
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             ManagedString::Owned(o) => o.as_str(),
             ManagedString::Borrow(s) => s
@@ -120,6 +120,10 @@ where
 
     pub fn borrow_from_str<'i>(input: &'i str) -> ManagedString<'i, T> {
         ManagedString::Borrow(input)
+    }
+
+    pub fn try_to_owned(&self) -> Result<ManagedString<'static, T>, ()> {
+        ManagedString::try_from_str(self.as_str())
     }
 }
 

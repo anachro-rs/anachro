@@ -1,11 +1,11 @@
 use core::default::Default;
 
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
-use uuid::Uuid;
 
 use anachro_icd::{
     arbitrator::{self, Arbitrator, SubMsg},
     component::{Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType},
+    Uuid, Name, Path,
 };
 
 pub use anachro_icd::{PubSubPath, Version};
@@ -88,7 +88,7 @@ impl Broker {
         // First, find the sender's path
         let source_id = useful().find(|(c, _x)| &c.id == source).ok_or(())?;
         let path = match path {
-            PubSubPath::Long(lp) => *lp,
+            PubSubPath::Long(lp) => lp.as_str(),
             PubSubPath::Short(sid) => {
                 &source_id
                     .1
@@ -97,10 +97,11 @@ impl Broker {
                     .find(|s| &s.short == sid)
                     .ok_or(())?
                     .long
+                    .as_str()
             }
         };
 
-        println!("{} said '{:?}' to {}", source, payload, path);
+        println!("{:?} said '{:?}' to {}", source, payload, path);
 
         // Then, find all applicable destinations, max of 1 per destination
         let mut responses = vec![];
@@ -111,13 +112,13 @@ impl Broker {
             }
 
             for subt in state.subscriptions.iter() {
-                if matches(subt, path) {
+                if matches(subt.as_str(), path) {
                     // Does the destination have a shortcut for this?
                     for short in state.shortcuts.iter() {
                         // NOTE: we use path, NOT subt, as it may contain wildcards
-                        if path == &short.long {
+                        if path == short.long.as_str() {
                             println!(
-                                "Sending 'short_{}':'{:?}' to {}",
+                                "Sending 'short_{}':'{:?}' to {:?}",
                                 short.short, payload, client.id
                             );
                             let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(
@@ -135,10 +136,10 @@ impl Broker {
                         }
                     }
 
-                    println!("Sending '{}':'{:?}' to {}", path, payload, client.id);
+                    println!("Sending '{}':'{:?}' to {:?}", path, payload, client.id);
 
                     let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(SubMsg {
-                        path: PubSubPath::Long(&path),
+                        path: PubSubPath::Long(Path::borrow_from_str(path)),
                         payload,
                     })));
                     let msg_bytes = to_stdvec_cobs(&msg).map_err(drop)?;
@@ -192,10 +193,10 @@ impl Client {
     fn process_control(&mut self, ctrl: &mut Control) -> Result<Option<Response>, ()> {
         let mut response = None;
 
-        let next = match ctrl.ty {
+        let next = match &ctrl.ty {
             ControlType::RegisterComponent(ComponentInfo { name, version }) => match &self.state {
                 ClientState::SessionEstablished | ClientState::Connected(_) => {
-                    println!("{:?} registered as {}, {:?}", self.id, name, version);
+                    println!("{:?} registered as {}, {:?}", self.id, name.as_str(), version);
 
                     let resp = Arbitrator::Control(arbitrator::Control {
                         seq: ctrl.seq,
@@ -211,8 +212,8 @@ impl Client {
                     });
 
                     Some(ClientState::Connected(ConnectedState {
-                        name: name.to_string(),
-                        version: version,
+                        name: name.try_to_owned()?,
+                        version: *version,
                         subscriptions: vec![],
                         shortcuts: vec![],
                     }))
@@ -232,8 +233,8 @@ impl Client {
 
                 // TODO: Dupe check?
                 state.shortcuts.push(Shortcut {
-                    long: long_name.to_owned(),
-                    short: short_id,
+                    long: Path::try_from_str(long_name).unwrap(),
+                    short: *short_id,
                 });
                 None
             }
@@ -251,24 +252,26 @@ impl Client {
 
         // Determine canonical path
         let path_str = match path {
-            PubSubPath::Long(lp) => lp.to_string(),
+            PubSubPath::Long(lp) => lp.as_str(),
             PubSubPath::Short(sid) => state
                 .shortcuts
                 .iter()
                 .find(|s| &s.short == sid)
                 .ok_or(())?
                 .long
-                .to_string(),
+                .as_str(),
         };
 
         // Only push if not a dupe
         if state
             .subscriptions
             .iter()
-            .find(|s| s == &&path_str)
+            .find(|s| s.as_str() == path_str)
             .is_none()
         {
-            state.subscriptions.push(path_str)
+            state.subscriptions.push(
+                Path::try_from_str(path_str).unwrap()
+            );
         }
 
         let resp = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubAck {
@@ -314,15 +317,15 @@ impl ClientState {
 
 #[derive(Debug)]
 struct ConnectedState {
-    name: String,
+    name: Name<'static>,
     version: Version,
-    subscriptions: Vec<String>,
+    subscriptions: Vec<Path<'static>>,
     shortcuts: Vec<Shortcut>,
 }
 
 #[derive(Debug)]
 struct Shortcut {
-    long: String,
+    long: Path<'static>,
     short: u16,
 }
 
