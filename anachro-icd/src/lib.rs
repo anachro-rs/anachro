@@ -127,7 +127,9 @@ where
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
+use core::hash::Hash;
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct Uuid([u8; 16]);
 
 impl Uuid {

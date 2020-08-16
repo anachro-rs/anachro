@@ -1,6 +1,5 @@
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
-use uuid::Uuid;
 
 use std::collections::{HashMap, HashSet};
 use std::default::Default;
@@ -8,7 +7,11 @@ use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use anachro_server::{Broker, Request};
+use anachro_server::{Broker, Request, Uuid};
+
+use postcard::{
+    to_stdvec_cobs, from_bytes_cobs,
+};
 
 #[derive(Default)]
 struct TcpBroker {
@@ -28,15 +31,19 @@ struct Connect {
     pending_data: Vec<u8>,
 }
 
+use rand::random;
+
 fn main() {
     let tcpb_1 = Arc::new(Mutex::new(TcpBroker::default()));
     let tcpb_2 = tcpb_1.clone();
+
 
     let _hdl = spawn(move || {
         let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
         while let Ok((stream, addr)) = listener.accept() {
-            let uuid = Uuid::new_v4();
+            let uuid_buf: u128 = random();
+            let uuid = Uuid::from_bytes(uuid_buf.to_le_bytes());
             stream.set_nonblocking(true).unwrap();
             println!("{:?} connected as {:?}", addr, uuid);
             let mut lock = tcpb_2.lock().unwrap();
@@ -70,10 +77,11 @@ fn main() {
             }
 
             let mut bad_keys = HashSet::new();
+
             let mut responses = vec![];
 
             // As a session manager, catch up with any messages
-            for (key, connect) in sessions.iter_mut() {
+            for (key, connect) in sessions.iter_mut() { // !!!!!
                 match connect.stream.read(&mut buf) {
                     Ok(n) if n > 0 => {
                         connect.pending_data.extend_from_slice(&buf[..n]);
@@ -93,42 +101,50 @@ fn main() {
                 while let Some(p) = connect.pending_data.iter().position(|c| *c == 0x00) {
                     let mut remainder = connect.pending_data.split_off(p + 1);
                     core::mem::swap(&mut remainder, &mut connect.pending_data);
-                    let payload = remainder;
+                    let mut payload = remainder;
 
                     println!("From {:?} got {:?}", key, payload);
 
-                    responses.append(
-                        &mut broker
-                            .process_msg(Request {
-                                source: key.clone(),
-                                msg: payload,
-                            })
-                            .unwrap(),
-                    );
+                    if let Ok(msg) = from_bytes_cobs(&mut payload) {
+                        let src = key.clone();
+                        let req = Request {
+                            source: src,
+                            msg,
+                        };
+
+                        let resps = broker
+                            .process_msg(&req).unwrap();
+
+                        for respmsg in resps {
+                            if let Ok(resp) = to_stdvec_cobs(&respmsg.msg) {
+                                responses.push((respmsg.dest, resp));
+                            }
+                        }
+                    }
                 }
             }
 
-            for msg in responses {
-                let mut fail = false;
-                if let Some(conn) = sessions.get_mut(&msg.dest) {
-                    fail = conn.stream.write(&msg.msg).is_err();
+            for (dest, resp) in responses.drain(..) {
+                if let Some(conn) = sessions.get_mut(&dest) {
+                    let fail = conn.stream.write_all(&resp).is_err();
+
+                    if fail {
+                        println!("Removing {:?}", dest);
+                        bad_keys.insert(dest.clone());
+                    } else {
+                        println!("Sent to {:?}", dest);
+                    }
                 }
-                if fail {
-                    println!("Removing {:?}", msg.dest);
-                    bad_keys.insert(msg.dest.clone());
-                } else {
-                    println!("Sent to {:?}", msg.dest);
-                }
+
             }
 
             // Do evictions
             for bk in bad_keys.iter() {
-                broker.remove_client(&bk).unwrap();
+                broker.remove_client(&bk).ok();
                 sessions.remove(bk);
             }
         }
 
-        println!("Sleeping...");
-        sleep(Duration::from_millis(1000));
+        sleep(Duration::from_millis(50));
     }
 }

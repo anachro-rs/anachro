@@ -5,10 +5,9 @@ use core::default::Default;
 use anachro_icd::{
     arbitrator::{self, Arbitrator, SubMsg},
     component::{Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType},
-    Name, Path, Uuid,
 };
 
-pub use anachro_icd::{PubSubPath, Version};
+pub use anachro_icd::{PubSubPath, Version, Name, Path, Uuid};
 
 use heapless::{consts, Vec};
 

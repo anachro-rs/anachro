@@ -8,15 +8,11 @@ edition = "2018"
 
 [dependencies]
 anachro-icd = { path = "../anachro-icd" }
+rand = "0.7.3"
 
 [dependencies.postcard]
 version = "0.5.1"
 features = ["use-std"]
-
-[dependencies.uuid]
-version = "0.8.1"
-default-features = false
-features = ["serde", "v4"]
 
 [dependencies.anachro-server]
 path = "../anachro-server"

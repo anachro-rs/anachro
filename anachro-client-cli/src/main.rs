@@ -1,6 +1,6 @@
 use anachro_icd::{
     arbitrator::Arbitrator,
-    PubSubPath, Version,
+    PubSubPath, Version, Path,
 };
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 use std::io::prelude::*;
@@ -70,7 +70,7 @@ fn main() {
     stream.set_nonblocking(true).unwrap();
 
     let mut client = Client::new(
-        "cool-board".to_string(),
+        "cool-board",
         Version { major: 0, minor: 4, trivial: 1, misc: 123 },
         123
     );
@@ -83,10 +83,10 @@ fn main() {
 
     println!("Connected.");
 
-    let path = "foo/bar/baz";
+    let path = Path::borrow_from_str("foo/bar/baz");
     let payload = b"henlo, welt!";
 
-    let outgoing = client.subscribe(PubSubPath::Long(path)).unwrap();
+    let outgoing = client.subscribe(PubSubPath::Long(path.clone())).unwrap();
     let ser = to_stdvec_cobs(&outgoing).map_err(drop).unwrap();
     stream.write_all(&ser).map_err(drop).unwrap();
 
@@ -104,7 +104,7 @@ fn main() {
             last_tx = Instant::now();
             ctr += 1;
 
-            let msg = client.publish(PubSubPath::Long(path), payload).unwrap();
+            let msg = client.publish(PubSubPath::Long(path.clone()), payload).unwrap();
 
             println!("Sending...");
 

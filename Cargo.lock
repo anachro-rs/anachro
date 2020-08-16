@@ -41,7 +41,7 @@ dependencies = [
  "anachro-icd",
  "anachro-server",
  "postcard",
- "uuid",
+ "rand",
 ]
 
 [[package]]
