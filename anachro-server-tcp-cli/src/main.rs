@@ -34,7 +34,11 @@ struct Connect {
 use rand::random;
 
 fn main() {
-    let tcpb_1 = Arc::new(Mutex::new(TcpBroker::default()));
+    let broker = TcpBroker::default();
+
+    println!("size: {}", core::mem::size_of::<Broker>());
+
+    let tcpb_1 = Arc::new(Mutex::new(broker));
     let tcpb_2 = tcpb_1.clone();
 
 

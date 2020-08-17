@@ -64,11 +64,12 @@ impl Broker {
                 }
                 PubSubType::Sub => {
                     let client = self.client_by_id_mut(&req.source)?;
-                    client.process_subscribe(&path)?;
+                    responses.push(client.process_subscribe(&path)?).map_err(drop)?;
                 }
                 PubSubType::Unsub => {
                     let client = self.client_by_id_mut(&req.source)?;
                     client.process_unsub(&path)?;
+                    todo!()
                 }
             },
         }
