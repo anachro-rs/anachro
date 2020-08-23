@@ -2,6 +2,9 @@
 //!
 //! These are messages that are sent FROM the peripheral
 //! Component/Client, TO the central Arbitrator.
+//!
+//! The [`Component` enum](enum.Component.html) is the top level
+//! message sent by Component/Clients.
 
 use crate::{PubSubPath, Version};
 use serde::{Deserialize, Serialize};
@@ -100,6 +103,8 @@ pub enum ControlType<'a> {
     RegisterPubSubShortId(PubSubShort<'a>),
 }
 
+/// Information about this Component/Client needed for
+/// registration
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ComponentInfo<'a> {
     /// The name of the Client/Component

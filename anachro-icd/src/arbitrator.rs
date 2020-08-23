@@ -2,6 +2,9 @@
 //!
 //! These are messages that are sent FROM the central Arbitrator,
 //! to the peripheral Components/Clients.
+//!
+//! The [`Arbitrator` enum](enum.Arbitrator.html) is the top level
+//! message sent by the Arbitrator.
 
 use crate::{PubSubPath, Uuid};
 use serde::{Deserialize, Serialize};
