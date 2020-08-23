@@ -27,7 +27,7 @@ fn processor(stream: &mut TcpStream, client: &mut Client, current: &mut Vec<u8>)
                         Ok(msg) => {
                             println!("got {:?}", msg);
                             let smsg = Some(msg);
-                            let x = client.process(&smsg)?;
+                            let x = client.process(&smsg).map_err(drop)?;
 
                             if let Some(bmsg) = x.broker_response {
                                 let ser = to_stdvec_cobs(&bmsg).map_err(drop)?;
@@ -51,7 +51,7 @@ fn processor(stream: &mut TcpStream, client: &mut Client, current: &mut Vec<u8>)
         }
     }
 
-    let x = client.process(&None)?;
+    let x = client.process(&None).map_err(drop)?;
 
     if let Some(bmsg) = x.broker_response {
         let ser = to_stdvec_cobs(&bmsg).map_err(drop)?;

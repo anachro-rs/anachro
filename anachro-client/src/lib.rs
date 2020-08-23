@@ -31,18 +31,25 @@ pub enum ClientState {
     Active(ActiveState),
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Error {
+    NotActive,
+    Busy,
+    UnexpectedMessage,
+}
+
 impl ClientState {
-    fn as_active_mut(&mut self) -> Result<&mut ActiveState, ()> {
+    fn as_active_mut(&mut self) -> Result<&mut ActiveState, Error> {
         match self {
             ClientState::Active(a_state) => Ok(a_state),
-            _ => Err(()),
+            _ => Err(Error::NotActive),
         }
     }
 
-    fn as_active(&self) -> Result<&ActiveState, ()> {
+    fn as_active(&self) -> Result<&ActiveState, Error> {
         match self {
             ClientState::Active(a_state) => Ok(a_state),
-            _ => Err(()),
+            _ => Err(Error::NotActive),
         }
     }
 }
@@ -68,6 +75,10 @@ impl Client {
         }
     }
 
+    pub fn reset_connection(&mut self) {
+        self.state =  ClientState::Created;
+    }
+
     pub fn get_id(&self) -> Option<&Uuid> {
         Some(&self.state.as_active().ok()?.uuid)
     }
@@ -79,14 +90,14 @@ impl Client {
     pub fn subscribe<'a, 'b: 'a>(
         &mut self,
         path: PubSubPath<'a>,
-    ) -> Result<Component<'a>, ()> {
+    ) -> Result<Component<'a>, Error> {
         // Only possible if we are already connected
         let state = self.state.as_active_mut()?;
 
         // TODO, we could track multiple pending subs in the
         // future, at the cost of storing a vec of pending subs
         if state.pending_sub {
-            return Err(());
+            return Err(Error::Busy);
         }
 
         state.pending_sub = true;
@@ -112,7 +123,7 @@ impl Client {
         }
     }
 
-    pub fn publish<'a, 'b: 'a>(&'b self, path: PubSubPath<'a>, payload: &'a [u8]) -> Result<Component<'a>, ()> {
+    pub fn publish<'a, 'b: 'a>(&'b self, path: PubSubPath<'a>, payload: &'a [u8]) -> Result<Component<'a>, Error> {
         self.state.as_active()?;
 
         Ok(Component::PubSub(PubSub {
@@ -127,12 +138,12 @@ impl Client {
         &'b mut self,
         short: u16,
         long: &'a str
-    ) -> Result<Component<'a>, ()> {
+    ) -> Result<Component<'a>, Error> {
         // Only possible if we are already connected
         let state = self.state.as_active_mut()?;
 
         if state.pending_short.is_some() {
-            return Err(());
+            return Err(Error::Busy);
         }
 
         state.pending_short = Some(short);
@@ -153,7 +164,7 @@ impl Client {
     pub fn process<'a, 'b: 'a>(
         &'b mut self,
         msg: &'a Option<Arbitrator<'a>>,
-    ) -> Result<Deliverables<'a>, ()> {
+    ) -> Result<Deliverables<'a>, Error> {
         let mut response = Deliverables {
             broker_response: None,
             client_response: None,
@@ -177,7 +188,7 @@ impl Client {
                 if let Arbitrator::Control(AControl { seq, response }) = msg {
                     if *seq != self.ctr {
                         // TODO, restart connection process? Just disregard?
-                        return Err(());
+                        return Err(Error::UnexpectedMessage);
                     }
                     if let Ok(ControlResponse::ComponentRegistration(uuid)) = response {
                         Some(ClientState::Active(ActiveState {
@@ -187,7 +198,7 @@ impl Client {
                         }))
                     } else {
                         // TODO, restart connection process? Just disregard?
-                        return Err(());
+                        return Err(Error::UnexpectedMessage);
                     }
                 } else {
                     None
@@ -227,28 +238,28 @@ impl Client {
 }
 
 impl ActiveState {
-    fn process_control(&mut self, msg: &AControl) -> Result<(), ()> {
+    fn process_control(&mut self, msg: &AControl) -> Result<(), Error> {
         match msg.response {
             Ok(ControlResponse::ComponentRegistration(_)) => {
                 // We already registered?
-                return Err(());
+                return Err(Error::UnexpectedMessage);
             }
             Ok(ControlResponse::PubSubShortRegistration(short_id)) => {
                 if let Some(exp_id) = self.pending_short {
                     if exp_id != short_id {
                         // This wasn't the shortcode response we were expecting
-                        return Err(());
+                        return Err(Error::UnexpectedMessage);
                     }
                 } else {
                     // We weren't expecting a shortcode response?
-                    return Err(());
+                    return Err(Error::UnexpectedMessage);
                 }
                 // We got what we were expecting! Clear it
                 self.pending_short = None;
             }
             Err(_) => {
                 // ?
-                return Err(());
+                return Err(Error::UnexpectedMessage);
             }
         }
 
@@ -258,7 +269,7 @@ impl ActiveState {
     fn process_pubsub<'a>(
         &mut self,
         msg: &'a Result<PubSubResponse, PubSubError>,
-    ) -> Result<Option<SubMsg<'a>>, ()> {
+    ) -> Result<Option<SubMsg<'a>>, Error> {
         match msg {
             Ok(PubSubResponse::SubAck { .. }) => {
                 if self.pending_sub {
@@ -266,14 +277,14 @@ impl ActiveState {
                     self.pending_sub = false;
                     Ok(None)
                 } else {
-                    Err(())
+                    Err(Error::UnexpectedMessage)
                 }
             }
             Ok(PubSubResponse::SubMsg(SubMsg { path, payload })) => Ok(Some(SubMsg {
                 path: path.clone(),
                 payload,
             })),
-            Err(_) => Err(()),
+            Err(_) => Err(Error::UnexpectedMessage),
         }
     }
 }
