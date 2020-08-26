@@ -4,7 +4,8 @@
 name = "anachro-client"
 version = "0.1.0"
 dependencies = [
- "anachro-icd",
+ "anachro-icd 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "postcard",
 ]
 
 [[package]]
@@ -12,7 +13,7 @@ name = "anachro-client-cli"
 version = "0.1.0"
 dependencies = [
  "anachro-client",
- "anachro-icd",
+ "anachro-icd 0.1.1",
  "postcard",
  "uuid",
 ]
@@ -27,10 +28,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "anachro-icd"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa30361013cd96bdb3ae2b068780d438c475e89da51f965b9ba5bf7d866f5798"
+dependencies = [
+ "heapless",
+ "serde",
+]
+
+[[package]]
 name = "anachro-server"
 version = "0.1.0"
 dependencies = [
- "anachro-icd",
+ "anachro-icd 0.1.1",
  "heapless",
 ]
 
@@ -38,7 +49,7 @@ dependencies = [
 name = "anachro-server-tcp-cli"
 version = "0.1.0"
 dependencies = [
- "anachro-icd",
+ "anachro-icd 0.1.1",
  "anachro-server",
  "postcard",
  "rand",

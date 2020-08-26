@@ -7,5 +7,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anachro-icd = { path = "../anachro-icd" }
-
+anachro-icd = "0.1"
+postcard = "0.5"

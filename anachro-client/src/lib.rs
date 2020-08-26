@@ -11,12 +11,14 @@ Thoughts:
 
 use anachro_icd::{
     arbitrator::{
-        Arbitrator, Control as AControl, ControlResponse, PubSubError, PubSubResponse, SubMsg,
+        Arbitrator, Control as AControl, ControlResponse, PubSubError, PubSubResponse,
     },
     component::{Component, ComponentInfo, Control as CControl, ControlType, PubSub, PubSubType, PubSubShort},
     Name, Uuid,
 };
-pub use anachro_icd::{Version, PubSubPath};
+pub use anachro_icd::{self, Version, PubSubPath};
+pub use postcard;
+pub use anachro_icd::arbitrator::SubMsg;
 
 pub struct Client {
     state: ClientState,
@@ -287,4 +289,56 @@ impl ActiveState {
             Err(_) => Err(Error::UnexpectedMessage),
         }
     }
+}
+
+pub enum TableError {
+    NoMatch,
+    Postcard(postcard::Error),
+    SorryNoShortCodes,
+}
+
+// TODO: Postcard feature?
+
+/// ## Example
+/// table_recv!(
+///     PlantLightTable,
+///     Relay: "lights/plants/living-room" => RelayCommand,
+///     Time: "time/unix/local" => u32,
+/// );
+#[macro_export]
+macro_rules! table_recv {
+    ($enum_ty:ident, $($variant_name:ident: $path:expr => $variant_ty:ty,)+) => {
+        #[derive(Debug)]
+        pub enum $enum_ty {
+            $($variant_name($variant_ty)),+
+        }
+
+        impl $enum_ty {
+            pub fn from_pub_sub<'a>(msg: $crate::SubMsg<'a>) -> core::result::Result<Self, $crate::TableError> {
+                let msg_path = match msg.path {
+                    $crate::anachro_icd::PubSubPath::Long(path) => path,
+                    _ => return Err($crate::TableError::SorryNoShortCodes),
+                };
+                $(
+                    if matches(msg_path.as_str(), $path) {
+                        return Ok(
+                            $enum_ty::$variant_name(
+                                $crate::postcard::from_bytes(msg.payload)
+                                    .map_err(|e| $crate::TableError::Postcard(e))?
+                            )
+                        );
+                    }
+                )+
+                Err($crate::TableError::NoMatch)
+            }
+
+            pub const fn paths() -> &'static [&'static str] {
+                const PATHS: &[&str] = &[
+                    $($path,)+
+                ];
+
+                PATHS
+            }
+        }
+    };
 }
