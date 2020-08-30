@@ -16,6 +16,7 @@ dependencies = [
  "anachro-client",
  "anachro-icd",
  "postcard",
+ "serde",
  "uuid",
 ]
 

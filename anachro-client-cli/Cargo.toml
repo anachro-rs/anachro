@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 anachro-icd = { path = "../anachro-icd" }
 anachro-client = { path = "../anachro-client" }
+serde = "1.0.115"
 
 [dependencies.postcard]
 version = "0.5.1"

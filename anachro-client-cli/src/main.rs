@@ -1,5 +1,6 @@
 use anachro_icd::{
     arbitrator::Arbitrator,
+    component::Component,
     PubSubPath, Version, Path,
 };
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
@@ -8,155 +9,123 @@ use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use anachro_client::Client;
+use anachro_client::{Client, ClientIo, ClientError, table_recv};
+use postcard;
+use serde::de::Deserialize;
 
-fn processor(stream: &mut TcpStream, client: &mut Client, current: &mut Vec<u8>) -> Result<(), ()> {
-    let mut scratch = [0u8; 1024];
+struct TcpAnachro {
+    stream: TcpStream,
+    scratch: Vec<u8>,
+}
 
-    loop {
-        match stream.read(&mut scratch) {
-            Ok(n) if n > 0 => {
-                current.extend_from_slice(&scratch[..n]);
+impl ClientIo for TcpAnachro {
+    fn recv<'a, 'b: 'a, F, E>(&'b mut self, fun: F) -> Result<(), ClientError>
+    where
+        F: FnOnce(&'a Arbitrator<'a>) -> Result<(), anachro_client::Error>
+    {
+        let mut scratch = [0u8; 1024];
 
-                while let Some(p) = current.iter().position(|c| *c == 0x00) {
-                    let mut remainder = current.split_off(p + 1);
-                    core::mem::swap(&mut remainder, current);
-                    let mut payload = remainder;
+        loop {
+            match self.stream.read(&mut scratch) {
+                Ok(n) if n > 0 => {
+                    self.scratch.extend_from_slice(&scratch[..n]);
 
-                    match from_bytes_cobs::<Arbitrator>(payload.as_mut_slice()) {
-                        Ok(msg) => {
-                            println!("got {:?}", msg);
-                            let smsg = Some(msg);
-                            let x = client.process(&smsg).map_err(drop)?;
+                    if let Some(p) = self.scratch.iter().position(|c| *c == 0x00) {
+                        let mut remainder = self.scratch.split_off(p + 1);
+                        core::mem::swap(&mut remainder, &mut self.scratch);
+                        let mut payload = remainder;
 
-                            if let Some(bmsg) = x.broker_response {
-                                let ser = to_stdvec_cobs(&bmsg).map_err(drop)?;
-                                stream.write_all(&ser).map_err(drop)?;
-                            }
+                        let ret = if let Ok(msg) = from_bytes_cobs::<Arbitrator>(payload.as_mut_slice()) {
+                            fun(&msg).map_err(|_| ClientError::ParsingError);
+                            return Ok(())
+                        } else {
+                            return Err(ClientError::ParsingError);
+                        };
 
-                            if let Some(cmsg) = x.client_response {
-                                println!("'{:?}': '{:?}'", cmsg.path, cmsg.payload);
-                            }
-                        }
-                        _ => {
-                            println!("  => Deser Err");
-                        }
                     }
                 }
-            }
-            Ok(_) => break,
-            Err(_shh) => {
-                break;
+                Ok(_) => return Ok(()),
+                Err(_) => return Err(ClientError::NoData),
             }
         }
+
+
     }
-
-    let x = client.process(&None).map_err(drop)?;
-
-    if let Some(bmsg) = x.broker_response {
-        let ser = to_stdvec_cobs(&bmsg).map_err(drop)?;
-        stream.write_all(&ser).map_err(drop)?;
+    fn send(&mut self, msg: &Component) -> Result<(), ClientError> {
+        let ser = to_stdvec_cobs(msg).map_err(|_| ClientError::ParsingError)?;
+        self.stream.write_all(&ser).map_err(|_| ClientError::OutputFull)?;
+        Ok(())
     }
-
-    if let Some(cmsg) = x.client_response {
-        println!("'{:?}': '{:?}'", cmsg.path, cmsg.payload);
-    }
-
-    Ok(())
 }
+
+
+
+table_recv!(
+    AnachroTable,
+    Something: "foo/bar/baz" => (),
+    Else: "bib/bim/#" => (),
+);
 
 fn main() {
     let mut stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
+    let mut cio = TcpAnachro {
+        stream,
+        scratch: Vec::new(),
+    };
+
+    // name: &str,
+    // version: Version,
+    // ctr_init: u16,
+    // sub_paths: &'static [&'static str],
+    // pub_short_paths: &'static [&'static str],
+    // timeout_ticks: Option<u8>,
+
     let mut client = Client::new(
         "cool-board",
         Version { major: 0, minor: 4, trivial: 1, misc: 123 },
-        123
+        987,
+        AnachroTable::paths(),
+        &["short/send", "send/short"],
+        Some(100),
     );
 
-    let mut current = vec![];
-
     while !client.is_connected() {
-        processor(&mut stream, &mut client, &mut current).unwrap();
+        client.process_one::<_, ()>(&mut cio);
     }
 
     println!("Connected.");
 
-    let path = Path::borrow_from_str("foo/bar/baz");
-    let payload = b"henlo, welt!";
-
-    let outgoing = client.subscribe(PubSubPath::Long(path.clone())).unwrap();
-    let ser = to_stdvec_cobs(&outgoing).map_err(drop).unwrap();
-    stream.write_all(&ser).map_err(drop).unwrap();
-
-    while !client.is_subscribe_pending() {
-        processor(&mut stream, &mut client, &mut current).unwrap();
-    }
-
-    println!("Subscribed.");
-
-    let mut ctr = 0;
-    let mut last_tx = Instant::now();
-
-    while ctr < 10 {
-        if last_tx.elapsed() >= Duration::from_secs(2) {
-            last_tx = Instant::now();
-            ctr += 1;
-
-            let msg = client.publish(PubSubPath::Long(path.clone()), payload).unwrap();
-
-            println!("Sending...");
-
-            let ser = to_stdvec_cobs(&msg).map_err(drop).unwrap();
-            stream.write_all(&ser).map_err(drop).unwrap();
-        }
-
-        processor(&mut stream, &mut client, &mut current).unwrap();
-    }
-
-    // stream.write(&connect).unwrap();
-
-    // let path = "foo/bar/baz";
+    // let path = Path::borrow_from_str("foo/bar/baz");
     // let payload = b"henlo, welt!";
 
-    // let subscribe = to_stdvec_cobs(&Component::PubSub(PubSub {
-    //     path: PubSubPath::Long(path),
-    //     ty: PubSubType::Sub,
-    // }))
-    // .unwrap();
-    // stream.write(&subscribe).unwrap();
+    // let outgoing = client.subscribe(PubSubPath::Long(path.clone())).unwrap();
+    // let ser = to_stdvec_cobs(&outgoing).map_err(drop).unwrap();
+    // stream.write_all(&ser).map_err(drop).unwrap();
 
-    // for i in 30..40 {
-    //     let publish = to_stdvec_cobs(&Component::PubSub(PubSub {
-    //         path: PubSubPath::Long(path),
-    //         ty: PubSubType::Pub { payload },
-    //     }))
-    //     .unwrap();
-    //     stream.write(&publish).unwrap();
-    //     let now = Instant::now();
-    //     let mut scratch = [0u8; 1024];
-    //     let mut current = vec![];
-    //     while now.elapsed() < Duration::from_secs(2) {
-    //         match stream.read(&mut scratch) {
-    //             Ok(n) if n > 0 => {
-    //                 current.extend_from_slice(&scratch[..n]);
-    //                 while let Some(p) = current.iter().position(|c| *c == 0x00) {
-    //                     let mut remainder = current.split_off(p + 1);
-    //                     core::mem::swap(&mut remainder, &mut current);
-    //                     let mut payload = remainder;
-    //                     match from_bytes_cobs::<Arbitrator>(payload.as_mut_slice()) {
-    //                         Ok(msg) => {
-    //                             println!("  => Got {:?}", msg);
-    //                         }
-    //                         _ => {
-    //                             println!("  => Deser Err");
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //             _ => sleep(Duration::from_millis(50)),
-    //         }
+    // while !client.is_subscribe_pending() {
+    //     processor(&mut stream, &mut client, &mut current).unwrap();
+    // }
+
+    // println!("Subscribed.");
+
+    // let mut ctr = 0;
+    // let mut last_tx = Instant::now();
+
+    // while ctr < 10 {
+    //     if last_tx.elapsed() >= Duration::from_secs(2) {
+    //         last_tx = Instant::now();
+    //         ctr += 1;
+
+    //         let msg = client.publish(PubSubPath::Long(path.clone()), payload).unwrap();
+
+    //         println!("Sending...");
+
+    //         let ser = to_stdvec_cobs(&msg).map_err(drop).unwrap();
+    //         stream.write_all(&ser).map_err(drop).unwrap();
     //     }
+
+    //     processor(&mut stream, &mut client, &mut current).unwrap();
     // }
 }

@@ -165,34 +165,6 @@ impl Broker {
     }
 }
 
-/// ## Examples
-///
-/// ```
-/// # use anachro_server::matches;
-/// #
-/// assert!(matches(
-///  "/+/temperature/#",
-///  "/dev_1/temperature/front",
-/// ));
-/// ```
-pub fn matches(subscr: &str, publ: &str) -> bool {
-    if subscr.is_empty() || publ.is_empty() {
-        return false;
-    }
-
-    let mut s_iter = subscr.split("/");
-    let mut p_iter = publ.split("/");
-
-    loop {
-        match (s_iter.next(), p_iter.next()) {
-            (Some("+"), Some(_)) => continue,
-            (Some("#"), _) | (None, None) => return true,
-            (Some(lhs), Some(rhs)) if lhs == rhs => continue,
-            _ => return false,
-        }
-    }
-}
-
 struct Client {
     id: Uuid,
     state: ClientState,
