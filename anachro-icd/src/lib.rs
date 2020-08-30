@@ -154,6 +154,10 @@ where
         }
     }
 
+    pub fn as_borrowed(&'a self) -> ManagedString<'a, T> {
+        ManagedString::Borrow(self.as_str())
+    }
+
     /// Attempt to create an Owned string from a given str
     ///
     /// May fail if the heapless::String is not large enough to
