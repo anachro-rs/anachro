@@ -119,7 +119,7 @@ impl Broker {
             }
 
             for subt in state.subscriptions.iter() {
-                if matches(subt.as_str(), path) {
+                if anachro_icd::matches(subt.as_str(), path) {
                     // Does the destination have a shortcut for this?
                     for short in state.shortcuts.iter() {
                         // NOTE: we use path, NOT subt, as it may contain wildcards

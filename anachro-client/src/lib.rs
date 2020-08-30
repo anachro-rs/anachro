@@ -19,7 +19,7 @@ use anachro_icd::{
 pub use anachro_icd::{self, Path, Version, PubSubPath, ManagedString};
 pub use postcard::from_bytes;
 pub use anachro_icd::arbitrator::SubMsg;
-use serde::de::{Deserialize, DeserializeOwned};
+use serde::de::DeserializeOwned;
 
 pub struct Client {
     state: ClientState,
@@ -76,9 +76,7 @@ pub enum ClientError {
 }
 
 pub trait ClientIo {
-    fn recv<'a, 'b: 'a, F, E>(&'b mut self, fun: F) -> Result<(), ClientError>
-    where
-        F: FnOnce(&'a Arbitrator<'a>) -> Result<(), Error>;
+    fn recv(&mut self) -> Result<Option<Arbitrator>, ClientError>;
     fn send(&mut self, msg: &Component) -> Result<(), ClientError>;
 }
 
@@ -178,30 +176,34 @@ impl Client {
         &mut self,
         cio: &mut C
     ) -> Result<(), Error> {
-        cio.recv::<_, Error>(|msg| {
-            if let Arbitrator::Control(AControl { seq, response }) = msg {
-                if *seq != self.ctr {
-                    self.current_tick = self.current_tick.saturating_add(1);
-                    // TODO, restart connection process? Just disregard?
-                    Err(Error::UnexpectedMessage)
-                } else if let Ok(ControlResponse::ComponentRegistration(uuid)) = response {
-                    self.uuid = *uuid;
-                    self.state = ClientState::Registered;
-                    self.current_tick = 0;
-                    Ok(())
-                } else {
-                    self.current_tick = self.current_tick.saturating_add(1);
-                    // TODO, restart connection process? Just disregard?
-                    Err(Error::UnexpectedMessage)
-                }
+        let msg = cio.recv()?;
+        let msg = match msg {
+            Some(msg) => msg,
+            None => {
+                self.current_tick = self.current_tick.saturating_add(1);
+                return Ok(())
+            }
+        };
+
+        if let Arbitrator::Control(AControl { seq, response }) = msg {
+            if seq != self.ctr {
+                self.current_tick = self.current_tick.saturating_add(1);
+                // TODO, restart connection process? Just disregard?
+                Err(Error::UnexpectedMessage)
+            } else if let Ok(ControlResponse::ComponentRegistration(uuid)) = response {
+                self.uuid = uuid;
+                self.state = ClientState::Registered;
+                self.current_tick = 0;
+                Ok(())
             } else {
                 self.current_tick = self.current_tick.saturating_add(1);
-                Ok(())
+                // TODO, restart connection process? Just disregard?
+                Err(Error::UnexpectedMessage)
             }
-        }).map_err(|_| {
+        } else {
             self.current_tick = self.current_tick.saturating_add(1);
-            Error::NotActive // TODO: Wrong
-        })
+            Ok(())
+        }
     }
 
     fn registered<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
@@ -225,40 +227,40 @@ impl Client {
     }
 
     fn subscribing<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
-        // let msg = cio.recv()?;
-        // let msg = match msg {
-        //     Some(msg) => msg,
-        //     None => {
-        //         self.current_tick = self.current_tick.saturating_add(1);
-        //         return Ok(())
-        //     }
-        // };
+        let msg = cio.recv()?;
+        let msg = match msg {
+            Some(msg) => msg,
+            None => {
+                self.current_tick = self.current_tick.saturating_add(1);
+                return Ok(())
+            }
+        };
 
-        // if let Arbitrator::PubSub(Ok(PubSubResponse::SubAck { path: PubSubPath::Long(pth) })) = msg {
-        //     if pth.as_str() == self.sub_paths[self.current_idx] {
-        //         self.current_idx += 1;
-        //         if self.current_idx >= self.sub_paths.len() {
-        //             self.state = ClientState::Subscribed;
-        //             self.current_tick = 0;
-        //         } else {
-        //             let msg = Component::PubSub(PubSub {
-        //                 path: PubSubPath::Long(Path::borrow_from_str(self.sub_paths[self.current_idx])),
-        //                 ty: PubSubType::Sub
-        //             });
+        if let Arbitrator::PubSub(Ok(PubSubResponse::SubAck { path: PubSubPath::Long(pth) })) = msg {
+            if pth.as_str() == self.sub_paths[self.current_idx] {
+                self.current_idx += 1;
+                if self.current_idx >= self.sub_paths.len() {
+                    self.state = ClientState::Subscribed;
+                    self.current_tick = 0;
+                } else {
+                    let msg = Component::PubSub(PubSub {
+                        path: PubSubPath::Long(Path::borrow_from_str(self.sub_paths[self.current_idx])),
+                        ty: PubSubType::Sub
+                    });
 
-        //             cio.send(&msg)?;
+                    cio.send(&msg)?;
 
-        //             self.state = ClientState::Subscribing;
-        //             self.current_tick = 0;
-        //         }
-        //     } else {
-        //         self.current_tick = self.current_tick.saturating_add(1);
-        //     }
-        // } else {
-        //     self.current_tick = self.current_tick.saturating_add(1);
-        // }
-        todo!()
-        // Ok(())
+                    self.state = ClientState::Subscribing;
+                    self.current_tick = 0;
+                }
+            } else {
+                self.current_tick = self.current_tick.saturating_add(1);
+            }
+        } else {
+            self.current_tick = self.current_tick.saturating_add(1);
+        }
+
+        Ok(())
     }
 
     fn subscribed<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
@@ -304,107 +306,105 @@ impl Client {
     }
 
     fn shortcoding_sub<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
-        // let msg = cio.recv()?;
-        // let msg = match msg {
-        //     Some(msg) => msg,
-        //     None => {
-        //         self.current_tick = self.current_tick.saturating_add(1);
-        //         return Ok(())
-        //     }
-        // };
+        let msg = cio.recv()?;
+        let msg = match msg {
+            Some(msg) => msg,
+            None => {
+                self.current_tick = self.current_tick.saturating_add(1);
+                return Ok(())
+            }
+        };
 
-        // if let Arbitrator::Control(AControl { seq, response: Ok(ControlResponse::PubSubShortRegistration(sid)) }) = msg {
-        //     if seq == self.ctr && sid == (self.current_idx as u16) {
-        //         self.current_idx += 1;
+        if let Arbitrator::Control(AControl { seq, response: Ok(ControlResponse::PubSubShortRegistration(sid)) }) = msg {
+            if seq == self.ctr && sid == (self.current_idx as u16) {
+                self.current_idx += 1;
 
-        //         if self.current_idx >= self.sub_paths.len() {
-        //             if self.pub_short_paths.is_empty() {
-        //                 self.state = ClientState::Active;
-        //                 self.current_tick = 0;
-        //             } else {
-        //                 self.ctr = self.ctr.wrapping_add(1);
+                if self.current_idx >= self.sub_paths.len() {
+                    if self.pub_short_paths.is_empty() {
+                        self.state = ClientState::Active;
+                        self.current_tick = 0;
+                    } else {
+                        self.ctr = self.ctr.wrapping_add(1);
 
-        //                 let msg = Component::Control(CControl {
-        //                     seq: self.ctr,
-        //                     ty: ControlType::RegisterPubSubShortId(PubSubShort {
-        //                         long_name: self.pub_short_paths[0],
-        //                         short_id: 0x8000,
-        //                     })
-        //                 });
+                        let msg = Component::Control(CControl {
+                            seq: self.ctr,
+                            ty: ControlType::RegisterPubSubShortId(PubSubShort {
+                                long_name: self.pub_short_paths[0],
+                                short_id: 0x8000,
+                            })
+                        });
 
-        //                 cio.send(&msg)?;
+                        cio.send(&msg)?;
 
-        //                 self.current_tick = 0;
-        //                 self.current_idx = 0;
-        //                 self.state = ClientState::ShortCodingPub;
-        //             }
-        //         } else {
-        //             self.ctr = self.ctr.wrapping_add(1);
+                        self.current_tick = 0;
+                        self.current_idx = 0;
+                        self.state = ClientState::ShortCodingPub;
+                    }
+                } else {
+                    self.ctr = self.ctr.wrapping_add(1);
 
-        //             let msg = Component::Control(CControl {
-        //                 seq: self.ctr,
-        //                 ty: ControlType::RegisterPubSubShortId(PubSubShort {
-        //                     long_name: self.sub_paths[self.current_idx],
-        //                     short_id: self.current_idx as u16,
-        //                 })
-        //             });
+                    let msg = Component::Control(CControl {
+                        seq: self.ctr,
+                        ty: ControlType::RegisterPubSubShortId(PubSubShort {
+                            long_name: self.sub_paths[self.current_idx],
+                            short_id: self.current_idx as u16,
+                        })
+                    });
 
-        //             cio.send(&msg)?;
+                    cio.send(&msg)?;
 
-        //             self.current_tick = 0;
-        //         }
-        //     } else {
-        //         self.current_tick = self.current_tick.saturating_add(1);
-        //     }
-        // } else {
-        //     self.current_tick = self.current_tick.saturating_add(1);
-        // }
-        todo!()
+                    self.current_tick = 0;
+                }
+            } else {
+                self.current_tick = self.current_tick.saturating_add(1);
+            }
+        } else {
+            self.current_tick = self.current_tick.saturating_add(1);
+        }
 
-        // Ok(())
+        Ok(())
     }
 
     fn shortcoding_pub<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
-        // let msg = cio.recv()?;
-        // let msg = match msg {
-        //     Some(msg) => msg,
-        //     None => {
-        //         self.current_tick = self.current_tick.saturating_add(1);
-        //         return Ok(())
-        //     }
-        // };
+        let msg = cio.recv()?;
+        let msg = match msg {
+            Some(msg) => msg,
+            None => {
+                self.current_tick = self.current_tick.saturating_add(1);
+                return Ok(())
+            }
+        };
 
-        // if let Arbitrator::Control(AControl { seq, response: Ok(ControlResponse::PubSubShortRegistration(sid)) }) = msg {
-        //     if seq == self.ctr && sid == ((self.current_idx + 0x8000) as u16) {
-        //         self.current_idx += 1;
+        if let Arbitrator::Control(AControl { seq, response: Ok(ControlResponse::PubSubShortRegistration(sid)) }) = msg {
+            if seq == self.ctr && sid == ((self.current_idx + 0x8000) as u16) {
+                self.current_idx += 1;
 
-        //         if self.current_idx >= self.pub_short_paths.len() {
-        //             self.state = ClientState::Active;
-        //             self.current_tick = 0;
-        //         } else {
-        //             self.ctr = self.ctr.wrapping_add(1);
+                if self.current_idx >= self.pub_short_paths.len() {
+                    self.state = ClientState::Active;
+                    self.current_tick = 0;
+                } else {
+                    self.ctr = self.ctr.wrapping_add(1);
 
-        //             let msg = Component::Control(CControl {
-        //                 seq: self.ctr,
-        //                 ty: ControlType::RegisterPubSubShortId(PubSubShort {
-        //                     long_name: self.pub_short_paths[self.current_idx],
-        //                     short_id: (self.current_idx + 0x8000) as u16,
-        //                 })
-        //             });
+                    let msg = Component::Control(CControl {
+                        seq: self.ctr,
+                        ty: ControlType::RegisterPubSubShortId(PubSubShort {
+                            long_name: self.pub_short_paths[self.current_idx],
+                            short_id: (self.current_idx + 0x8000) as u16,
+                        })
+                    });
 
-        //             cio.send(&msg)?;
+                    cio.send(&msg)?;
 
-        //             self.current_tick = 0;
-        //         }
-        //     } else {
-        //         self.current_tick = self.current_tick.saturating_add(1);
-        //     }
-        // } else {
-        //     self.current_tick = self.current_tick.saturating_add(1);
-        // }
-        todo!()
+                    self.current_tick = 0;
+                }
+            } else {
+                self.current_tick = self.current_tick.saturating_add(1);
+            }
+        } else {
+            self.current_tick = self.current_tick.saturating_add(1);
+        }
 
-        // Ok(())
+        Ok(())
     }
 
     pub fn active<'a, 'b: 'a, C: ClientIo, T: DeserializeOwned>(
@@ -412,33 +412,32 @@ impl Client {
         cio: &mut C,
     ) -> Result<Option<RecvMsg<T>>, Error> {
 
-        // let msg = cio.recv()?;
-        // let pubsub = match msg {
-        //     Some(Arbitrator::PubSub(Ok(PubSubResponse::SubMsg(ref ps)))) => ps,
-        //     Some(_) => {
-        //         // TODO: Maybe something else? return err?
-        //         return Ok(None);
-        //     }
-        //     None => {
-        //         return Ok(None);
-        //     }
-        // };
+        let msg = cio.recv()?;
+        let pubsub = match msg {
+            Some(Arbitrator::PubSub(Ok(PubSubResponse::SubMsg(ref ps)))) => ps,
+            Some(_) => {
+                // TODO: Maybe something else? return err?
+                return Ok(None);
+            }
+            None => {
+                return Ok(None);
+            }
+        };
 
-        // // Determine the path
-        // let path = match &pubsub.path {
-        //     PubSubPath::Short(sid) => {
-        //         Path::Borrow(*self.sub_paths.get(*sid as usize).ok_or(Error::UnexpectedMessage)?)
-        //     }
-        //     PubSubPath::Long(ms) => {
-        //         ms.try_to_owned().map_err(|_| Error::UnexpectedMessage)?
-        //     }
-        // };
+        // Determine the path
+        let path = match &pubsub.path {
+            PubSubPath::Short(sid) => {
+                Path::Borrow(*self.sub_paths.get(*sid as usize).ok_or(Error::UnexpectedMessage)?)
+            }
+            PubSubPath::Long(ms) => {
+                ms.try_to_owned().map_err(|_| Error::UnexpectedMessage)?
+            }
+        };
 
-        // Ok(Some(RecvMsg {
-        //     path,
-        //     payload: from_bytes(pubsub.payload).map_err(|_| Error::UnexpectedMessage)?,
-        // }))
-        todo!()
+        Ok(Some(RecvMsg {
+            path,
+            payload: from_bytes(pubsub.payload).map_err(|_| Error::UnexpectedMessage)?,
+        }))
     }
 
     fn timeout_violated(&self) -> bool {
