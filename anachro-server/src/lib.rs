@@ -203,33 +203,50 @@ impl Client {
                 long_name,
                 short_id,
             }) => {
-                println!("Shortcoding!");
+
+                let state = self.state.as_connected_mut()?;
+
                 if long_name.contains('#') || long_name.contains('+') {
                     // TODO: How to handle wildcards + short names?
-                    return Err(());
+                    let resp = Arbitrator::Control(arbitrator::Control {
+                        seq: ctrl.seq,
+                        response: Err(arbitrator::ControlError::NoWildcardsInShorts),
+                    });
+
+                    response = Some(Response {
+                        dest: self.id.clone(),
+                        msg: resp,
+                    });
+
+                } else {
+                    if state.shortcuts.iter().find(|sc| {
+                        (sc.long.as_str() == *long_name) && (sc.short == *short_id)
+                    }).is_none() {
+                        state
+                            .shortcuts
+                            .push(Shortcut {
+                                long: Path::try_from_str(long_name).unwrap(),
+                                short: *short_id,
+                            })
+                            .map_err(drop)?;
+                    }
+
+                    let resp = Arbitrator::Control(arbitrator::Control {
+                        seq: ctrl.seq,
+                        response: Ok(arbitrator::ControlResponse::PubSubShortRegistration(*short_id)),
+                    });
+
+                    response = Some(Response {
+                        dest: self.id.clone(),
+                        msg: resp,
+                    });
+
                 }
-                let state = self.state.as_connected_mut()?;
 
                 // println!("{:?} aliased '{}' to {}", self.id, long_name, short_id);
 
                 // TODO: Dupe check?
-                state
-                    .shortcuts
-                    .push(Shortcut {
-                        long: Path::try_from_str(long_name).unwrap(),
-                        short: *short_id,
-                    })
-                    .map_err(drop)?;
 
-                let resp = Arbitrator::Control(arbitrator::Control {
-                    seq: ctrl.seq,
-                    response: Ok(arbitrator::ControlResponse::PubSubShortRegistration(*short_id)),
-                });
-
-                response = Some(Response {
-                    dest: self.id.clone(),
-                    msg: resp,
-                });
 
                 None
             }

@@ -7,7 +7,7 @@ Thoughts:
 
 */
 
-// #![no_std]
+#![no_std]
 
 use anachro_icd::{
     arbitrator::{
@@ -19,7 +19,6 @@ use anachro_icd::{
 pub use anachro_icd::{self, Path, Version, PubSubPath, ManagedString};
 pub use postcard::from_bytes;
 pub use anachro_icd::arbitrator::SubMsg;
-use serde::de::DeserializeOwned;
 
 pub struct Client {
     state: ClientState,
@@ -193,7 +192,6 @@ impl Client {
                 // TODO, restart connection process? Just disregard?
                 Err(Error::UnexpectedMessage)
             } else if let Ok(ControlResponse::ComponentRegistration(uuid)) = response {
-                println!("Happy :)");
                 self.uuid = uuid;
                 self.state = ClientState::Registered;
                 self.current_tick = 0;
@@ -446,7 +444,6 @@ impl Client {
     fn timeout_violated(&self) -> bool {
         match self.timeout_ticks {
             Some(ticks) if ticks <= self.current_tick => {
-                println!("Timeout! {} {}", ticks, self.current_tick);
                 true
             },
             Some(_) => false,
@@ -583,11 +580,17 @@ pub trait Table: Sized {
 // TODO: Postcard feature?
 
 /// ## Example
-/// table_recv!(
-///     PlantLightTable,
-///     Relay: "lights/plants/living-room" => RelayCommand,
-///     Time: "time/unix/local" => u32,
-/// );
+/// pubsub_table!{
+///     AnachroTable,
+///     Subs => {
+///         Something: "foo/bar/baz" => Demo,
+///         Else: "bib/bim/bap" => (),
+///     },
+///     Pubs => {
+///         Etwas: "short/send" => (),
+///         Anders: "send/short" => (),
+///     },
+/// }
 #[macro_export]
 macro_rules! pubsub_table {
     (

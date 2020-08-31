@@ -119,7 +119,9 @@ pub enum ControlResponse {
 
 /// Control Message Errors
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub enum ControlError {}
+pub enum ControlError {
+    NoWildcardsInShorts,
+}
 
 /// Publish/Subscribe Errors
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]

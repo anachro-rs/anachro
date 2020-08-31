@@ -135,7 +135,7 @@ fn main() {
 
             let to_send = postcard::to_slice(&msg, &mut buf).unwrap();
 
-            let msg = client.publish(
+            client.publish(
                 &mut cio,
                 "foo/bar/baz",
                 to_send,
