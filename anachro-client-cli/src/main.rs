@@ -9,8 +9,10 @@ use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use anachro_client::{Client, Error, ClientIo, ClientError, table_recv};
+use anachro_client::{Client, Error, ClientIo, ClientError, pubsub_table};
 use postcard;
+
+use serde::{Serialize, Deserialize};
 
 struct TcpAnachro {
     stream: TcpStream,
@@ -58,13 +60,24 @@ impl ClientIo for TcpAnachro {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Demo {
+    foo: u32,
+    bar: i16,
+    baz: (u8, u8),
+}
 
-
-table_recv!(
+pubsub_table!{
     AnachroTable,
-    Something: "foo/bar/baz" => (),
-    Else: "bib/bim/bap" => (),
-);
+    Subs => {
+        Something: "foo/bar/baz" => Demo,
+        Else: "bib/bim/bap" => (),
+    },
+    Pubs => {
+        Etwas: "short/send" => (),
+        Anders: "send/short" => (),
+    },
+}
 
 fn main() {
     let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
@@ -87,14 +100,14 @@ fn main() {
         "cool-board",
         Version { major: 0, minor: 4, trivial: 1, misc: 123 },
         987,
-        AnachroTable::paths(),
-        &["short/send", "send/short"],
+        AnachroTable::sub_paths(),
+        AnachroTable::pub_paths(),
         Some(100),
     );
 
     while !client.is_connected() {
 
-        match client.process_one::<_, ()>(&mut cio) {
+        match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => println!("Got: {:?}", msg),
             Ok(None) => {},
             Err(Error::ClientIoError(ClientError::NoData)) => {},
@@ -113,15 +126,24 @@ fn main() {
             last_tx = Instant::now();
             ctr += 1;
 
+            let mut buf = [0u8; 1024];
+            let msg = Demo {
+                foo: 123,
+                bar: 456,
+                baz: (10, 20),
+            };
+
+            let to_send = postcard::to_slice(&msg, &mut buf).unwrap();
+
             let msg = client.publish(
                 &mut cio,
                 "foo/bar/baz",
-                &[],
+                to_send,
             ).unwrap();
 
             println!("Sending...");
         }
-        if let Ok(Some(msg)) = client.process_one::<_, ()>(&mut cio) {
+        if let Ok(Some(msg)) = client.process_one::<_, AnachroTable>(&mut cio) {
             println!("{:?}", msg);
         }
         std::thread::sleep(Duration::from_millis(10));

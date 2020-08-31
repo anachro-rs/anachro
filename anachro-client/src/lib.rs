@@ -84,7 +84,7 @@ pub trait ClientIo {
 pub struct ActiveState;
 
 #[derive(Debug)]
-pub struct RecvMsg<T: DeserializeOwned> {
+pub struct RecvMsg<T: Table> {
     pub path: Path<'static>,
     pub payload: T
 }
@@ -410,7 +410,7 @@ impl Client {
         Ok(())
     }
 
-    pub fn active<'a, 'b: 'a, C: ClientIo, T: DeserializeOwned>(
+    pub fn active<'a, 'b: 'a, C: ClientIo, T: Table>(
         &'b mut self,
         cio: &mut C,
     ) -> Result<Option<RecvMsg<T>>, Error> {
@@ -439,7 +439,7 @@ impl Client {
 
         Ok(Some(RecvMsg {
             path,
-            payload: from_bytes(pubsub.payload).map_err(|_| Error::UnexpectedMessage)?,
+            payload: T::from_pub_sub(pubsub).map_err(|_| Error::UnexpectedMessage)?,
         }))
     }
 
@@ -454,7 +454,7 @@ impl Client {
         }
     }
 
-    pub fn process_one<'a, 'b: 'a, C: ClientIo, T: DeserializeOwned>(
+    pub fn process_one<'a, 'b: 'a, C: ClientIo, T: Table>(
         &'b mut self,
         cio: &mut C,
     ) -> Result<Option<RecvMsg<T>>, Error> {
@@ -574,6 +574,12 @@ pub enum TableError {
     SorryNoShortCodes,
 }
 
+pub trait Table: Sized {
+    fn sub_paths() -> &'static [&'static str];
+    fn pub_paths() -> &'static [&'static str];
+    fn from_pub_sub<'a>(msg: &'a SubMsg<'a>) -> Result<Self, TableError>;
+}
+
 // TODO: Postcard feature?
 
 /// ## Example
@@ -583,23 +589,59 @@ pub enum TableError {
 ///     Time: "time/unix/local" => u32,
 /// );
 #[macro_export]
-macro_rules! table_recv {
-    ($enum_ty:ident, $($variant_name:ident: $path:expr => $variant_ty:ty,)+) => {
-        #[derive(Debug)]
+macro_rules! pubsub_table {
+    (
+        $enum_ty:ident,
+        Subs => {
+            $($sub_variant_name:ident: $sub_path:expr => $sub_variant_ty:ty,)+
+        },
+        Pubs => {
+            $($pub_variant_name:ident: $pub_path:expr => $pub_variant_ty:ty,)+
+        },
+    ) => {
+        #[derive(Debug, serde::Deserialize)]
         pub enum $enum_ty {
-            $($variant_name($variant_ty)),+
+            $($sub_variant_name($sub_variant_ty)),+,
+            $($pub_variant_name($pub_variant_ty)),+,
         }
 
-        impl $enum_ty {
-            pub fn from_pub_sub<'a>(msg: $crate::SubMsg<'a>) -> core::result::Result<Self, $crate::TableError> {
+        impl $crate::Table for $enum_ty {
+            fn from_pub_sub<'a>(msg: &'a $crate::SubMsg<'a>) -> core::result::Result<Self, $crate::TableError> {
                 let msg_path = match msg.path {
-                    $crate::anachro_icd::PubSubPath::Long(path) => path,
-                    _ => return Err($crate::TableError::SorryNoShortCodes),
+                    $crate::anachro_icd::PubSubPath::Long(ref path) => path.as_str(),
+                    $crate::anachro_icd::PubSubPath::Short(sid) => {
+                        if sid < 0x8000 {
+                            // Subscribe
+                            if (sid as usize) < Self::sub_paths().len() {
+                                Self::sub_paths()[(sid as usize)]
+                            } else {
+                                return Err($crate::TableError::NoMatch);
+                            }
+                        } else {
+                            // publish
+                            let new_sid = (sid as usize) - 0x8000;
+                            if new_sid < Self::pub_paths().len() {
+                                Self::pub_paths()[new_sid]
+                            } else {
+                                return Err($crate::TableError::NoMatch);
+                            }
+                        }
+                    },
                 };
                 $(
-                    if $crate::anachro_icd::matches(msg_path.as_str(), $path) {
+                    if $crate::anachro_icd::matches(msg_path, $sub_path) {
                         return Ok(
-                            $enum_ty::$variant_name(
+                            $enum_ty::$sub_variant_name(
+                                postcard::from_bytes(msg.payload)
+                                    .map_err(|e| $crate::TableError::Postcard(e))?
+                            )
+                        );
+                    }
+                )+
+                $(
+                    if $crate::anachro_icd::matches(msg_path, $pub_path) {
+                        return Ok(
+                            $enum_ty::$pub_variant_name(
                                 postcard::from_bytes(msg.payload)
                                     .map_err(|e| $crate::TableError::Postcard(e))?
                             )
@@ -609,9 +651,27 @@ macro_rules! table_recv {
                 Err($crate::TableError::NoMatch)
             }
 
-            pub const fn paths() -> &'static [&'static str] {
+            fn sub_paths() -> &'static [&'static str] {
+                Self::sub_paths()
+            }
+
+            fn pub_paths() -> &'static [&'static str] {
+                Self::pub_paths()
+            }
+        }
+
+        impl $enum_ty {
+            pub const fn sub_paths() -> &'static [&'static str] {
                 const PATHS: &[&str] = &[
-                    $($path,)+
+                    $($sub_path,)+
+                ];
+
+                PATHS
+            }
+
+            pub const fn pub_paths() -> &'static [&'static str] {
+                const PATHS: &[&str] = &[
+                    $($pub_path,)+
                 ];
 
                 PATHS
