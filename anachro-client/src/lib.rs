@@ -7,7 +7,7 @@ Thoughts:
 
 */
 
-#![no_std]
+// #![no_std]
 
 use anachro_icd::{
     arbitrator::{
@@ -34,6 +34,7 @@ pub struct Client {
     current_idx: usize,
 }
 
+#[derive(Debug)]
 pub enum ClientState {
     Disconnected,
     PendingRegistration,
@@ -82,6 +83,7 @@ pub trait ClientIo {
 
 pub struct ActiveState;
 
+#[derive(Debug)]
 pub struct RecvMsg<T: DeserializeOwned> {
     pub path: Path<'static>,
     pub payload: T
@@ -191,6 +193,7 @@ impl Client {
                 // TODO, restart connection process? Just disregard?
                 Err(Error::UnexpectedMessage)
             } else if let Ok(ControlResponse::ComponentRegistration(uuid)) = response {
+                println!("Happy :)");
                 self.uuid = uuid;
                 self.state = ClientState::Registered;
                 self.current_tick = 0;
@@ -442,7 +445,10 @@ impl Client {
 
     fn timeout_violated(&self) -> bool {
         match self.timeout_ticks {
-            Some(ticks) if ticks >= self.current_tick => true,
+            Some(ticks) if ticks <= self.current_tick => {
+                println!("Timeout! {} {}", ticks, self.current_tick);
+                true
+            },
             Some(_) => false,
             None => false,
         }

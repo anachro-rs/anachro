@@ -1,4 +1,4 @@
-#![no_std]
+// #![no_std]
 
 use core::default::Default;
 
@@ -203,6 +203,7 @@ impl Client {
                 long_name,
                 short_id,
             }) => {
+                println!("Shortcoding!");
                 if long_name.contains('#') || long_name.contains('+') {
                     // TODO: How to handle wildcards + short names?
                     return Err(());
@@ -219,6 +220,17 @@ impl Client {
                         short: *short_id,
                     })
                     .map_err(drop)?;
+
+                let resp = Arbitrator::Control(arbitrator::Control {
+                    seq: ctrl.seq,
+                    response: Ok(arbitrator::ControlResponse::PubSubShortRegistration(*short_id)),
+                });
+
+                response = Some(Response {
+                    dest: self.id.clone(),
+                    msg: resp,
+                });
+
                 None
             }
         };

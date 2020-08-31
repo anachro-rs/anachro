@@ -9,19 +9,17 @@ use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use anachro_client::{Client, ClientIo, ClientError, table_recv};
+use anachro_client::{Client, Error, ClientIo, ClientError, table_recv};
 use postcard;
-use serde::de::Deserialize;
 
 struct TcpAnachro {
     stream: TcpStream,
     scratch: Vec<u8>,
+    current: Option<Vec<u8>>,
 }
 
 impl ClientIo for TcpAnachro {
-    fn recv<'a, 'b: 'a, F, E>(&'b mut self, fun: F) -> Result<(), ClientError>
-    where
-        F: FnOnce(&'a Arbitrator<'a>) -> Result<(), anachro_client::Error>
+    fn recv(&mut self) -> Result<Option<Arbitrator>, ClientError>
     {
         let mut scratch = [0u8; 1024];
 
@@ -33,25 +31,27 @@ impl ClientIo for TcpAnachro {
                     if let Some(p) = self.scratch.iter().position(|c| *c == 0x00) {
                         let mut remainder = self.scratch.split_off(p + 1);
                         core::mem::swap(&mut remainder, &mut self.scratch);
-                        let mut payload = remainder;
+                        self.current = Some(remainder);
 
-                        let ret = if let Ok(msg) = from_bytes_cobs::<Arbitrator>(payload.as_mut_slice()) {
-                            fun(&msg).map_err(|_| ClientError::ParsingError);
-                            return Ok(())
-                        } else {
-                            return Err(ClientError::ParsingError);
-                        };
+                        if let Some(ref mut payload) = self.current {
+                            if let Ok(msg) = from_bytes_cobs::<Arbitrator>(payload.as_mut_slice()) {
+                                println!("GIVING: {:?}", msg);
+                                return Ok(Some(msg));
+                            }
+                        }
 
+                        return Err(ClientError::ParsingError);
                     }
                 }
-                Ok(_) => return Ok(()),
-                Err(_) => return Err(ClientError::NoData),
+                Ok(_) => return Ok(None),
+                Err(_) => return Ok(None),
             }
         }
 
 
     }
     fn send(&mut self, msg: &Component) -> Result<(), ClientError> {
+        println!("SENDING: {:?}", msg);
         let ser = to_stdvec_cobs(msg).map_err(|_| ClientError::ParsingError)?;
         self.stream.write_all(&ser).map_err(|_| ClientError::OutputFull)?;
         Ok(())
@@ -63,16 +63,17 @@ impl ClientIo for TcpAnachro {
 table_recv!(
     AnachroTable,
     Something: "foo/bar/baz" => (),
-    Else: "bib/bim/#" => (),
+    Else: "bib/bim/bap" => (),
 );
 
 fn main() {
-    let mut stream = TcpStream::connect("127.0.0.1:8080").unwrap();
+    let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
     let mut cio = TcpAnachro {
         stream,
         scratch: Vec::new(),
+        current: None,
     };
 
     // name: &str,
@@ -92,40 +93,37 @@ fn main() {
     );
 
     while !client.is_connected() {
-        client.process_one::<_, ()>(&mut cio);
+
+        match client.process_one::<_, ()>(&mut cio) {
+            Ok(Some(msg)) => println!("Got: {:?}", msg),
+            Ok(None) => {},
+            Err(Error::ClientIoError(ClientError::NoData)) => {},
+            Err(e) => println!("error: {:?}", e),
+        }
+        std::thread::sleep(Duration::from_millis(10));
     }
 
     println!("Connected.");
 
-    // let path = Path::borrow_from_str("foo/bar/baz");
-    // let payload = b"henlo, welt!";
+    let mut ctr = 0;
+    let mut last_tx = Instant::now();
 
-    // let outgoing = client.subscribe(PubSubPath::Long(path.clone())).unwrap();
-    // let ser = to_stdvec_cobs(&outgoing).map_err(drop).unwrap();
-    // stream.write_all(&ser).map_err(drop).unwrap();
+    while ctr < 10 {
+        if last_tx.elapsed() >= Duration::from_secs(2) {
+            last_tx = Instant::now();
+            ctr += 1;
 
-    // while !client.is_subscribe_pending() {
-    //     processor(&mut stream, &mut client, &mut current).unwrap();
-    // }
+            let msg = client.publish(
+                &mut cio,
+                "foo/bar/baz",
+                &[],
+            ).unwrap();
 
-    // println!("Subscribed.");
-
-    // let mut ctr = 0;
-    // let mut last_tx = Instant::now();
-
-    // while ctr < 10 {
-    //     if last_tx.elapsed() >= Duration::from_secs(2) {
-    //         last_tx = Instant::now();
-    //         ctr += 1;
-
-    //         let msg = client.publish(PubSubPath::Long(path.clone()), payload).unwrap();
-
-    //         println!("Sending...");
-
-    //         let ser = to_stdvec_cobs(&msg).map_err(drop).unwrap();
-    //         stream.write_all(&ser).map_err(drop).unwrap();
-    //     }
-
-    //     processor(&mut stream, &mut client, &mut current).unwrap();
-    // }
+            println!("Sending...");
+        }
+        if let Ok(Some(msg)) = client.process_one::<_, ()>(&mut cio) {
+            println!("{:?}", msg);
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
 }
