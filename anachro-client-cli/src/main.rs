@@ -1,18 +1,14 @@
-use anachro_icd::{
-    arbitrator::Arbitrator,
-    component::Component,
-    PubSubPath, Version, Path,
-};
+use anachro_icd::{arbitrator::Arbitrator, component::Component, Path, PubSubPath, Version};
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 use std::io::prelude::*;
 use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use anachro_client::{Client, Error, ClientIo, ClientError, pubsub_table};
+use anachro_client::{pubsub_table, Client, ClientError, ClientIo, Error};
 use postcard;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 struct TcpAnachro {
     stream: TcpStream,
@@ -21,8 +17,7 @@ struct TcpAnachro {
 }
 
 impl ClientIo for TcpAnachro {
-    fn recv(&mut self) -> Result<Option<Arbitrator>, ClientError>
-    {
+    fn recv(&mut self) -> Result<Option<Arbitrator>, ClientError> {
         let mut scratch = [0u8; 1024];
 
         loop {
@@ -49,13 +44,13 @@ impl ClientIo for TcpAnachro {
                 Err(_) => return Ok(None),
             }
         }
-
-
     }
     fn send(&mut self, msg: &Component) -> Result<(), ClientError> {
         println!("SENDING: {:?}", msg);
         let ser = to_stdvec_cobs(msg).map_err(|_| ClientError::ParsingError)?;
-        self.stream.write_all(&ser).map_err(|_| ClientError::OutputFull)?;
+        self.stream
+            .write_all(&ser)
+            .map_err(|_| ClientError::OutputFull)?;
         Ok(())
     }
 }
@@ -67,7 +62,7 @@ pub struct Demo {
     baz: (u8, u8),
 }
 
-pubsub_table!{
+pubsub_table! {
     AnachroTable,
     Subs => {
         Something: "foo/bar/baz" => Demo,
@@ -98,7 +93,12 @@ fn main() {
 
     let mut client = Client::new(
         "cool-board",
-        Version { major: 0, minor: 4, trivial: 1, misc: 123 },
+        Version {
+            major: 0,
+            minor: 4,
+            trivial: 1,
+            misc: 123,
+        },
         987,
         AnachroTable::sub_paths(),
         AnachroTable::pub_paths(),
@@ -106,11 +106,10 @@ fn main() {
     );
 
     while !client.is_connected() {
-
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => println!("Got: {:?}", msg),
-            Ok(None) => {},
-            Err(Error::ClientIoError(ClientError::NoData)) => {},
+            Ok(None) => {}
+            Err(Error::ClientIoError(ClientError::NoData)) => {}
             Err(e) => println!("error: {:?}", e),
         }
         std::thread::sleep(Duration::from_millis(10));
@@ -135,11 +134,7 @@ fn main() {
 
             let to_send = postcard::to_slice(&msg, &mut buf).unwrap();
 
-            client.publish(
-                &mut cio,
-                "foo/bar/baz",
-                to_send,
-            ).unwrap();
+            client.publish(&mut cio, "foo/bar/baz", to_send).unwrap();
 
             println!("Sending...");
         }

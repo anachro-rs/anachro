@@ -9,16 +9,16 @@ Thoughts:
 
 #![no_std]
 
+pub use anachro_icd::arbitrator::SubMsg;
+pub use anachro_icd::{self, ManagedString, Path, PubSubPath, Version};
 use anachro_icd::{
-    arbitrator::{
-        Arbitrator, Control as AControl, ControlResponse, PubSubResponse,
+    arbitrator::{Arbitrator, Control as AControl, ControlResponse, PubSubResponse},
+    component::{
+        Component, ComponentInfo, Control as CControl, ControlType, PubSub, PubSubShort, PubSubType,
     },
-    component::{Component, ComponentInfo, Control as CControl, ControlType, PubSub, PubSubType, PubSubShort},
     Name, Uuid,
 };
-pub use anachro_icd::{self, Path, Version, PubSubPath, ManagedString};
 pub use postcard::from_bytes;
-pub use anachro_icd::arbitrator::SubMsg;
 
 pub struct Client {
     state: ClientState,
@@ -85,7 +85,7 @@ pub struct ActiveState;
 #[derive(Debug)]
 pub struct RecvMsg<T: Table> {
     pub path: Path<'static>,
-    pub payload: T
+    pub payload: T,
 }
 
 impl Client {
@@ -133,20 +133,18 @@ impl Client {
         &'b self,
         cio: &mut C,
         path: &'a str,
-        payload: &'a [u8]
+        payload: &'a [u8],
     ) -> Result<(), Error> {
         self.state.as_active()?;
 
         let path = match self.pub_short_paths.iter().position(|pth| &path == pth) {
             Some(short) => PubSubPath::Short((short as u16) | 0x8000),
-            None => PubSubPath::Long(ManagedString::Borrow(path))
+            None => PubSubPath::Long(ManagedString::Borrow(path)),
         };
 
         let msg = Component::PubSub(PubSub {
             path,
-            ty: PubSubType::Pub {
-                payload
-            }
+            ty: PubSubType::Pub { payload },
         });
 
         cio.send(&msg)?;
@@ -173,16 +171,13 @@ impl Client {
         Ok(())
     }
 
-    fn pending_registration<C: ClientIo>(
-        &mut self,
-        cio: &mut C
-    ) -> Result<(), Error> {
+    fn pending_registration<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
         let msg = cio.recv()?;
         let msg = match msg {
             Some(msg) => msg,
             None => {
                 self.current_tick = self.current_tick.saturating_add(1);
-                return Ok(())
+                return Ok(());
             }
         };
 
@@ -214,7 +209,7 @@ impl Client {
         } else {
             let msg = Component::PubSub(PubSub {
                 path: PubSubPath::Long(Path::borrow_from_str(self.sub_paths[0])),
-                ty: PubSubType::Sub
+                ty: PubSubType::Sub,
             });
 
             cio.send(&msg)?;
@@ -233,11 +228,14 @@ impl Client {
             Some(msg) => msg,
             None => {
                 self.current_tick = self.current_tick.saturating_add(1);
-                return Ok(())
+                return Ok(());
             }
         };
 
-        if let Arbitrator::PubSub(Ok(PubSubResponse::SubAck { path: PubSubPath::Long(pth) })) = msg {
+        if let Arbitrator::PubSub(Ok(PubSubResponse::SubAck {
+            path: PubSubPath::Long(pth),
+        })) = msg
+        {
             if pth.as_str() == self.sub_paths[self.current_idx] {
                 self.current_idx += 1;
                 if self.current_idx >= self.sub_paths.len() {
@@ -245,8 +243,10 @@ impl Client {
                     self.current_tick = 0;
                 } else {
                     let msg = Component::PubSub(PubSub {
-                        path: PubSubPath::Long(Path::borrow_from_str(self.sub_paths[self.current_idx])),
-                        ty: PubSubType::Sub
+                        path: PubSubPath::Long(Path::borrow_from_str(
+                            self.sub_paths[self.current_idx],
+                        )),
+                        ty: PubSubType::Sub,
                     });
 
                     cio.send(&msg)?;
@@ -277,7 +277,7 @@ impl Client {
                     ty: ControlType::RegisterPubSubShortId(PubSubShort {
                         long_name: self.pub_short_paths[0],
                         short_id: 0x8000,
-                    })
+                    }),
                 });
 
                 cio.send(&msg)?;
@@ -293,7 +293,7 @@ impl Client {
                     ty: ControlType::RegisterPubSubShortId(PubSubShort {
                         long_name: self.sub_paths[0],
                         short_id: 0x0000,
-                    })
+                    }),
                 });
 
                 cio.send(&msg)?;
@@ -312,11 +312,15 @@ impl Client {
             Some(msg) => msg,
             None => {
                 self.current_tick = self.current_tick.saturating_add(1);
-                return Ok(())
+                return Ok(());
             }
         };
 
-        if let Arbitrator::Control(AControl { seq, response: Ok(ControlResponse::PubSubShortRegistration(sid)) }) = msg {
+        if let Arbitrator::Control(AControl {
+            seq,
+            response: Ok(ControlResponse::PubSubShortRegistration(sid)),
+        }) = msg
+        {
             if seq == self.ctr && sid == (self.current_idx as u16) {
                 self.current_idx += 1;
 
@@ -332,7 +336,7 @@ impl Client {
                             ty: ControlType::RegisterPubSubShortId(PubSubShort {
                                 long_name: self.pub_short_paths[0],
                                 short_id: 0x8000,
-                            })
+                            }),
                         });
 
                         cio.send(&msg)?;
@@ -349,7 +353,7 @@ impl Client {
                         ty: ControlType::RegisterPubSubShortId(PubSubShort {
                             long_name: self.sub_paths[self.current_idx],
                             short_id: self.current_idx as u16,
-                        })
+                        }),
                     });
 
                     cio.send(&msg)?;
@@ -372,11 +376,15 @@ impl Client {
             Some(msg) => msg,
             None => {
                 self.current_tick = self.current_tick.saturating_add(1);
-                return Ok(())
+                return Ok(());
             }
         };
 
-        if let Arbitrator::Control(AControl { seq, response: Ok(ControlResponse::PubSubShortRegistration(sid)) }) = msg {
+        if let Arbitrator::Control(AControl {
+            seq,
+            response: Ok(ControlResponse::PubSubShortRegistration(sid)),
+        }) = msg
+        {
             if seq == self.ctr && sid == ((self.current_idx + 0x8000) as u16) {
                 self.current_idx += 1;
 
@@ -391,7 +399,7 @@ impl Client {
                         ty: ControlType::RegisterPubSubShortId(PubSubShort {
                             long_name: self.pub_short_paths[self.current_idx],
                             short_id: (self.current_idx + 0x8000) as u16,
-                        })
+                        }),
                     });
 
                     cio.send(&msg)?;
@@ -408,11 +416,10 @@ impl Client {
         Ok(())
     }
 
-    pub fn active<'a, 'b: 'a, C: ClientIo, T: Table>(
-        &'b mut self,
+    pub fn active<C: ClientIo, T: Table>(
+        &mut self,
         cio: &mut C,
     ) -> Result<Option<RecvMsg<T>>, Error> {
-
         let msg = cio.recv()?;
         let pubsub = match msg {
             Some(Arbitrator::PubSub(Ok(PubSubResponse::SubMsg(ref ps)))) => ps,
@@ -427,12 +434,13 @@ impl Client {
 
         // Determine the path
         let path = match &pubsub.path {
-            PubSubPath::Short(sid) => {
-                Path::Borrow(*self.sub_paths.get(*sid as usize).ok_or(Error::UnexpectedMessage)?)
-            }
-            PubSubPath::Long(ms) => {
-                ms.try_to_owned().map_err(|_| Error::UnexpectedMessage)?
-            }
+            PubSubPath::Short(sid) => Path::Borrow(
+                *self
+                    .sub_paths
+                    .get(*sid as usize)
+                    .ok_or(Error::UnexpectedMessage)?,
+            ),
+            PubSubPath::Long(ms) => ms.try_to_owned().map_err(|_| Error::UnexpectedMessage)?,
         };
 
         Ok(Some(RecvMsg {
@@ -443,19 +451,16 @@ impl Client {
 
     fn timeout_violated(&self) -> bool {
         match self.timeout_ticks {
-            Some(ticks) if ticks <= self.current_tick => {
-                true
-            },
+            Some(ticks) if ticks <= self.current_tick => true,
             Some(_) => false,
             None => false,
         }
     }
 
-    pub fn process_one<'a, 'b: 'a, C: ClientIo, T: Table>(
-        &'b mut self,
+    pub fn process_one<C: ClientIo, T: Table>(
+        &mut self,
         cio: &mut C,
     ) -> Result<Option<RecvMsg<T>>, Error> {
-
         let mut response: Option<RecvMsg<T>> = None;
 
         // TODO: split these into smaller functions
@@ -493,8 +498,10 @@ impl Client {
 
                 if self.timeout_violated() {
                     let msg = Component::PubSub(PubSub {
-                        path: PubSubPath::Long(Path::borrow_from_str(self.sub_paths[self.current_idx])),
-                        ty: PubSubType::Sub
+                        path: PubSubPath::Long(Path::borrow_from_str(
+                            self.sub_paths[self.current_idx],
+                        )),
+                        ty: PubSubType::Sub,
                     });
 
                     cio.send(&msg)?;
@@ -524,7 +531,7 @@ impl Client {
                         ty: ControlType::RegisterPubSubShortId(PubSubShort {
                             long_name: self.sub_paths[self.current_idx],
                             short_id: self.current_idx as u16,
-                        })
+                        }),
                     });
 
                     cio.send(&msg)?;
@@ -544,7 +551,7 @@ impl Client {
                         ty: ControlType::RegisterPubSubShortId(PubSubShort {
                             long_name: self.pub_short_paths[self.current_idx],
                             short_id: (self.current_idx + 0x8000) as u16,
-                        })
+                        }),
                     });
 
                     cio.send(&msg)?;

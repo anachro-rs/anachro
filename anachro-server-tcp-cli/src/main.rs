@@ -9,9 +9,7 @@ use std::time::Duration;
 
 use anachro_server::{Broker, Request, Uuid};
 
-use postcard::{
-    to_stdvec_cobs, from_bytes_cobs,
-};
+use postcard::{from_bytes_cobs, to_stdvec_cobs};
 
 #[derive(Default)]
 struct TcpBroker {
@@ -40,7 +38,6 @@ fn main() {
 
     let tcpb_1 = Arc::new(Mutex::new(broker));
     let tcpb_2 = tcpb_1.clone();
-
 
     let _hdl = spawn(move || {
         let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
@@ -85,7 +82,8 @@ fn main() {
             let mut responses = vec![];
 
             // As a session manager, catch up with any messages
-            for (key, connect) in sessions.iter_mut() { // !!!!!
+            for (key, connect) in sessions.iter_mut() {
+                // !!!!!
                 match connect.stream.read(&mut buf) {
                     Ok(n) if n > 0 => {
                         connect.pending_data.extend_from_slice(&buf[..n]);
@@ -111,13 +109,9 @@ fn main() {
 
                     if let Ok(msg) = from_bytes_cobs(&mut payload) {
                         let src = key.clone();
-                        let req = Request {
-                            source: src,
-                            msg,
-                        };
+                        let req = Request { source: src, msg };
 
-                        let resps = broker
-                            .process_msg(&req).unwrap();
+                        let resps = broker.process_msg(&req).unwrap();
 
                         for respmsg in resps {
                             if let Ok(resp) = to_stdvec_cobs(&respmsg.msg) {
@@ -139,7 +133,6 @@ fn main() {
                         println!("Sent to {:?}", dest);
                     }
                 }
-
             }
 
             // Do evictions

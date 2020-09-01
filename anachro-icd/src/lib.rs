@@ -167,7 +167,7 @@ where
     }
 
     /// Create a Borrowed string from a given str
-    pub fn borrow_from_str<'i>(input: &'i str) -> ManagedString<'i, T> {
+    pub fn borrow_from_str(input: &str) -> ManagedString<T> {
         ManagedString::Borrow(input)
     }
 
@@ -201,7 +201,6 @@ impl Uuid {
     }
 }
 
-
 /// ## Examples
 ///
 /// ```
@@ -217,8 +216,8 @@ pub fn matches(subscr: &str, publ: &str) -> bool {
         return false;
     }
 
-    let mut s_iter = subscr.split("/");
-    let mut p_iter = publ.split("/");
+    let mut s_iter = subscr.split('/');
+    let mut p_iter = publ.split('/');
 
     loop {
         match (s_iter.next(), p_iter.next()) {

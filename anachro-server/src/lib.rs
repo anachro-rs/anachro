@@ -1,4 +1,4 @@
-// #![no_std]
+#![no_std]
 
 use core::default::Default;
 
@@ -7,7 +7,7 @@ use anachro_icd::{
     component::{Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType},
 };
 
-pub use anachro_icd::{PubSubPath, Version, Name, Path, Uuid};
+pub use anachro_icd::{Name, Path, PubSubPath, Uuid, Version};
 
 use heapless::{consts, Vec};
 
@@ -25,10 +25,10 @@ impl Broker {
     }
 
     pub fn register_client(&mut self, id: &Uuid) -> Result<(), ()> {
-        if self.clients.iter_mut().find(|c| &c.id == id).is_none() {
+        if self.clients.iter().find(|c| &c.id == id).is_none() {
             self.clients
                 .push(Client {
-                    id: id.clone(),
+                    id: *id,
                     state: ClientState::SessionEstablished,
                 })
                 .map_err(drop)?;
@@ -64,7 +64,9 @@ impl Broker {
                 }
                 PubSubType::Sub => {
                     let client = self.client_by_id_mut(&req.source)?;
-                    responses.push(client.process_subscribe(&path)?).map_err(drop)?;
+                    responses
+                        .push(client.process_subscribe(&path)?)
+                        .map_err(drop)?;
                 }
                 PubSubType::Unsub => {
                     let client = self.client_by_id_mut(&req.source)?;
@@ -136,7 +138,7 @@ impl Broker {
                             )));
                             responses
                                 .push(Response {
-                                    dest: client.id.clone(),
+                                    dest: client.id,
                                     msg,
                                 })
                                 .map_err(drop)?;
@@ -152,7 +154,7 @@ impl Broker {
                     })));
                     responses
                         .push(Response {
-                            dest: client.id.clone(),
+                            dest: client.id,
                             msg,
                         })
                         .map_err(drop)?;
@@ -181,13 +183,11 @@ impl Client {
 
                     let resp = Arbitrator::Control(arbitrator::Control {
                         seq: ctrl.seq,
-                        response: Ok(arbitrator::ControlResponse::ComponentRegistration(
-                            self.id.clone(),
-                        )),
+                        response: Ok(arbitrator::ControlResponse::ComponentRegistration(self.id)),
                     });
 
                     response = Some(Response {
-                        dest: self.id.clone(),
+                        dest: self.id,
                         msg: resp,
                     });
 
@@ -203,7 +203,6 @@ impl Client {
                 long_name,
                 short_id,
             }) => {
-
                 let state = self.state.as_connected_mut()?;
 
                 if long_name.contains('#') || long_name.contains('+') {
@@ -214,14 +213,16 @@ impl Client {
                     });
 
                     response = Some(Response {
-                        dest: self.id.clone(),
+                        dest: self.id,
                         msg: resp,
                     });
-
                 } else {
-                    if state.shortcuts.iter().find(|sc| {
-                        (sc.long.as_str() == *long_name) && (sc.short == *short_id)
-                    }).is_none() {
+                    let shortcut_exists = state
+                        .shortcuts
+                        .iter()
+                        .any(|sc| (sc.long.as_str() == *long_name) && (sc.short == *short_id));
+
+                    if !shortcut_exists {
                         state
                             .shortcuts
                             .push(Shortcut {
@@ -233,20 +234,20 @@ impl Client {
 
                     let resp = Arbitrator::Control(arbitrator::Control {
                         seq: ctrl.seq,
-                        response: Ok(arbitrator::ControlResponse::PubSubShortRegistration(*short_id)),
+                        response: Ok(arbitrator::ControlResponse::PubSubShortRegistration(
+                            *short_id,
+                        )),
                     });
 
                     response = Some(Response {
-                        dest: self.id.clone(),
+                        dest: self.id,
                         msg: resp,
                     });
-
                 }
 
                 // println!("{:?} aliased '{}' to {}", self.id, long_name, short_id);
 
                 // TODO: Dupe check?
-
 
                 None
             }
@@ -292,7 +293,7 @@ impl Client {
         }));
 
         Ok(Response {
-            dest: self.id.clone(),
+            dest: self.id,
             msg: resp,
         })
     }
