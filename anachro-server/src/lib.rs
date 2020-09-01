@@ -174,7 +174,7 @@ struct Client {
 
 impl Client {
     fn process_control(&mut self, ctrl: &Control) -> Result<Option<Response>, ()> {
-        let mut response = None;
+        let response;
 
         let next = match &ctrl.ty {
             ControlType::RegisterComponent(ComponentInfo { name, version }) => match &self.state {

@@ -584,6 +584,11 @@ pub trait Table: Sized {
     fn from_pub_sub<'a>(msg: &'a SubMsg<'a>) -> Result<Self, TableError>;
 }
 
+pub struct Pubby<'a> {
+    pub buf: &'a [u8],
+    pub path: &'static str,
+}
+
 // TODO: Postcard feature?
 
 /// ## Example
@@ -609,7 +614,7 @@ macro_rules! pubsub_table {
             $($pub_variant_name:ident: $pub_path:expr => $pub_variant_ty:ty,)+
         },
     ) => {
-        #[derive(Debug, serde::Deserialize)]
+        #[derive(Debug, serde::Deserialize, Clone)]
         pub enum $enum_ty {
             $($sub_variant_name($sub_variant_ty)),+,
             $($pub_variant_name($pub_variant_ty)),+,
@@ -671,6 +676,30 @@ macro_rules! pubsub_table {
         }
 
         impl $enum_ty {
+            pub fn get_pub_path(&self) -> core::option::Option<&'static str> {
+                match self {
+                    $(
+                        $enum_ty::$pub_variant_name(_) => Some($pub_path),
+                    )+
+                    _ => None,
+                }
+            }
+
+            pub fn serialize<'a>(&self, buffer: &'a mut [u8]) -> core::result::Result<$crate::Pubby<'a>, ()> {
+                match self {
+                    $(
+                        $enum_ty::$pub_variant_name(msg) => {
+                            Ok($crate::Pubby {
+                                buf: postcard::to_slice(msg, buffer)
+                                        .map_err(drop)?,
+                                path: $pub_path,
+                            })
+                        },
+                    )+
+                    _ => Err(()),
+                }
+            }
+
             pub const fn sub_paths() -> &'static [&'static str] {
                 const PATHS: &[&str] = &[
                     $($sub_path,)+
