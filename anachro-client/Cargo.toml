@@ -1,13 +1,20 @@
 [package]
 name = "anachro-client"
 version = "0.1.0"
+description = "The Client Library for Anachro-PC"
+repository = "https://github.com/jamesmunns/anachro"
 authors = ["James Munns <james.munns@ferrous-systems.com>"]
 edition = "2018"
+readme = "README.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+categories = [
+    "embedded",
+    "no-std",
+]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-anachro-icd = { version = "0.1", path = "../anachro-icd" }
+anachro-icd = { version = "0.1.2", path = "../anachro-icd" }
 postcard = "0.5"
 
 [dependencies.serde]
