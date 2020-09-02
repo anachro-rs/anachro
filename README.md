@@ -5,8 +5,8 @@ See [this blog post](https://jamesmunns.com/blog/anachro-pc-001/) for more detai
 ## Components
 
 * [Anachro ICD](./anachro-icd/README.md) - The Interface Control Document, containing protocol messages used between the Arbitrator/Client.
-* Client - To Document
-* Server - To Document
+* [Client](./anachro-client/README.md) - The Client Library, intended to run on each client
+* [Server](./anachro-server/README.md) - The Server/Broker library, intended to run on a single server
 
 ## Example Libraries
 

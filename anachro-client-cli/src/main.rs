@@ -1,11 +1,11 @@
-use anachro_icd::{arbitrator::Arbitrator, component::Component, Path, PubSubPath, Version};
+use anachro_icd::{arbitrator::Arbitrator, component::Component, Version};
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 use std::io::prelude::*;
 use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use anachro_client::{pubsub_table, Client, ClientError, ClientIo, Error};
+use anachro_client::{pubsub_table, Client, ClientIoError, ClientIo, Error};
 use postcard;
 
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ struct TcpAnachro {
 }
 
 impl ClientIo for TcpAnachro {
-    fn recv(&mut self) -> Result<Option<Arbitrator>, ClientError> {
+    fn recv(&mut self) -> Result<Option<Arbitrator>, ClientIoError> {
         let mut scratch = [0u8; 1024];
 
         loop {
@@ -37,7 +37,7 @@ impl ClientIo for TcpAnachro {
                             }
                         }
 
-                        return Err(ClientError::ParsingError);
+                        return Err(ClientIoError::ParsingError);
                     }
                 }
                 Ok(_) => return Ok(None),
@@ -45,17 +45,17 @@ impl ClientIo for TcpAnachro {
             }
         }
     }
-    fn send(&mut self, msg: &Component) -> Result<(), ClientError> {
+    fn send(&mut self, msg: &Component) -> Result<(), ClientIoError> {
         println!("SENDING: {:?}", msg);
-        let ser = to_stdvec_cobs(msg).map_err(|_| ClientError::ParsingError)?;
+        let ser = to_stdvec_cobs(msg).map_err(|_| ClientIoError::ParsingError)?;
         self.stream
             .write_all(&ser)
-            .map_err(|_| ClientError::OutputFull)?;
+            .map_err(|_| ClientIoError::OutputFull)?;
         Ok(())
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
     foo: u32,
     bar: i16,
@@ -109,7 +109,7 @@ fn main() {
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => println!("Got: {:?}", msg),
             Ok(None) => {}
-            Err(Error::ClientIoError(ClientError::NoData)) => {}
+            Err(Error::ClientIoError(ClientIoError::NoData)) => {}
             Err(e) => println!("error: {:?}", e),
         }
         std::thread::sleep(Duration::from_millis(10));

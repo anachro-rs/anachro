@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 anachro-icd = { path = "../anachro-icd" }
 rand = "0.7.3"
+heapless = "0.5.5"
 
 [dependencies.postcard]
 version = "0.5.1"

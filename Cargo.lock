@@ -22,7 +22,7 @@ dependencies = [
 
 [[package]]
 name = "anachro-icd"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "heapless",
  "postcard",
@@ -43,6 +43,7 @@ version = "0.1.0"
 dependencies = [
  "anachro-icd",
  "anachro-server",
+ "heapless",
  "postcard",
  "rand",
 ]

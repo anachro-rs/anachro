@@ -7,7 +7,7 @@ use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use anachro_server::{Broker, Request, Uuid};
+use anachro_server::{Broker, Request, Uuid, RESET_MESSAGE, Response};
 
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 
@@ -111,7 +111,18 @@ fn main() {
                         let src = key.clone();
                         let req = Request { source: src, msg };
 
-                        let resps = broker.process_msg(&req).unwrap();
+                        let resps = match broker.process_msg(&req) {
+                            Ok(resps) => resps,
+                            Err(e) => {
+                                println!("Error: {:?}, resetting client", e);
+                                let mut resp = heapless::Vec::new();
+                                resp.push(Response {
+                                    dest: src,
+                                    msg: RESET_MESSAGE,
+                                }).ok();
+                                resp
+                            }
+                        };
 
                         for respmsg in resps {
                             if let Ok(resp) = to_stdvec_cobs(&respmsg.msg) {
