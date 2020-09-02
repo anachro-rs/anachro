@@ -617,10 +617,7 @@ impl Client {
     }
 
     /// Process messages while in a Connected state
-    fn active<C: ClientIo, T: Table>(
-        &mut self,
-        cio: &mut C,
-    ) -> Result<Option<RecvMsg<T>>, Error> {
+    fn active<C: ClientIo, T: Table>(&mut self, cio: &mut C) -> Result<Option<RecvMsg<T>>, Error> {
         let msg = cio.recv()?;
         let pubsub = match msg {
             Some(Arbitrator::PubSub(Ok(PubSubResponse::SubMsg(ref ps)))) => ps,

@@ -34,7 +34,6 @@ pub trait Table: Sized {
     fn from_pub_sub<'a>(msg: &'a SubMsg<'a>) -> Result<Self, TableError>;
 }
 
-
 /// A macro for defining a publish and subscribe table
 ///
 /// This macro assists with generating a table that defines publish
