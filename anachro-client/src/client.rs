@@ -499,7 +499,7 @@ impl Client {
             response: Ok(ControlResponse::PubSubShortRegistration(sid)),
         }) = msg
         {
-            if seq == self.ctr && sid == ((self.current_idx + 0x8000) as u16) {
+            if seq == self.ctr && sid == ((self.current_idx as u16) | PUBLISH_SHORTCODE_OFFSET) {
                 self.current_idx += 1;
 
                 if self.current_idx >= self.pub_short_paths.len() {
@@ -512,7 +512,7 @@ impl Client {
                         seq: self.ctr,
                         ty: ControlType::RegisterPubSubShortId(PubSubShort {
                             long_name: self.pub_short_paths[self.current_idx],
-                            short_id: (self.current_idx + 0x8000) as u16,
+                            short_id: ((self.current_idx as u16) | PUBLISH_SHORTCODE_OFFSET),
                         }),
                     });
 
