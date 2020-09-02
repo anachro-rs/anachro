@@ -1,53 +1,130 @@
+//! # The Anachro Protocol Server/Broker Library
+//!
+//! This crate is used by devices acting as a Server/Broker of the Anachro Protocol
+
 #![no_std]
 
-use core::default::Default;
-
-use anachro_icd::{
-    arbitrator::{self, Arbitrator, SubMsg},
-    component::{Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType},
+use {
+    anachro_icd::{
+        arbitrator::{self, Arbitrator, Control as AControl, ControlError, SubMsg},
+        component::{
+            Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType,
+        },
+    },
+    core::default::Default,
+    heapless::{consts, Vec},
 };
 
-pub use anachro_icd::{Name, Path, PubSubPath, Uuid, Version};
-
-use heapless::{consts, Vec};
+pub use anachro_icd::{self, Name, Path, PubSubPath, Uuid, Version};
 
 type ClientStore = Vec<Client, consts::U8>;
 
-// Thinks in term of uuids
+/// The Broker Interface
+///
+/// This is the primary interface for devices acting as a broker.
+///
+/// Currently the max capacity is fixed with a maximum of 8
+/// clients connected. Each Client may subscribe up to 8 topics.
+/// Each Client may register up to 8 shortcodes.
+///
+/// In the future, these limits may be configurable.
+///
+/// As a note, the Broker currently creates a sizable object, due
+/// to the fixed upper limits
 #[derive(Default)]
 pub struct Broker {
     clients: ClientStore,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum ServerError {
+    ClientAlreadyRegistered,
+    UnknownClient,
+    ClientDisconnected,
+    ConnectionError,
+    ResourcesExhausted,
+    UnknownShortcode,
+}
+
+pub const RESET_MESSAGE: Arbitrator = Arbitrator::Control(AControl {
+    response: Err(ControlError::ResetConnection),
+    seq: 0,
+});
+
+// Public Interfaces
 impl Broker {
-    fn client_by_id_mut(&mut self, id: &Uuid) -> Result<&mut Client, ()> {
-        self.clients.iter_mut().find(|c| &c.id == id).ok_or(())
+    /// Create a new broker with no clients attached
+    #[inline(always)]
+    pub fn new() -> Self {
+        Broker::default()
     }
 
-    pub fn register_client(&mut self, id: &Uuid) -> Result<(), ()> {
+    /// Register a client to the broker
+    ///
+    /// This can be done dynamically, e.g. when a client connects for the
+    /// first time, e.g. a TCP session is established, or the first packet
+    /// is received, or can be done ahead-of-time, e.g. when communicating
+    /// with a fixed set of wired devices.
+    ///
+    /// Clients must be registered before messages from them can be processed.
+    ///
+    /// If an already-registered client is re-registered, they will be reset to
+    /// an initial connection state, dropping all subscriptions or shortcodes.
+    pub fn register_client(&mut self, id: &Uuid) -> Result<(), ServerError> {
         if self.clients.iter().find(|c| &c.id == id).is_none() {
             self.clients
                 .push(Client {
                     id: *id,
                     state: ClientState::SessionEstablished,
                 })
-                .map_err(drop)?;
+                .map_err(|_| ServerError::ResourcesExhausted)?;
             Ok(())
         } else {
-            Err(())
+            Err(ServerError::ClientAlreadyRegistered)
         }
     }
 
-    pub fn remove_client(&mut self, id: &Uuid) -> Result<(), ()> {
-        let pos = self.clients.iter().position(|c| &c.id == id).ok_or(())?;
+    /// Remove a client from the broker
+    ///
+    /// This could be necessary if the connection to a client breaks or times out
+    /// Once removed, no further messages to or from this client will be processed
+    pub fn remove_client(&mut self, id: &Uuid) -> Result<(), ServerError> {
+        let pos = self
+            .clients
+            .iter()
+            .position(|c| &c.id == id)
+            .ok_or(ServerError::UnknownClient)?;
         self.clients.swap_remove(pos);
         Ok(())
     }
 
+    /// Reset a client registered with the broker, without removing it
+    ///
+    /// This could be necessary if the connection to a client breaks or times out.
+    pub fn reset_client(&mut self, id: &Uuid) -> Result<(), ServerError> {
+        let mut client = self.client_by_id_mut(id)?;
+        client.state = ClientState::SessionEstablished;
+        Ok(())
+    }
+
+    /// Process a single message from a client
+    ///
+    /// A message from a client will be processed. If processing this message
+    /// generates responses that need to be sent (e.g. a publish occurs and
+    /// subscribed clients should be notified, or if the broker is responding
+    /// to a request from the client), they will be returned, and the messages
+    /// should be sent to the appropriate clients.
+    ///
+    /// Requests and Responses are addressed by the Uuid registered for each client
+    ///
+    /// **NOTE**: If an error occurs, you probably should send a `RESET_MESSAGE` to
+    /// that client to force them to reconnect. You may also want to `remove_client`
+    /// or `reset_client`, depending on the situation. This will hopefully be handled
+    /// automatically in the future.
     pub fn process_msg<'a, 'b: 'a>(
         &'b mut self,
         req: &'a Request<'a>,
-    ) -> Result<Vec<Response<'a>, consts::U8>, ()> {
+    ) -> Result<Vec<Response<'a>, consts::U8>, ServerError> {
         let mut responses = Vec::new();
 
         match &req.msg {
@@ -55,7 +132,9 @@ impl Broker {
                 let client = self.client_by_id_mut(&req.source)?;
 
                 if let Some(msg) = client.process_control(&ctrl)? {
-                    responses.push(msg).map_err(drop)?;
+                    responses
+                        .push(msg)
+                        .map_err(|_| ServerError::ResourcesExhausted)?;
                 }
             }
             Component::PubSub(PubSub { ref path, ref ty }) => match ty {
@@ -66,7 +145,7 @@ impl Broker {
                     let client = self.client_by_id_mut(&req.source)?;
                     responses
                         .push(client.process_subscribe(&path)?)
-                        .map_err(drop)?;
+                        .map_err(|_| ServerError::ResourcesExhausted)?;
                 }
                 PubSubType::Unsub => {
                     let client = self.client_by_id_mut(&req.source)?;
@@ -78,13 +157,23 @@ impl Broker {
 
         Ok(responses)
     }
+}
+
+// Private interfaces
+impl Broker {
+    fn client_by_id_mut(&mut self, id: &Uuid) -> Result<&mut Client, ServerError> {
+        self.clients
+            .iter_mut()
+            .find(|c| &c.id == id)
+            .ok_or(ServerError::UnknownClient)
+    }
 
     fn process_publish<'b: 'a, 'a>(
         &'b mut self,
         path: &'a PubSubPath,
         payload: &'a [u8],
         source: &'a Uuid,
-    ) -> Result<Vec<Response<'a>, consts::U8>, ()> {
+    ) -> Result<Vec<Response<'a>, consts::U8>, ServerError> {
         // TODO: Make sure we're not publishing to wildcards
 
         // First, find the sender's path
@@ -93,7 +182,7 @@ impl Broker {
             .iter()
             .filter_map(|c| c.state.as_connected().ok().map(|x| (c, x)))
             .find(|(c, _x)| &c.id == source)
-            .ok_or(())?;
+            .ok_or(ServerError::UnknownClient)?;
         let path = match path {
             PubSubPath::Long(lp) => lp.as_str(),
             PubSubPath::Short(sid) => &source_id
@@ -101,12 +190,10 @@ impl Broker {
                 .shortcuts
                 .iter()
                 .find(|s| &s.short == sid)
-                .ok_or(())?
+                .ok_or(ServerError::UnknownShortcode)?
                 .long
                 .as_str(),
         };
-
-        // println!("{:?} said '{:?}' to {}", source, payload, path);
 
         // Then, find all applicable destinations, max of 1 per destination
         let mut responses = Vec::new();
@@ -126,10 +213,6 @@ impl Broker {
                     for short in state.shortcuts.iter() {
                         // NOTE: we use path, NOT subt, as it may contain wildcards
                         if path == short.long.as_str() {
-                            // println!(
-                            //     "Sending 'short_{}':'{:?}' to {:?}",
-                            //     short.short, payload, client.id
-                            // );
                             let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(
                                 SubMsg {
                                     path: PubSubPath::Short(short.short),
@@ -141,12 +224,10 @@ impl Broker {
                                     dest: client.id,
                                     msg,
                                 })
-                                .map_err(drop)?;
+                                .map_err(|_| ServerError::ResourcesExhausted)?;
                             continue 'client;
                         }
                     }
-
-                    // println!("Sending '{}':'{:?}' to {:?}", path, payload, client.id);
 
                     let msg = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubMsg(SubMsg {
                         path: PubSubPath::Long(Path::borrow_from_str(path)),
@@ -157,7 +238,7 @@ impl Broker {
                             dest: client.id,
                             msg,
                         })
-                        .map_err(drop)?;
+                        .map_err(|_| ServerError::ResourcesExhausted)?;
                     continue 'client;
                 }
             }
@@ -173,14 +254,12 @@ struct Client {
 }
 
 impl Client {
-    fn process_control(&mut self, ctrl: &Control) -> Result<Option<Response>, ()> {
+    fn process_control(&mut self, ctrl: &Control) -> Result<Option<Response>, ServerError> {
         let response;
 
         let next = match &ctrl.ty {
             ControlType::RegisterComponent(ComponentInfo { name, version }) => match &self.state {
                 ClientState::SessionEstablished | ClientState::Connected(_) => {
-                    // println!("{:?} registered as {}, {:?}", self.id, name.as_str(), version);
-
                     let resp = Arbitrator::Control(arbitrator::Control {
                         seq: ctrl.seq,
                         response: Ok(arbitrator::ControlResponse::ComponentRegistration(self.id)),
@@ -192,7 +271,9 @@ impl Client {
                     });
 
                     Some(ClientState::Connected(ConnectedState {
-                        name: name.try_to_owned()?,
+                        name: name
+                            .try_to_owned()
+                            .map_err(|_| ServerError::ResourcesExhausted)?,
                         version: *version,
                         subscriptions: Vec::new(),
                         shortcuts: Vec::new(),
@@ -229,7 +310,7 @@ impl Client {
                                 long: Path::try_from_str(long_name).unwrap(),
                                 short: *short_id,
                             })
-                            .map_err(drop)?;
+                            .map_err(|_| ServerError::ResourcesExhausted)?;
                     }
 
                     let resp = Arbitrator::Control(arbitrator::Control {
@@ -245,8 +326,6 @@ impl Client {
                     });
                 }
 
-                // println!("{:?} aliased '{}' to {}", self.id, long_name, short_id);
-
                 // TODO: Dupe check?
 
                 None
@@ -260,7 +339,7 @@ impl Client {
         Ok(response)
     }
 
-    fn process_subscribe<'a>(&mut self, path: &'a PubSubPath) -> Result<Response<'a>, ()> {
+    fn process_subscribe<'a>(&mut self, path: &'a PubSubPath) -> Result<Response<'a>, ServerError> {
         let state = self.state.as_connected_mut()?;
 
         // Determine canonical path
@@ -270,7 +349,7 @@ impl Client {
                 .shortcuts
                 .iter()
                 .find(|s| &s.short == sid)
-                .ok_or(())?
+                .ok_or(ServerError::UnknownShortcode)?
                 .long
                 .as_str(),
         };
@@ -285,7 +364,7 @@ impl Client {
             state
                 .subscriptions
                 .push(Path::try_from_str(path_str).unwrap())
-                .map_err(drop)?;
+                .map_err(|_| ServerError::ResourcesExhausted)?;
         }
 
         let resp = Arbitrator::PubSub(Ok(arbitrator::PubSubResponse::SubAck {
@@ -298,13 +377,14 @@ impl Client {
         })
     }
 
-    fn process_unsub(&mut self, _path: &PubSubPath) -> Result<(), ()> {
+    fn process_unsub(&mut self, _path: &PubSubPath) -> Result<(), ServerError> {
         let _state = self.state.as_connected_mut()?;
 
         todo!()
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 enum ClientState {
     SessionEstablished,
@@ -312,17 +392,17 @@ enum ClientState {
 }
 
 impl ClientState {
-    fn as_connected(&self) -> Result<&ConnectedState, ()> {
+    fn as_connected(&self) -> Result<&ConnectedState, ServerError> {
         match self {
             ClientState::Connected(state) => Ok(state),
-            _ => Err(()),
+            _ => Err(ServerError::ClientDisconnected),
         }
     }
 
-    fn as_connected_mut(&mut self) -> Result<&mut ConnectedState, ()> {
+    fn as_connected_mut(&mut self) -> Result<&mut ConnectedState, ServerError> {
         match self {
             ClientState::Connected(ref mut state) => Ok(state),
-            _ => Err(()),
+            _ => Err(ServerError::ClientDisconnected),
         }
     }
 }
@@ -341,16 +421,17 @@ struct Shortcut {
     short: u16,
 }
 
-// TODO: These two probably shouldn't exist here, because
-// it means we constrain the serialization method. In the
-// future we should probably just have msg be Arbitrator/
-// Component
-
+/// A request FROM the Client, TO the Broker
+///
+/// This message is addressed by a UUID used when registering the client
 pub struct Request<'a> {
     pub source: Uuid,
     pub msg: Component<'a>,
 }
 
+/// A response TO the Client, FROM the Broker
+///
+/// This message is addressed by a UUID used when registering the client
 pub struct Response<'a> {
     pub dest: Uuid,
     pub msg: Arbitrator<'a>,

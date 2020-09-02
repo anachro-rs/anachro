@@ -121,6 +121,7 @@ pub enum ControlResponse {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum ControlError {
     NoWildcardsInShorts,
+    ResetConnection,
 }
 
 /// Publish/Subscribe Errors
