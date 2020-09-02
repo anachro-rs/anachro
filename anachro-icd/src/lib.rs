@@ -154,6 +154,7 @@ where
         }
     }
 
+    /// Retrieve a borrowed copy of the string
     pub fn as_borrowed(&'a self) -> ManagedString<'a, T> {
         ManagedString::Borrow(self.as_str())
     }
@@ -201,10 +202,12 @@ impl Uuid {
     }
 }
 
+/// A function for matching pub/sub paths
+///
 /// ## Examples
 ///
 /// ```
-/// # use anachro_server::matches;
+/// # use anachro_icd::matches;
 /// #
 /// assert!(matches(
 ///  "/+/temperature/#",
