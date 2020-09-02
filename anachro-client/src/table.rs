@@ -1,5 +1,6 @@
 use anachro_icd::arbitrator::SubMsg;
 use postcard;
+use crate::client::PUBLISH_SHORTCODE_OFFSET;
 
 pub enum TableError {
     NoMatch,
@@ -48,7 +49,7 @@ macro_rules! pubsub_table {
                 let msg_path = match msg.path {
                     $crate::anachro_icd::PubSubPath::Long(ref path) => path.as_str(),
                     $crate::anachro_icd::PubSubPath::Short(sid) => {
-                        if sid < 0x8000 {
+                        if sid < PUBLISH_SHORTCODE_OFFSET {
                             // Subscribe
                             if (sid as usize) < Self::sub_paths().len() {
                                 Self::sub_paths()[(sid as usize)]
@@ -57,7 +58,7 @@ macro_rules! pubsub_table {
                             }
                         } else {
                             // publish
-                            let new_sid = (sid as usize) - 0x8000;
+                            let new_sid = (sid as usize) - (PUBLISH_SHORTCODE_OFFSET as usize);
                             if new_sid < Self::pub_paths().len() {
                                 Self::pub_paths()[new_sid]
                             } else {
