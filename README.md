@@ -4,14 +4,14 @@ See [this blog post](https://jamesmunns.com/blog/anachro-pc-001/) for more detai
 
 ## Components
 
-* [Anachro ICD](./anachro-icd/README.md) - The Interface Control Document, containing protocol messages used between the Arbitrator/Client.
-* [Client](./anachro-client/README.md) - The Client Library, intended to run on each client
-* [Server](./anachro-server/README.md) - The Server/Broker library, intended to run on a single server
+* [Anachro ICD](./crates/icd/README.md) - The Interface Control Document, containing protocol messages used between the Arbitrator/Client.
+* [Client](./crates/client/README.md) - The Client Library, intended to run on each client
+* [Server](./crates/server/README.md) - The Server/Broker library, intended to run on a single server
 
-## Example Libraries
+## Example Applications
 
-* Client-cli - Example TCP Client
-* Server-tcp-cli - Example TCP Server
+* `client-tcp` - Example TCP Client
+* `server-tcp` - Example TCP Server
 
 # License
 
