@@ -1,9 +1,10 @@
 [workspace]
 
 members = [
-    "anachro-client",
-    "anachro-client-cli",
-    "anachro-icd",
-    "anachro-server",
-    "anachro-server-tcp-cli",
+    "crates/client",
+    "crates/icd",
+    "crates/server",
+
+    "pc-examples/client-tcp",
+    "pc-examples/server-tcp",
 ]

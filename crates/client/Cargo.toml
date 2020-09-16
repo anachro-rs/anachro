@@ -1,7 +1,7 @@
 [package]
-name = "anachro-server"
+name = "anachro-client"
 version = "0.1.0"
-description = "The Server/Broker Library for Anachro-PC"
+description = "The Client Library for Anachro-PC"
 repository = "https://github.com/jamesmunns/anachro"
 authors = ["James Munns <james.munns@ferrous-systems.com>"]
 edition = "2018"
@@ -14,5 +14,10 @@ categories = [
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-anachro-icd = { version = "0.1.3", path = "../anachro-icd" }
-heapless = "0.5.5"
+anachro-icd = { version = "0.1.2", path = "../icd" }
+postcard = "0.5"
+
+[dependencies.serde]
+version = "1.0.114"
+default-features = false
+features = ["derive"]
