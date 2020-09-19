@@ -82,9 +82,12 @@ pub trait EncLogicLLArbitrator {
     /// Prepare data to be exchanged. The data MUST not be referenced
     /// until `complete_exchange` or `abort_exchange` has been called.
     ///
-    /// NOTE: Data will not be sent until `trigger_exchange` has been
-    /// called. This will automatically set the GO line if it is
+    /// This will automatically set the GO line if it is
     /// not already active.
+    ///
+    /// Will return an error if READY is not active
+    ///
+    /// This will begin sending once the Component begins clocking data
     ///
     /// An error will be returned if an exchange is already in progress
     // TODO: `embedded-dma`?
@@ -95,11 +98,6 @@ pub trait EncLogicLLArbitrator {
         data_in: *mut u8,
         data_in_max: usize,
     ) -> Result<()>;
-
-    /// Actually begin exchanging data
-    ///
-    /// Will return an error if READY and GO are not active
-    fn trigger_exchange(&mut self) -> Result<()>;
 
     /// Is a `exchange` action still in progress?
     fn is_exchange_active(&self) -> Result<bool>;
@@ -139,7 +137,7 @@ pub trait EncLogicHLArbitrator {
     /// Periodic poll. Should be called regularly (or on interrupts?)
     fn poll(&mut self) -> Result<()>;
 
-    unsafe fn get_ll<LL: EncLogicLLArbitrator>(&mut self) -> &mut LL;
+    fn get_ll<LL: EncLogicLLArbitrator>(&mut self) -> &mut LL;
 }
 
 pub trait EncLogicHLComponent {
@@ -152,6 +150,6 @@ pub trait EncLogicHLComponent {
     /// Periodic poll. Should be called regularly (or on interrupts?)
     fn poll(&mut self) -> Result<()>;
 
-    unsafe fn get_ll<LL: EncLogicLLComponent>(&mut self) -> &mut LL;
+    fn get_ll<LL: EncLogicLLComponent>(&mut self) -> &mut LL;
 }
 

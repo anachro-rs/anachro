@@ -24,7 +24,7 @@ fn main() {
     stream.set_nonblocking(true).unwrap();
 
     println!("Component connected!");
-    let mut com = TcpSpiCom::new(stream);
+    let mut com = TcpSpiComLL::new(stream);
 
     let mut last_tx = Instant::now();
 
@@ -37,18 +37,21 @@ fn main() {
         sleep(Duration::from_millis(10));
 
         if com.is_exchange_active().unwrap() {
-            if let Ok(false) = com.is_go_active() {
-                com.abort_exchange().ok();
-            }
             if !triggered {
                 if com.is_go_active().unwrap() {
+                    println!("triggering!");
                     com.trigger_exchange().unwrap();
                     triggered = true;
                 }
             } else {
-                match com.complete_exchange(true) {
+                if let Ok(false) = com.is_go_active() {
+                    println!("aborting!");
+                    com.abort_exchange().ok();
+                }
+                match com.complete_exchange(false) {
                     Err(_) => {},
                     Ok(amt) => {
+                        println!("completing...");
                         let in_buf = unsafe {
                             assert!(amt <= 10);
                             core::slice::from_raw_parts(
@@ -83,7 +86,7 @@ enum TcpSpiMsg {
     Payload(Vec<u8>),
 }
 
-struct TcpSpiCom {
+struct TcpSpiComLL {
     stream: TcpStream,
     go_state: Option<bool>,
     ready_state: bool,
@@ -99,7 +102,7 @@ struct PendingExchange {
     data_in_max: usize,
 }
 
-impl TcpSpiCom {
+impl TcpSpiComLL {
     fn new(mut stream: TcpStream) -> Self {
         let init_msg = to_stdvec_cobs(
             &TcpSpiMsg::ReadyState(false)
@@ -108,7 +111,7 @@ impl TcpSpiCom {
         // Send init message declaring GO state
         stream.write_all(&init_msg).unwrap();
 
-        TcpSpiCom {
+        TcpSpiComLL {
             stream,
             go_state: None,
             ready_state: false,
@@ -171,7 +174,7 @@ impl TcpSpiCom {
     }
 }
 
-impl EncLogicLLComponent for TcpSpiCom {
+impl EncLogicLLComponent for TcpSpiComLL {
     fn is_go_active(&mut self) -> SpiResult<bool> {
         self.go_state.ok_or(SpiError::ToDo)
     }
@@ -277,6 +280,7 @@ impl EncLogicLLComponent for TcpSpiCom {
 
         let inc = match self.incoming_payload.take() {
             None if !is_go_active => {
+                println!("No go!");
                 return Err(SpiError::ArbitratorHungUp);
             }
             None => {
