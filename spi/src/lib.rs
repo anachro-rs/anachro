@@ -124,8 +124,7 @@ pub trait EncLogicLLArbitrator {
     fn abort_exchange(&mut self) -> Result<()>;
 }
 
-// TODO: Separate ones of these for Arbitrator/Component?
-pub trait EncLogicHL {
+pub trait EncLogicHLArbitrator {
     /// Place a message to be sent over SPI
     fn enqueue(&mut self, msg: &[u8]) -> Result<()>;
 
@@ -134,4 +133,20 @@ pub trait EncLogicHL {
 
     /// Periodic poll. Should be called regularly (or on interrupts?)
     fn poll(&mut self) -> Result<()>;
+
+    unsafe fn get_ll<LL: EncLogicLLArbitrator>(&mut self) -> &mut LL;
 }
+
+pub trait EncLogicHLComponent {
+    /// Place a message to be sent over SPI
+    fn enqueue(&mut self, msg: &[u8]) -> Result<()>;
+
+    /// Attempt to receive a message over SPI
+    fn dequeue<'a>(&mut self, msg_out: &'a mut [u8]) -> Result<Option<&'a [u8]>>;
+
+    /// Periodic poll. Should be called regularly (or on interrupts?)
+    fn poll(&mut self) -> Result<()>;
+
+    unsafe fn get_ll<LL: EncLogicLLComponent>(&mut self) -> &mut LL;
+}
+

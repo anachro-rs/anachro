@@ -29,6 +29,7 @@ Do I want to just build this on top of a bidirectional BBQueue?
 4. The Component clocks 4 bytes:
     * The Component sends the length of the next message in bytes, or zero if no message
     * The Arbitrator sends the length of the next message in bytes, or zero if no message
+    * TODO: Varints?
 5. The Component decides whether to continue.
     * If not, the component releases the READY line high, and returns to state 1
     * If so, the component checks if the GO line is still low.
