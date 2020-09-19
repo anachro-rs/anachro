@@ -38,7 +38,7 @@ fn main() {
                 println!("==> Got HL msg: {:?}", msg);
             }
 
-            if last_tx.elapsed() > Duration::from_secs(5) {
+            if last_tx.elapsed() > Duration::from_secs(10) {
                 println!("==> Enqueuing!");
                 arb.enqueue(vec![0xF0; 6]);
                 last_tx = Instant::now();
@@ -90,7 +90,7 @@ impl TcpSpiArbHL {
             match self.ll.is_ready_active() {
                 Ok(true) => {
                     if !self.sent_hdr {
-                        println!("Got READY, start header exchange!");
+                        // println!("Got READY, start header exchange!");
                         let amt = self
                             .outgoing_msgs
                             .get(0)
@@ -108,7 +108,7 @@ impl TcpSpiArbHL {
                             4,
                         ).unwrap();
                     } else {
-                        println!("Got READY, start data exchange!");
+                        // println!("Got READY, start data exchange!");
 
                         // Do we actually have an outgoing message?
                         // TODO: Probably unsound if VecDeque can realloc/move!!!
@@ -127,7 +127,7 @@ impl TcpSpiArbHL {
                     }
                 }
                 Ok(false) if self.ll.go_state => {
-                    println!("clearing go!");
+                    // println!("clearing go!");
                     self.ll.clear_go().unwrap();
                     self.sent_hdr = false;
                 }
@@ -135,7 +135,7 @@ impl TcpSpiArbHL {
             }
         } else {
             if !self.ll.is_ready_active().unwrap() {
-                println!("aborting!");
+                // println!("aborting!");
                 self.ll.abort_exchange().ok();
                 self.sent_hdr = false;
             }
@@ -151,10 +151,12 @@ impl TcpSpiArbHL {
                             amt,
                         )
                     };
-                    println!("got {:?}!", in_buf_inner);
+                    // println!("got {:?}!", in_buf_inner);
 
                     if self.sent_hdr {
-                        self.incoming_msgs.push_back(in_buf_inner.to_vec());
+                        if !in_buf_inner.is_empty() {
+                            self.incoming_msgs.push_back(in_buf_inner.to_vec());
+                        }
                         let _ = self.outgoing_msgs.pop_front();
                     }
 
@@ -233,19 +235,19 @@ impl TcpSpiArbLL {
             core::mem::swap(&mut remainder, &mut self.pending_data);
             let mut payload = remainder;
 
-            println!("TCP: got {:?}", payload);
+            // println!("TCP: got {:?}", payload);
 
             if let Ok(msg) = from_bytes_cobs::<TcpSpiMsg>(&mut payload) {
                 match msg {
                     TcpSpiMsg::ReadyState(state) => {
-                        println!("Ready is now: {}", state);
+                        // println!("Ready is now: {}", state);
                         self.ready_state = Some(state);
                     }
                     TcpSpiMsg::GoState(_) => {
                         panic!("We're an arbitrator! No one should tell us Go state!");
                     }
                     TcpSpiMsg::Payload(payload) => {
-                        println!("Payload!");
+                        // println!("Payload!");
                         assert!(self.incoming_payload.is_none(), "DATALOSS");
                         self.incoming_payload = Some(payload);
                     }
@@ -271,7 +273,7 @@ impl spi::EncLogicLLArbitrator for TcpSpiArbLL {
     }
 
     fn clear_go(&mut self) -> SpiResult<()> {
-        println!("cleargo");
+        // println!("cleargo");
         self.go_state = false;
         let msg = TcpSpiMsg::GoState(false);
         let payload = to_stdvec_cobs(&msg).map_err(|_| SpiError::ToDo)?;

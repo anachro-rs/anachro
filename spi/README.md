@@ -24,8 +24,8 @@ Do I want to just build this on top of a bidirectional BBQueue?
 ## Message Sequence
 
 1. The Component is idle
-2. The Component drives the GO line low
-3. The Component waits until the READY line is low
+2. The Component drives the READY line low
+3. The Component waits until the GO line is low
 4. The Component clocks 4 bytes:
     * The Component sends the length of the next message in bytes, or zero if no message
     * The Arbitrator sends the length of the next message in bytes, or zero if no message
@@ -63,6 +63,6 @@ Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
 * [x] Work on Enc/Logic as a crate
 * [ ] Get Enc/Logic working over TCP (SPI simulator)
     * [x] Low Level Interface
-    * [ ] High Level Interface
+    * [x] High Level Interface
 * [ ] Get Physical layer working (embedded-hal?)
 * [ ] Get it working on two actual physical nrf52840s

@@ -24,57 +24,19 @@ fn main() {
     stream.set_nonblocking(true).unwrap();
 
     println!("Component connected!");
-    let mut com = TcpSpiComLL::new(stream);
+    let mut com = TcpSpiComHL::new(stream);
 
     let mut last_tx = Instant::now();
 
-    let out_buf = [0x00u8; 8];
-    let in_buf  = UnsafeCell::new([0xFFu8; 10]);
+    while let Ok(_) = com.poll() {
+        while let Some(msg) = com.dequeue() {
+            println!("==> Got HL msg: {:?}", msg);
+        }
 
-    let mut triggered = false;
-
-    while let Ok(_) = com.process() {
-        sleep(Duration::from_millis(10));
-
-        if com.is_exchange_active().unwrap() {
-            if !triggered {
-                if com.is_go_active().unwrap() {
-                    println!("triggering!");
-                    com.trigger_exchange().unwrap();
-                    triggered = true;
-                }
-            } else {
-                if let Ok(false) = com.is_go_active() {
-                    println!("aborting!");
-                    com.abort_exchange().ok();
-                }
-                match com.complete_exchange(false) {
-                    Err(_) => {},
-                    Ok(amt) => {
-                        println!("completing...");
-                        let in_buf = unsafe {
-                            assert!(amt <= 10);
-                            core::slice::from_raw_parts(
-                                in_buf.get() as *const u8,
-                                amt,
-                            )
-                        };
-                        println!("got {:?}!", in_buf);
-                        triggered = false;
-                    }
-                }
-            }
-        } else {
-            if last_tx.elapsed() > Duration::from_secs(3) {
-                println!("Starting exchange!");
-                com.prepare_exchange(
-                    out_buf.as_ptr(),
-                    out_buf.len(),
-                    in_buf.get().cast(),
-                    10,
-                ).unwrap();
-                last_tx = Instant::now();
-            }
+        if last_tx.elapsed() > Duration::from_secs(5) {
+            println!("==> Enqueuing!");
+            com.enqueue(vec![0x0F; 9]);
+            last_tx = Instant::now();
         }
     }
 }
@@ -84,6 +46,109 @@ enum TcpSpiMsg {
     ReadyState(bool),
     GoState(bool),
     Payload(Vec<u8>),
+}
+
+struct TcpSpiComHL {
+    ll: TcpSpiComLL,
+    outgoing_msgs: VecDeque<Vec<u8>>,
+    incoming_msgs: VecDeque<Vec<u8>>,
+    out_buf: Vec<u8>,
+    in_buf: UnsafeCell<[u8; 256]>,
+    sent_hdr: bool,
+    triggered: bool,
+}
+
+impl TcpSpiComHL {
+    pub fn new(stream: TcpStream) -> Self {
+        TcpSpiComHL {
+            ll: TcpSpiComLL::new(stream),
+            outgoing_msgs: VecDeque::default(),
+            incoming_msgs: VecDeque::default(),
+            out_buf: Vec::new(),
+            in_buf: UnsafeCell::new([0xFFu8; 256]),
+            sent_hdr: false,
+            triggered: false,
+        }
+    }
+
+    pub fn dequeue(&mut self) -> Option<Vec<u8>> {
+        self.incoming_msgs.pop_front()
+    }
+
+    pub fn enqueue(&mut self, msg: Vec<u8>) {
+        self.outgoing_msgs.push_back(msg);
+    }
+
+    pub fn poll(&mut self) -> Result<(), ()> {
+        self.ll.process()?;
+
+        if !self.ll.is_exchange_active().unwrap() {
+            // TODO: We probably also should occasionally just
+            // poll for incoming messages, even when we don't
+            // have any outgoing messages to process
+            if let Some(msg) = self.outgoing_msgs.get(0) {
+                if !self.sent_hdr {
+                    // println!("Starting exchange, header!");
+                    let out_len_bytes = (msg.len() as u32).to_le_bytes();
+
+                    self.out_buf.clear();
+                    self.out_buf.extend_from_slice(&out_len_bytes);
+
+                    self.ll.prepare_exchange(
+                        self.out_buf.as_ptr(),
+                        4,
+                        self.in_buf.get().cast(),
+                        4,
+                    ).unwrap();
+                } else {
+                    // println!("Starting exchange, data!");
+                    self.ll.prepare_exchange(
+                        msg.as_ptr(),
+                        msg.len(),
+                        self.in_buf.get().cast(),
+                        255,
+                    ).unwrap();
+                }
+            }
+        } else {
+            if !self.triggered {
+                if self.ll.is_go_active().unwrap() {
+                    // println!("triggering!");
+                    self.ll.trigger_exchange().unwrap();
+                    self.triggered = true;
+                }
+            } else {
+                if let Ok(false) = self.ll.is_go_active() {
+                    // println!("aborting!");
+                    self.ll.abort_exchange().ok();
+                }
+                match self.ll.complete_exchange(self.sent_hdr) {
+                    Err(_) => {},
+                    Ok(amt) => {
+                        // println!("completing...");
+                        let in_buf = unsafe {
+                            assert!(amt <= 256);
+                            core::slice::from_raw_parts(
+                                self.in_buf.get() as *const u8,
+                                amt,
+                            )
+                        };
+                        // println!("got {:?}!", in_buf);
+                        if self.sent_hdr {
+                            if !in_buf.is_empty() {
+                                self.incoming_msgs.push_back(in_buf.to_vec());
+                            }
+                            let _ = self.outgoing_msgs.pop_front();
+                        }
+                        self.triggered = false;
+                        self.sent_hdr = !self.sent_hdr;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 struct TcpSpiComLL {
@@ -150,19 +215,19 @@ impl TcpSpiComLL {
             core::mem::swap(&mut remainder, &mut self.pending_data);
             let mut payload = remainder;
 
-            println!("TCP: got {:?}", payload);
+            // println!("TCP: got {:?}", payload);
 
             if let Ok(msg) = from_bytes_cobs::<TcpSpiMsg>(&mut payload) {
                 match msg {
                     TcpSpiMsg::GoState(state) => {
-                        println!("Go is now: {}", state);
+                        // println!("Go is now: {}", state);
                         self.go_state = Some(state);
                     }
                     TcpSpiMsg::ReadyState(_) => {
                         panic!("We're a component! No one should be sending us ready state!");
                     }
                     TcpSpiMsg::Payload(payload) => {
-                        println!("Payload!");
+                        // println!("Payload!");
                         assert!(self.incoming_payload.is_none(), "DATA LOSS");
                         self.incoming_payload = Some(payload);
                     }
@@ -280,7 +345,7 @@ impl EncLogicLLComponent for TcpSpiComLL {
 
         let inc = match self.incoming_payload.take() {
             None if !is_go_active => {
-                println!("No go!");
+                // println!("No go!");
                 return Err(SpiError::ArbitratorHungUp);
             }
             None => {
