@@ -7,4 +7,6 @@ members = [
 
     "pc-examples/client-tcp",
     "pc-examples/server-tcp",
+
+    "spi",
 ]
