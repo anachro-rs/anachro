@@ -74,6 +74,9 @@ pub trait EncLogicLLArbitrator {
     /// Set the GO line active (low)
     fn notify_go(&mut self) -> Result<()>;
 
+    /// Set the GO line inactive(high)
+    fn clear_go(&mut self) -> Result<()>;
+
     /// Prepare data to be exchanged. The data MUST not be referenced
     /// until `complete_exchange` or `abort_exchange` has been called.
     ///
@@ -111,17 +114,17 @@ pub trait EncLogicLLArbitrator {
     ///
     /// Use `abort_exchange` to force the exchange to completion even
     /// if it is still in progress.
-    fn complete_exchange(&mut self, clear_go: bool) -> Result<()>;
+    fn complete_exchange(&mut self, clear_go: bool) -> Result<usize>;
 
     /// Stop the `exchange` action immediately
     ///
-    /// Returns `Ok(())` if the exchange had already been completed.
+    /// Returns `Ok(usize)` if the exchange had already been completed.
     ///
     /// In all cases, the GO line will be cleared.
     ///
     /// If the exchange had not yet completed, an Error containing the
     /// number of successfully sent bytes will be returned.
-    fn abort_exchange(&mut self) -> Result<()>;
+    fn abort_exchange(&mut self) -> Result<usize>;
 }
 
 pub trait EncLogicHLArbitrator {

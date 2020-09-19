@@ -36,9 +36,17 @@ struct TcpSpiCom {
     stream: TcpStream,
     go_state: Option<bool>,
     ready_state: bool,
-    outgoing_msgs: VecDeque<Vec<u8>>,
+    outgoing_payloads: VecDeque<Vec<u8>>,
     incoming_msgs: VecDeque<Vec<u8>>,
     pending_data: Vec<u8>,
+    pending_exchange: Option<PendingExchange>,
+}
+
+struct PendingExchange {
+    data_out: *const u8,
+    data_out_len: usize,
+    data_in: *mut u8,
+    data_in_max: usize,
 }
 
 impl TcpSpiCom {
@@ -54,9 +62,10 @@ impl TcpSpiCom {
             stream,
             go_state: None,
             ready_state: false,
-            outgoing_msgs: VecDeque::default(),
+            outgoing_payloads: VecDeque::default(),
             incoming_msgs: VecDeque::default(),
             pending_data: Vec::default(),
+            pending_exchange: None,
         }
     }
 
@@ -106,8 +115,9 @@ impl TcpSpiCom {
             }
         }
 
-        while let Some(msg) = self.outgoing_msgs.pop_back() {
-            self.stream.write_all(&msg).unwrap();
+        while let Some(msg) = self.outgoing_payloads.pop_back() {
+            let wrapped = to_stdvec_cobs(&TcpSpiMsg::Payload(msg)).unwrap();
+            self.stream.write_all(&wrapped).unwrap();
         }
 
         Ok(())
