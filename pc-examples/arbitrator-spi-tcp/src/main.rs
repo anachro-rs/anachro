@@ -18,10 +18,14 @@ use std::time::Duration;
 use serde::{Serialize, Deserialize};
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 
+use core::cell::UnsafeCell;
+
 fn main() {
     // FOR NOW, just accept a single connection.
     // Deal with parallel later
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let out_buf = [0x00u8; 10];
+    let in_buf  = UnsafeCell::new([0xFFu8; 8]);
 
     while let Ok((stream, addr)) = listener.accept() {
         stream.set_nonblocking(true).unwrap();
@@ -29,7 +33,46 @@ fn main() {
         let mut arb = TcpSpiArb::new(stream);
 
         while let Ok(_) = arb.process() {
-            sleep(Duration::from_millis(10));
+            if !arb.is_exchange_active().unwrap() {
+                match arb.is_ready_active() {
+                    Ok(true) => {
+                        println!("Got READY, start exchange!");
+                        arb.prepare_exchange(
+                            out_buf.as_ptr(),
+                            out_buf.len(),
+                            in_buf.get().cast(),
+                            8,
+                        ).unwrap();
+
+                        // TODO: Remove arbitrator trigger - it doesn't get to choose
+                        arb.trigger_exchange().unwrap();
+                    }
+                    Ok(false) if arb.go_state => {
+                        println!("clearing go!");
+                        arb.clear_go().unwrap();
+                    }
+                    _ => {},
+                }
+            } else {
+                if !arb.is_ready_active().unwrap() {
+                    println!("aborting!");
+                    arb.abort_exchange().ok();
+                }
+
+                match arb.complete_exchange(false) {
+                    Err(_) => {},
+                    Ok(amt) => {
+                        let in_buf_inner = unsafe {
+                            assert!(amt <= 8);
+                            core::slice::from_raw_parts(
+                                in_buf.get() as *const u8,
+                                amt,
+                            )
+                        };
+                        println!("got {:?}!", in_buf_inner);
+                    }
+                }
+            }
         }
     }
 }
@@ -110,12 +153,14 @@ impl TcpSpiArb {
             if let Ok(msg) = from_bytes_cobs::<TcpSpiMsg>(&mut payload) {
                 match msg {
                     TcpSpiMsg::ReadyState(state) => {
+                        println!("Ready is now: {}", state);
                         self.ready_state = Some(state);
                     }
                     TcpSpiMsg::GoState(_) => {
                         panic!("We're an arbitrator! No one should tell us Go state!");
                     }
                     TcpSpiMsg::Payload(payload) => {
+                        println!("Payload!");
                         assert!(self.incoming_payload.is_none(), "DATALOSS");
                         self.incoming_payload = Some(payload);
                     }
@@ -141,6 +186,7 @@ impl spi::EncLogicLLArbitrator for TcpSpiArb {
     }
 
     fn clear_go(&mut self) -> SpiResult<()> {
+        println!("cleargo");
         self.go_state = false;
         let msg = TcpSpiMsg::GoState(false);
         let payload = to_stdvec_cobs(&msg).map_err(|_| SpiError::ToDo)?;
@@ -169,6 +215,10 @@ impl spi::EncLogicLLArbitrator for TcpSpiArb {
     }
 
     fn trigger_exchange(&mut self) -> SpiResult<()> {
+        if !(self.is_ready_active()? && self.go_state) {
+            return Err(SpiError::ToDo);
+        }
+
         let exch = match self.pending_exchange.as_ref() {
             Some(ex) => ex,
             None => return Err(SpiError::ToDo),
@@ -189,7 +239,7 @@ impl spi::EncLogicLLArbitrator for TcpSpiArb {
     }
 
     fn is_exchange_active(&self) -> SpiResult<bool> {
-        Ok(self.pending_exchange.is_some() && self.incoming_payload.is_none())
+        Ok(self.pending_exchange.is_some())
     }
 
     fn complete_exchange(&mut self, clear_go: bool) -> SpiResult<usize> {
@@ -235,7 +285,6 @@ impl spi::EncLogicLLArbitrator for TcpSpiArb {
 
         let inc = match self.incoming_payload.take() {
             None => {
-                self.pending_exchange = Some(exch);
                 return Err(SpiError::IncompleteTransaction(0));
             }
             Some(inc) => inc,

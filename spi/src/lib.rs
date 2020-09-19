@@ -1,7 +1,9 @@
+#[derive(Debug)]
 pub enum Error {
     TxQueueFull,
     ToDo, // REMOVEME
     IncompleteTransaction(usize),
+    ArbitratorHungUp,
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -54,7 +56,7 @@ pub trait EncLogicLLComponent {
     ///
     /// Use `abort_exchange` to force the exchange to completion even
     /// if it is still in progress.
-    fn complete_exchange(&mut self, clear_ready: bool) -> Result<()>;
+    fn complete_exchange(&mut self, clear_ready: bool) -> Result<usize>;
 
     /// Stop the `exchange` action immediately
     ///
@@ -64,7 +66,7 @@ pub trait EncLogicLLComponent {
     ///
     /// If the exchange had not yet completed, an Error containing the
     /// number of successfully sent bytes will be returned.
-    fn abort_exchange(&mut self) -> Result<()>;
+    fn abort_exchange(&mut self) -> Result<usize>;
 }
 
 pub trait EncLogicLLArbitrator {

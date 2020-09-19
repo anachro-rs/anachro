@@ -60,7 +60,9 @@ Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
 
 ## 2020-09-19 Stream
 
-* Work on Enc/Logic as a crate
-* Get Enc/Logic working over TCP (SPI simulator)
-* Get Physical layer working (embedded-hal?)
-* Get it working on two actual physical nrf52840s
+* [x] Work on Enc/Logic as a crate
+* [ ] Get Enc/Logic working over TCP (SPI simulator)
+    * [x] Low Level Interface
+    * [ ] High Level Interface
+* [ ] Get Physical layer working (embedded-hal?)
+* [ ] Get it working on two actual physical nrf52840s
