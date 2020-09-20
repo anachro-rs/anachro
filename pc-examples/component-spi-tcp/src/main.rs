@@ -10,27 +10,62 @@ use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 
-use core::cell::UnsafeCell;
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 use serde::{Deserialize, Serialize};
+
+
+use bbqueue::{
+    consts::*,
+    framed::{FrameConsumer, FrameProducer, FrameGrantR, FrameGrantW},
+    ArrayLength, BBBuffer, ConstBBBuffer,
+};
+
+static BB_OUT: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
+static BB_INP: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
+
+struct BBFullDuplex<CT>
+where
+    CT: ArrayLength<u8>,
+{
+    prod: FrameProducer<'static, CT>,
+    cons: FrameConsumer<'static, CT>,
+}
+
+impl<CT> BBFullDuplex<CT>
+where
+    CT: ArrayLength<u8>,
+{
+    fn new(
+        a: &'static BBBuffer<CT>,
+    ) -> Result<BBFullDuplex<CT>, ()> {
+        let (prod, cons) = a.try_split_framed().map_err(drop)?;
+
+        Ok(BBFullDuplex {
+            prod,
+            cons,
+        })
+    }
+}
+
 
 fn main() {
     let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
     println!("Component connected!");
-    let mut com = TcpSpiComHL::new(stream);
+    let mut com = TcpSpiComHL::new(stream, &BB_OUT, &BB_INP).unwrap();
 
     let mut last_tx = Instant::now();
 
     while let Ok(_) = com.poll() {
         while let Some(msg) = com.dequeue() {
-            println!("==> Got HL msg: {:?}", msg);
+            println!("==> Got HL msg: {:?}", &msg[..]);
+            msg.release();
         }
 
         if last_tx.elapsed() > Duration::from_secs(5) {
             println!("==> Enqueuing!");
-            com.enqueue(vec![0x0F; 9]);
+            com.enqueue(&[0x0F; 9]).unwrap();
             last_tx = Instant::now();
         }
     }
@@ -43,35 +78,51 @@ enum TcpSpiMsg {
     Payload(Vec<u8>),
 }
 
-struct TcpSpiComHL {
+struct TcpSpiComHL<CT>
+where
+    CT: ArrayLength<u8>,
+{
     ll: TcpSpiComLL,
-    outgoing_msgs: VecDeque<Vec<u8>>,
-    incoming_msgs: VecDeque<Vec<u8>>,
-    out_buf: Vec<u8>,
-    in_buf: UnsafeCell<[u8; 256]>,
+    outgoing_msgs: BBFullDuplex<CT>,
+    incoming_msgs: BBFullDuplex<CT>,
+    out_grant: Option<FrameGrantR<'static, CT>>,
+    in_grant: Option<FrameGrantW<'static, CT>>,
+    out_buf: [u8; 4],
     sent_hdr: bool,
     triggered: bool,
 }
 
-impl TcpSpiComHL {
-    pub fn new(stream: TcpStream) -> Self {
-        TcpSpiComHL {
+impl<CT> TcpSpiComHL<CT>
+where
+    CT: ArrayLength<u8>
+{
+    pub fn new(
+        stream: TcpStream,
+        outgoing: &'static BBBuffer<CT>,
+        incoming: &'static BBBuffer<CT>
+    ) -> Result<Self, ()> {
+        Ok(TcpSpiComHL {
             ll: TcpSpiComLL::new(stream),
-            outgoing_msgs: VecDeque::default(),
-            incoming_msgs: VecDeque::default(),
-            out_buf: Vec::new(),
-            in_buf: UnsafeCell::new([0xFFu8; 256]),
+            outgoing_msgs: BBFullDuplex::new(outgoing)?,
+            incoming_msgs: BBFullDuplex::new(incoming)?,
+            out_buf: [0u8; 4],
+            out_grant: None,
+            in_grant: None,
             sent_hdr: false,
             triggered: false,
-        }
+        })
     }
 
-    pub fn dequeue(&mut self) -> Option<Vec<u8>> {
-        self.incoming_msgs.pop_front()
+    pub fn dequeue(&mut self) -> Option<FrameGrantR<CT>> {
+        self.incoming_msgs.cons.read()
     }
 
-    pub fn enqueue(&mut self, msg: Vec<u8>) {
-        self.outgoing_msgs.push_back(msg);
+    pub fn enqueue(&mut self, msg: &[u8]) -> Result<(), ()> {
+        let len = msg.len();
+        let mut wgr = self.outgoing_msgs.prod.grant(len).map_err(drop)?;
+        wgr.copy_from_slice(msg);
+        wgr.commit(len);
+        Ok(())
     }
 
     pub fn poll(&mut self) -> Result<(), ()> {
@@ -81,21 +132,60 @@ impl TcpSpiComHL {
             // TODO: We probably also should occasionally just
             // poll for incoming messages, even when we don't
             // have any outgoing messages to process
-            if let Some(msg) = self.outgoing_msgs.get(0) {
+            if let Some(msg) = self.outgoing_msgs.cons.read() {
                 if !self.sent_hdr {
-                    // println!("Starting exchange, header!");
-                    let out_len_bytes = (msg.len() as u32).to_le_bytes();
+                    let igr_ptr;
+                    match self.incoming_msgs.prod.grant(4) {
+                        Ok(mut igr) => {
+                            igr_ptr = igr.as_mut_ptr();
+                            assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
+                            self.in_grant = Some(igr);
+                        }
+                        Err(_) => {
+                            todo!("Handle insufficient size available for incoming");
+                        }
+                    }
+                    // TODO: Do I want to save the grant here? I just need to "peek" to
+                    // get the header values
 
-                    self.out_buf.clear();
-                    self.out_buf.extend_from_slice(&out_len_bytes);
+                    // println!("Starting exchange, header!");
+                    self.out_buf = (msg.len() as u32).to_le_bytes();
 
                     self.ll
-                        .prepare_exchange(self.out_buf.as_ptr(), 4, self.in_buf.get().cast(), 4)
+                        .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
                         .unwrap();
                 } else {
+                    let out_ptr = msg.as_ptr();
+                    let out_len = msg.len();
+                    self.out_grant = Some(msg);
+
+                    let amt = match self.in_grant.take() {
+                        Some(igr) => {
+                            // Note: Drop IGR without commit by taking
+                            assert_eq!(igr.len(), 4, "wrong header igr?");
+                            let mut buf = [0u8; 4];
+                            buf.copy_from_slice(&igr);
+                            u32::from_le_bytes(buf) as usize
+                        }
+                        None => {
+                            panic!("Why don't we have a header igr?");
+                        }
+                    };
+
+                    let in_ptr;
+                    self.in_grant = match self.incoming_msgs.prod.grant(amt) {
+                        Ok(mut igr) => {
+                            in_ptr = igr.as_mut_ptr();
+                            Some(igr)
+                        }
+                        Err(_) => {
+                            todo!("Handle insufficient size of igr")
+                        }
+                    };
+
                     // println!("Starting exchange, data!");
                     self.ll
-                        .prepare_exchange(msg.as_ptr(), msg.len(), self.in_buf.get().cast(), 255)
+                        .prepare_exchange(out_ptr, out_len, in_ptr, amt)
                         .unwrap();
                 }
             }
@@ -114,17 +204,20 @@ impl TcpSpiComHL {
                 match self.ll.complete_exchange(self.sent_hdr) {
                     Err(_) => {}
                     Ok(amt) => {
-                        // println!("completing...");
-                        let in_buf = unsafe {
-                            assert!(amt <= 256);
-                            core::slice::from_raw_parts(self.in_buf.get() as *const u8, amt)
-                        };
                         // println!("got {:?}!", in_buf);
                         if self.sent_hdr {
-                            if !in_buf.is_empty() {
-                                self.incoming_msgs.push_back(in_buf.to_vec());
+                            // Note: relax this for "empty" requests to the arbitrator
+                            assert!(self.in_grant.is_some(), "Why no in grant on completion?");
+
+                            if let Some(igr) = self.in_grant.take() {
+                                if amt != 0 {
+                                    igr.commit(amt);
+                                }
                             }
-                            let _ = self.outgoing_msgs.pop_front();
+
+                            if let Some(ogr) = self.out_grant.take() {
+                                ogr.release();
+                            }
                         }
                         self.triggered = false;
                         self.sent_hdr = !self.sent_hdr;

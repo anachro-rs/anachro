@@ -10,3 +10,4 @@ edition = "2018"
 anachro-spi = { path = "../../spi" }
 serde = { version = "1.0", features = ["derive"] }
 postcard = { version = "0.5.1", features = ["use-std"] }
+bbqueue = "0.4.10"

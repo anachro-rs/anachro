@@ -19,8 +19,8 @@ use bbqueue::{
     ArrayLength, BBBuffer, ConstBBBuffer,
 };
 
-use core::cell::UnsafeCell;
-
+// NOTE: For arbitrator, I will need 2xBBQueues per connection.
+// this might be sort of unwieldy for something like 7-8 connections?
 static BB_OUT: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
 static BB_INP: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
 
@@ -87,12 +87,11 @@ where
     CT: ArrayLength<u8>,
 {
     ll: TcpSpiArbLL,
-    outgoing_msgs: BBFullDuplex<CT>, // replaced by bbq_out
-    incoming_msgs: BBFullDuplex<CT>, // replaced by bbq_in
+    outgoing_msgs: BBFullDuplex<CT>,
+    incoming_msgs: BBFullDuplex<CT>,
     out_grant: Option<FrameGrantR<'static, CT>>,
     in_grant: Option<FrameGrantW<'static, CT>>,
-    out_buf: [u8; 4],                 // *probably* can just be a [u8; 4]?
-    // in_buf: UnsafeCell<[u8; 256]>,    // Replaced by bbq_in::GrantW
+    out_buf: [u8; 4],
     sent_hdr: bool,
 }
 
@@ -189,7 +188,7 @@ where
                         };
 
                         // HACK: Always request one byte so we'll get a grant for a valid pointer/
-                        // to not handle potentially missing data. I might just want to have something
+                        // to not handle potentially None grants. I might just want to have something
                         // else for this case
                         let in_ptr;
                         self.in_grant = match self.incoming_msgs.prod.grant(amt.max(1)) {
@@ -249,12 +248,12 @@ where
 
                         assert!(self.in_grant.is_some(), "Why don't we have an in grant at the end of exchange?");
 
-                        self.in_grant.take().map(|igr| {
+                        if let Some(igr) = self.in_grant.take() {
                             igr.commit(amt);
-                        });
-                        self.out_grant.take().map(|ogr| {
+                        }
+                        if let Some(ogr) = self.out_grant.take() {
                             ogr.release();
-                        });
+                        }
                     }
                     // else NOTE: if we just finished sending the header, DON'T clean up yet, as we
                     // will do that at the start of the next transaction.

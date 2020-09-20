@@ -99,6 +99,7 @@ name = "component-spi-tcp"
 version = "0.1.0"
 dependencies = [
  "anachro-spi",
+ "bbqueue",
  "postcard",
  "serde",
 ]
