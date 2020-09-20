@@ -15,11 +15,14 @@ use serde::{Deserialize, Serialize};
 
 use bbqueue::{
     consts::*,
-    framed::{FrameConsumer, FrameProducer},
+    framed::{FrameConsumer, FrameProducer, FrameGrantR, FrameGrantW},
     ArrayLength, BBBuffer, ConstBBBuffer,
 };
 
 use core::cell::UnsafeCell;
+
+static BB_OUT: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
+static BB_INP: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
 
 struct BBFullDuplex<CT>
 where
@@ -33,11 +36,15 @@ impl<CT> BBFullDuplex<CT>
 where
     CT: ArrayLength<u8>,
 {
-    fn new_two(
+    fn new(
         a: &'static BBBuffer<CT>,
-        b: &'static BBBuffer<CT>,
-    ) -> Result<[BBFullDuplex<CT>; 2], ()> {
-        todo!()
+    ) -> Result<BBFullDuplex<CT>, ()> {
+        let (prod, cons) = a.try_split_framed().map_err(drop)?;
+
+        Ok(BBFullDuplex {
+            prod,
+            cons,
+        })
     }
 }
 
@@ -51,16 +58,17 @@ fn main() {
 
         stream.set_nonblocking(true).unwrap();
         println!("{:?} connected", addr);
-        let mut arb = TcpSpiArbHL::new(stream);
+        let mut arb = TcpSpiArbHL::new(stream, &BB_OUT, &BB_INP).unwrap();
 
         while let Ok(_) = arb.poll() {
             while let Some(msg) = arb.dequeue() {
-                println!("==> Got HL msg: {:?}", msg);
+                println!("==> Got HL msg: {:?}", &msg[..]);
+                msg.release();
             }
 
             if last_tx.elapsed() > Duration::from_secs(10) {
                 println!("==> Enqueuing!");
-                arb.enqueue(vec![0xF0; 6]);
+                arb.enqueue(&[0xF0; 6]).unwrap();
                 last_tx = Instant::now();
             }
         }
@@ -74,33 +82,51 @@ enum TcpSpiMsg {
     Payload(Vec<u8>),
 }
 
-struct TcpSpiArbHL {
+struct TcpSpiArbHL<CT>
+where
+    CT: ArrayLength<u8>,
+{
     ll: TcpSpiArbLL,
-    outgoing_msgs: VecDeque<Vec<u8>>,
-    incoming_msgs: VecDeque<Vec<u8>>,
-    out_buf: Vec<u8>,
-    in_buf: UnsafeCell<[u8; 256]>,
+    outgoing_msgs: BBFullDuplex<CT>, // replaced by bbq_out
+    incoming_msgs: BBFullDuplex<CT>, // replaced by bbq_in
+    out_grant: Option<FrameGrantR<'static, CT>>,
+    in_grant: Option<FrameGrantW<'static, CT>>,
+    out_buf: [u8; 4],                 // *probably* can just be a [u8; 4]?
+    // in_buf: UnsafeCell<[u8; 256]>,    // Replaced by bbq_in::GrantW
     sent_hdr: bool,
 }
 
-impl TcpSpiArbHL {
-    pub fn new(stream: TcpStream) -> Self {
-        TcpSpiArbHL {
+impl<CT> TcpSpiArbHL<CT>
+where
+    CT: ArrayLength<u8>
+{
+    pub fn new(
+        stream: TcpStream,
+        outgoing: &'static BBBuffer<CT>,
+        incoming: &'static BBBuffer<CT>
+    ) -> Result<Self, ()> {
+        Ok(TcpSpiArbHL {
             ll: TcpSpiArbLL::new(stream),
-            outgoing_msgs: VecDeque::default(),
-            incoming_msgs: VecDeque::default(),
-            out_buf: Vec::new(),
-            in_buf: UnsafeCell::new([0xFFu8; 256]),
+            outgoing_msgs: BBFullDuplex::new(outgoing)?,
+            incoming_msgs: BBFullDuplex::new(incoming)?,
+            out_buf: [0u8; 4],
+            out_grant: None,
+            in_grant: None,
             sent_hdr: false,
-        }
+        })
     }
 
-    pub fn dequeue(&mut self) -> Option<Vec<u8>> {
-        self.incoming_msgs.pop_front()
+    pub fn dequeue(&mut self) -> Option<FrameGrantR<CT>> {
+        self.incoming_msgs.cons.read()
     }
 
-    pub fn enqueue(&mut self, msg: Vec<u8>) {
-        self.outgoing_msgs.push_back(msg);
+    // TODO: `enqueue_with` function or something for zero-copy grants
+    pub fn enqueue(&mut self, msg: &[u8]) -> Result<(), ()> {
+        let len = msg.len();
+        let mut wgr = self.outgoing_msgs.prod.grant(len).map_err(drop)?;
+        wgr.copy_from_slice(msg);
+        wgr.commit(len);
+        Ok(())
     }
 
     pub fn poll(&mut self) -> Result<(), ()> {
@@ -111,26 +137,74 @@ impl TcpSpiArbHL {
                 Ok(true) => {
                     if !self.sent_hdr {
                         // println!("Got READY, start header exchange!");
-                        let amt = self.outgoing_msgs.get(0).map(|msg| msg.len()).unwrap_or(0);
-                        let amt_u32 = amt as u32;
+                        assert!(self.out_grant.is_none(), "Why do we have an out grant already?!");
+                        assert!(self.in_grant.is_none(), "Why do we have an in grant already?!");
 
-                        self.out_buf.clear();
-                        self.out_buf.extend(&amt_u32.to_le_bytes());
+                        // This will be a pointer to the incoming grant
+                        let in_ptr;
+
+                        // Note: Hardcoded to 4, as we are expecting a u32
+                        self.in_grant  = Some({
+                            let mut igr = self.incoming_msgs.prod.grant(4).map_err(drop)?;
+                            in_ptr = igr.as_mut_ptr();
+                            igr
+                        });
+                        self.out_grant = self.outgoing_msgs.cons.read();
+
+                        // Fill the output buffer with the size of the next body
+                        self.out_buf = self
+                            .out_grant
+                            .as_ref()
+                            .map(|msg| msg.len() as u32)
+                            .unwrap_or(0)
+                            .to_le_bytes();
 
                         self.ll
                             .prepare_exchange(
                                 self.out_buf.as_ptr(),
-                                core::mem::size_of::<u32>(),
-                                self.in_buf.get().cast(),
+                                self.out_buf.len(),
+                                in_ptr,
                                 4,
                             )
                             .unwrap();
                     } else {
                         // println!("Got READY, start data exchange!");
 
+                        // TODO:
+                        // * Parse the input data into a u32 to get the Component's len
+                        // * Release the incoming grant (we don't want to send u32s to the app)
+                        // * Request a grant that is component_len
+
+                        // Note: This drops igr by taking it out of the option
+                        let amt = if let Some(igr) = self.in_grant.take() {
+                            assert_eq!(igr.len(), 4);
+                            let mut buf = [0u8; 4];
+                            buf.copy_from_slice(&igr);
+                            let amt = u32::from_le_bytes(buf);
+                            amt as usize
+                        } else {
+                            // Why don't we have a grant here?
+                            // TODO: Probably want to drop grants, if any, and abort exch
+                            panic!("logic error: No igr from header rx");
+                        };
+
+                        // HACK: Always request one byte so we'll get a grant for a valid pointer/
+                        // to not handle potentially missing data. I might just want to have something
+                        // else for this case
+                        let in_ptr;
+                        self.in_grant = match self.incoming_msgs.prod.grant(amt.max(1)) {
+                            Ok(mut igr) => {
+                                in_ptr = igr.as_mut_ptr();
+                                Some(igr)
+                            },
+                            Err(_) => {
+                                // TODO: probably want to abort and clear grants
+                                todo!("Handle insufficient size for incoming message")
+                            }
+                        };
+
                         // Do we actually have an outgoing message?
-                        // TODO: Probably unsound if VecDeque can realloc/move!!!
-                        let (ptr, len) = if let Some(msg) = self.outgoing_msgs.get(0) {
+                        let (ptr, len) = if let Some(msg) = self.out_grant.as_ref() {
                             (msg.as_ptr(), msg.len())
                         } else {
                             (self.out_buf.as_ptr(), 0)
@@ -140,8 +214,8 @@ impl TcpSpiArbHL {
                             .prepare_exchange(
                                 ptr,
                                 len,
-                                self.in_buf.get().cast(),
-                                256, // TODO: This should probably be the size of the header
+                                in_ptr,
+                                amt,
                             )
                             .unwrap();
                     }
@@ -158,24 +232,32 @@ impl TcpSpiArbHL {
                 // println!("aborting!");
                 self.ll.abort_exchange().ok();
                 self.sent_hdr = false;
+
+                // Drop grants without comitting.
+                // Do AFTER aborting exchange, to defuse DMA.
+                self.in_grant = None;
+                self.out_grant = None;
             }
 
             match self.ll.complete_exchange(false) {
                 Err(_) => {}
                 Ok(amt) => {
-                    let in_buf_inner = unsafe {
-                        assert!(amt <= 256);
-                        // TODO: Assert == last header?
-                        core::slice::from_raw_parts(self.in_buf.get() as *const u8, amt)
-                    };
+
                     // println!("got {:?}!", in_buf_inner);
 
                     if self.sent_hdr {
-                        if !in_buf_inner.is_empty() {
-                            self.incoming_msgs.push_back(in_buf_inner.to_vec());
-                        }
-                        let _ = self.outgoing_msgs.pop_front();
+
+                        assert!(self.in_grant.is_some(), "Why don't we have an in grant at the end of exchange?");
+
+                        self.in_grant.take().map(|igr| {
+                            igr.commit(amt);
+                        });
+                        self.out_grant.take().map(|ogr| {
+                            ogr.release();
+                        });
                     }
+                    // else NOTE: if we just finished sending the header, DON'T clean up yet, as we
+                    // will do that at the start of the next transaction.
 
                     // If we hadn't sent the header, we just did.
                     // If we have sent the header, we need to for the
