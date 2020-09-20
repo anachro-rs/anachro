@@ -64,5 +64,7 @@ Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
 * [ ] Get Enc/Logic working over TCP (SPI simulator)
     * [x] Low Level Interface
     * [x] High Level Interface
+* Struct or Trait for HL interface?
+* What to do for storage?
 * [ ] Get Physical layer working (embedded-hal?)
 * [ ] Get it working on two actual physical nrf52840s

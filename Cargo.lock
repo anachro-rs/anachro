@@ -57,6 +57,7 @@ name = "arbitrator-spi-tcp"
 version = "0.1.0"
 dependencies = [
  "anachro-spi",
+ "bbqueue",
  "postcard",
  "serde",
 ]
@@ -70,6 +71,15 @@ dependencies = [
  "generic-array 0.12.3",
  "generic-array 0.13.2",
  "stable_deref_trait",
+]
+
+[[package]]
+name = "bbqueue"
+version = "0.4.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e6ffd9a6d04298eb55d5ac6d0fde48c2f991468b5ba8aa263fe2d1ea7288c0a"
+dependencies = [
+ "generic-array 0.13.2",
 ]
 
 [[package]]

@@ -7,7 +7,7 @@ use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use anachro_server::{Broker, Request, Uuid, RESET_MESSAGE, Response};
+use anachro_server::{Broker, Request, Response, Uuid, RESET_MESSAGE};
 
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 
@@ -119,7 +119,8 @@ fn main() {
                                 resp.push(Response {
                                     dest: src,
                                     msg: RESET_MESSAGE,
-                                }).ok();
+                                })
+                                .ok();
                                 resp
                             }
                         };

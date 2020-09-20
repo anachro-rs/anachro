@@ -1,11 +1,6 @@
 #![allow(unused_imports)]
 
-use anachro_spi::{
-    self as spi,
-    EncLogicLLComponent,
-    Error as SpiError,
-    Result as SpiResult,
-};
+use anachro_spi::{self as spi, EncLogicLLComponent, Error as SpiError, Result as SpiResult};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
@@ -15,9 +10,9 @@ use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 
-use serde::{Serialize, Deserialize};
-use postcard::{from_bytes_cobs, to_stdvec_cobs};
 use core::cell::UnsafeCell;
+use postcard::{from_bytes_cobs, to_stdvec_cobs};
+use serde::{Deserialize, Serialize};
 
 fn main() {
     let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
@@ -94,20 +89,14 @@ impl TcpSpiComHL {
                     self.out_buf.clear();
                     self.out_buf.extend_from_slice(&out_len_bytes);
 
-                    self.ll.prepare_exchange(
-                        self.out_buf.as_ptr(),
-                        4,
-                        self.in_buf.get().cast(),
-                        4,
-                    ).unwrap();
+                    self.ll
+                        .prepare_exchange(self.out_buf.as_ptr(), 4, self.in_buf.get().cast(), 4)
+                        .unwrap();
                 } else {
                     // println!("Starting exchange, data!");
-                    self.ll.prepare_exchange(
-                        msg.as_ptr(),
-                        msg.len(),
-                        self.in_buf.get().cast(),
-                        255,
-                    ).unwrap();
+                    self.ll
+                        .prepare_exchange(msg.as_ptr(), msg.len(), self.in_buf.get().cast(), 255)
+                        .unwrap();
                 }
             }
         } else {
@@ -123,15 +112,12 @@ impl TcpSpiComHL {
                     self.ll.abort_exchange().ok();
                 }
                 match self.ll.complete_exchange(self.sent_hdr) {
-                    Err(_) => {},
+                    Err(_) => {}
                     Ok(amt) => {
                         // println!("completing...");
                         let in_buf = unsafe {
                             assert!(amt <= 256);
-                            core::slice::from_raw_parts(
-                                self.in_buf.get() as *const u8,
-                                amt,
-                            )
+                            core::slice::from_raw_parts(self.in_buf.get() as *const u8, amt)
                         };
                         // println!("got {:?}!", in_buf);
                         if self.sent_hdr {
@@ -169,9 +155,7 @@ struct PendingExchange {
 
 impl TcpSpiComLL {
     fn new(mut stream: TcpStream) -> Self {
-        let init_msg = to_stdvec_cobs(
-            &TcpSpiMsg::ReadyState(false)
-        ).unwrap();
+        let init_msg = to_stdvec_cobs(&TcpSpiMsg::ReadyState(false)).unwrap();
 
         // Send init message declaring GO state
         stream.write_all(&init_msg).unwrap();
@@ -197,17 +181,16 @@ impl TcpSpiComLL {
                 }
                 Ok(_) => {
                     break;
-                },
+                }
                 Err(e) if e.kind() == ErrorKind::WouldBlock => {
                     break;
-                },
+                }
                 Err(e) => {
                     eprintln!("TCP Error: {:?}", e);
                     panic!()
                 }
             }
         }
-
 
         // Process any messages
         while let Some(p) = self.pending_data.iter().position(|c| *c == 0x00) {
@@ -249,7 +232,9 @@ impl EncLogicLLComponent for TcpSpiComLL {
         self.ready_state = true;
         let msg = TcpSpiMsg::ReadyState(true);
         let payload = to_stdvec_cobs(&msg).map_err(|_| SpiError::ToDo)?;
-        self.stream.write_all(&payload).map_err(|_| SpiError::ToDo)?;
+        self.stream
+            .write_all(&payload)
+            .map_err(|_| SpiError::ToDo)?;
         Ok(())
     }
 
@@ -258,7 +243,9 @@ impl EncLogicLLComponent for TcpSpiComLL {
         self.ready_state = false;
         let msg = TcpSpiMsg::ReadyState(false);
         let payload = to_stdvec_cobs(&msg).map_err(|_| SpiError::ToDo)?;
-        self.stream.write_all(&payload).map_err(|_| SpiError::ToDo)?;
+        self.stream
+            .write_all(&payload)
+            .map_err(|_| SpiError::ToDo)?;
         Ok(())
     }
 
@@ -305,12 +292,8 @@ impl EncLogicLLComponent for TcpSpiComLL {
         };
 
         // Hello! I am pretending to be DMA!
-        let payload = unsafe {
-            core::slice::from_raw_parts(
-                exch.data_out,
-                exch.data_out_len
-            )
-        }.to_vec();
+        let payload =
+            unsafe { core::slice::from_raw_parts(exch.data_out, exch.data_out_len) }.to_vec();
 
         let msg = to_stdvec_cobs(&TcpSpiMsg::Payload(payload)).map_err(|_| SpiError::ToDo)?;
         self.stream.write_all(&msg).map_err(|_| SpiError::ToDo)?;
@@ -357,12 +340,7 @@ impl EncLogicLLComponent for TcpSpiComLL {
         };
 
         // It's me, DMA!
-        let out_slice = unsafe {
-            core::slice::from_raw_parts_mut(
-                exch.data_in,
-                exch.data_in_max,
-            )
-        };
+        let out_slice = unsafe { core::slice::from_raw_parts_mut(exch.data_in, exch.data_in_max) };
 
         let copy_amt = exch.data_in_max.min(inc.len());
 
@@ -403,12 +381,7 @@ impl EncLogicLLComponent for TcpSpiComLL {
         };
 
         // It's me, DMA!
-        let out_slice = unsafe {
-            core::slice::from_raw_parts_mut(
-                exch.data_in,
-                exch.data_in_max,
-            )
-        };
+        let out_slice = unsafe { core::slice::from_raw_parts_mut(exch.data_in, exch.data_in_max) };
 
         let copy_amt = exch.data_in_max.min(inc.len());
 

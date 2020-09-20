@@ -152,4 +152,3 @@ pub trait EncLogicHLComponent {
 
     fn get_ll<LL: EncLogicLLComponent>(&mut self) -> &mut LL;
 }
-

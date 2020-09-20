@@ -1,11 +1,6 @@
 #![allow(unused_imports)]
 
-use anachro_spi::{
-    self as spi,
-    Error as SpiError,
-    Result as SpiResult,
-    EncLogicLLArbitrator,
-};
+use anachro_spi::{self as spi, EncLogicLLArbitrator, Error as SpiError, Result as SpiResult};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
@@ -13,18 +8,43 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::default::Default;
 use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
-use serde::{Serialize, Deserialize};
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
+use serde::{Deserialize, Serialize};
+
+use bbqueue::{
+    consts::*,
+    framed::{FrameConsumer, FrameProducer},
+    ArrayLength, BBBuffer, ConstBBBuffer,
+};
 
 use core::cell::UnsafeCell;
+
+struct BBFullDuplex<CT>
+where
+    CT: ArrayLength<u8>,
+{
+    prod: FrameProducer<'static, CT>,
+    cons: FrameConsumer<'static, CT>,
+}
+
+impl<CT> BBFullDuplex<CT>
+where
+    CT: ArrayLength<u8>,
+{
+    fn new_two(
+        a: &'static BBBuffer<CT>,
+        b: &'static BBBuffer<CT>,
+    ) -> Result<[BBFullDuplex<CT>; 2], ()> {
+        todo!()
+    }
+}
 
 fn main() {
     // FOR NOW, just accept a single connection.
     // Deal with parallel later
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-
 
     while let Ok((stream, addr)) = listener.accept() {
         let mut last_tx = Instant::now();
@@ -91,22 +111,20 @@ impl TcpSpiArbHL {
                 Ok(true) => {
                     if !self.sent_hdr {
                         // println!("Got READY, start header exchange!");
-                        let amt = self
-                            .outgoing_msgs
-                            .get(0)
-                            .map(|msg| msg.len())
-                            .unwrap_or(0);
+                        let amt = self.outgoing_msgs.get(0).map(|msg| msg.len()).unwrap_or(0);
                         let amt_u32 = amt as u32;
 
                         self.out_buf.clear();
                         self.out_buf.extend(&amt_u32.to_le_bytes());
 
-                        self.ll.prepare_exchange(
-                            self.out_buf.as_ptr(),
-                            core::mem::size_of::<u32>(),
-                            self.in_buf.get().cast(),
-                            4,
-                        ).unwrap();
+                        self.ll
+                            .prepare_exchange(
+                                self.out_buf.as_ptr(),
+                                core::mem::size_of::<u32>(),
+                                self.in_buf.get().cast(),
+                                4,
+                            )
+                            .unwrap();
                     } else {
                         // println!("Got READY, start data exchange!");
 
@@ -118,12 +136,14 @@ impl TcpSpiArbHL {
                             (self.out_buf.as_ptr(), 0)
                         };
 
-                        self.ll.prepare_exchange(
-                            ptr,
-                            len,
-                            self.in_buf.get().cast(),
-                            256, // TODO: This should probably be the size of the header
-                        ).unwrap();
+                        self.ll
+                            .prepare_exchange(
+                                ptr,
+                                len,
+                                self.in_buf.get().cast(),
+                                256, // TODO: This should probably be the size of the header
+                            )
+                            .unwrap();
                     }
                 }
                 Ok(false) if self.ll.go_state => {
@@ -131,7 +151,7 @@ impl TcpSpiArbHL {
                     self.ll.clear_go().unwrap();
                     self.sent_hdr = false;
                 }
-                _ => {},
+                _ => {}
             }
         } else {
             if !self.ll.is_ready_active().unwrap() {
@@ -141,15 +161,12 @@ impl TcpSpiArbHL {
             }
 
             match self.ll.complete_exchange(false) {
-                Err(_) => {},
+                Err(_) => {}
                 Ok(amt) => {
                     let in_buf_inner = unsafe {
                         assert!(amt <= 256);
                         // TODO: Assert == last header?
-                        core::slice::from_raw_parts(
-                            self.in_buf.get() as *const u8,
-                            amt,
-                        )
+                        core::slice::from_raw_parts(self.in_buf.get() as *const u8, amt)
                     };
                     // println!("got {:?}!", in_buf_inner);
 
@@ -189,9 +206,7 @@ struct PendingExchange {
 
 impl TcpSpiArbLL {
     fn new(mut stream: TcpStream) -> Self {
-        let init_msg = to_stdvec_cobs(
-            &TcpSpiMsg::GoState(false)
-        ).unwrap();
+        let init_msg = to_stdvec_cobs(&TcpSpiMsg::GoState(false)).unwrap();
 
         // Send init message declaring GO state
         stream.write_all(&init_msg).unwrap();
@@ -217,17 +232,16 @@ impl TcpSpiArbLL {
                 }
                 Ok(_) => {
                     break;
-                },
+                }
                 Err(e) if e.kind() == ErrorKind::WouldBlock => {
                     break;
-                },
+                }
                 Err(e) => {
                     eprintln!("TCP Error: {:?}", e);
                     panic!()
                 }
             }
         }
-
 
         // Process any messages
         while let Some(p) = self.pending_data.iter().position(|c| *c == 0x00) {
@@ -259,7 +273,7 @@ impl TcpSpiArbLL {
     }
 }
 
-impl spi::EncLogicLLArbitrator for TcpSpiArbLL {
+impl EncLogicLLArbitrator for TcpSpiArbLL {
     fn is_ready_active(&mut self) -> SpiResult<bool> {
         self.ready_state.ok_or(SpiError::ToDo)
     }
@@ -268,7 +282,9 @@ impl spi::EncLogicLLArbitrator for TcpSpiArbLL {
         self.go_state = true;
         let msg = TcpSpiMsg::GoState(true);
         let payload = to_stdvec_cobs(&msg).map_err(|_| SpiError::ToDo)?;
-        self.stream.write_all(&payload).map_err(|_| SpiError::ToDo)?;
+        self.stream
+            .write_all(&payload)
+            .map_err(|_| SpiError::ToDo)?;
         Ok(())
     }
 
@@ -277,7 +293,9 @@ impl spi::EncLogicLLArbitrator for TcpSpiArbLL {
         self.go_state = false;
         let msg = TcpSpiMsg::GoState(false);
         let payload = to_stdvec_cobs(&msg).map_err(|_| SpiError::ToDo)?;
-        self.stream.write_all(&payload).map_err(|_| SpiError::ToDo)?;
+        self.stream
+            .write_all(&payload)
+            .map_err(|_| SpiError::ToDo)?;
         Ok(())
     }
 
@@ -331,23 +349,14 @@ impl spi::EncLogicLLArbitrator for TcpSpiArbLL {
         // by a SPI peripheral as the client clocks out data
 
         // Hello! I am pretending to be DMA!
-        let payload = unsafe {
-            core::slice::from_raw_parts(
-                exch.data_out,
-                exch.data_out_len
-            )
-        }.to_vec();
+        let payload =
+            unsafe { core::slice::from_raw_parts(exch.data_out, exch.data_out_len) }.to_vec();
 
         let msg = to_stdvec_cobs(&TcpSpiMsg::Payload(payload)).map_err(|_| SpiError::ToDo)?;
         self.stream.write_all(&msg).map_err(|_| SpiError::ToDo)?;
 
         // It's me, DMA!
-        let out_slice = unsafe {
-            core::slice::from_raw_parts_mut(
-                exch.data_in,
-                exch.data_in_max,
-            )
-        };
+        let out_slice = unsafe { core::slice::from_raw_parts_mut(exch.data_in, exch.data_in_max) };
 
         let copy_amt = exch.data_in_max.min(inc.len());
 
@@ -376,12 +385,7 @@ impl spi::EncLogicLLArbitrator for TcpSpiArbLL {
         };
 
         // It's me, DMA!
-        let out_slice = unsafe {
-            core::slice::from_raw_parts_mut(
-                exch.data_in,
-                exch.data_in_max,
-            )
-        };
+        let out_slice = unsafe { core::slice::from_raw_parts_mut(exch.data_in, exch.data_in_max) };
 
         let copy_amt = exch.data_in_max.min(inc.len());
 

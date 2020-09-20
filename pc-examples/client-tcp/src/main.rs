@@ -5,7 +5,7 @@ use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use anachro_client::{pubsub_table, Client, ClientIoError, ClientIo, Error};
+use anachro_client::{pubsub_table, Client, ClientIo, ClientIoError, Error};
 use postcard;
 
 use serde::{Deserialize, Serialize};
