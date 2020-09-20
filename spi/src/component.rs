@@ -5,6 +5,17 @@ use bbqueue::{
     ArrayLength, BBBuffer,
 };
 
+use anachro_client::{
+    ClientIo,
+    ClientIoError,
+    anachro_icd::{
+        arbitrator::Arbitrator,
+        component::Component,
+    },
+    from_bytes_cobs,
+    to_slice_cobs,
+};
+
 pub trait EncLogicLLComponent {
     /// Process low level messages
     fn process(&mut self) -> Result<()>;
@@ -86,6 +97,20 @@ where
     out_buf: [u8; 4],
     sent_hdr: bool,
     triggered: bool,
+
+    // NOTE: This is the grant from the incoming queue, used to return
+    // messages up the protocol stack. By holding the grant HERE, we tie
+    // the zero-copy message to the borrow of self, which means that
+    // the higher levels of the stack MUST release the incoming message
+    // before they do anything else with Self. We then just drop the grant
+    // the next time the user asks us to receive a message, which works,
+    // because they've already let go of the reference to the data contained
+    // by the grant (by releasing the borrow of Self).
+    //
+    // I *think* this is the best we can do without radically re-architecting
+    // how the entire stack works, switching to something like heapless::Pool,
+    // or totally reconsidering zero-copy entirely.
+    side_bet: Option<FrameGrantR<'static, CT>>,
 }
 
 impl<LL, CT> EncLogicHLComponent<LL, CT>
@@ -107,10 +132,11 @@ where
             in_grant: None,
             sent_hdr: false,
             triggered: false,
+            side_bet: None,
         })
     }
 
-    pub fn dequeue(&mut self) -> Option<FrameGrantR<CT>> {
+    pub fn dequeue(&mut self) -> Option<FrameGrantR<'static, CT>> {
         self.incoming_msgs.cons.read()
     }
 
@@ -227,16 +253,56 @@ where
     }
 }
 
+impl<LL, CT> ClientIo for EncLogicHLComponent<LL, CT>
+where
+    CT: ArrayLength<u8>,
+    LL: EncLogicLLComponent,
+{
+    /// Attempt to receive one message FROM the Arbitrator/Broker, TO the Client
+    fn recv(&mut self) -> core::result::Result<Option<Arbitrator>, ClientIoError> {
+        self.side_bet = None;
+        match self.dequeue() {
+            Some(mut msg) => {
+                // Set message to automatically release on drop
+                msg.auto_release(true);
+                self.side_bet = Some(msg);
+                let sbr = self.side_bet.as_mut().unwrap();
 
-// pub trait EncLogicHLComponent {
-//     /// Place a message to be sent over SPI
-//     fn enqueue(&mut self, msg: &[u8]) -> Result<()>;
+                // TODO: Cobs encoding at this level is probably not super necessary,
+                // because for now we only handle one message exchange at a time. In the
+                // future, it might be possible to pack multiple datagrams together into
+                // a single frame. But for now, we only handle one.
+                match from_bytes_cobs(sbr) {
+                    Ok(deser) => {
+                        Ok(deser)
+                    }
+                    Err(_) => {
+                        Err(ClientIoError::ParsingError)
+                    }
+                }
+            }
+            None => return Ok(None),
+        }
+    }
 
-//     /// Attempt to receive a message over SPI
-//     fn dequeue<'a>(&mut self, msg_out: &'a mut [u8]) -> Result<Option<&'a [u8]>>;
-
-//     /// Periodic poll. Should be called regularly (or on interrupts?)
-//     fn poll(&mut self) -> Result<()>;
-
-//     fn get_ll<LL: EncLogicLLComponent>(&mut self) -> &mut LL;
-// }
+    /// Attempt to send one message TO the Arbitrator/Broker, FROM the Client
+    fn send(&mut self, msg: &Component) -> core::result::Result<(), ClientIoError> {
+        // HACK: Actual sizing. /4 is based on nothing actually
+        match self.outgoing_msgs.prod.grant(CT::to_usize() / 4) {
+            Ok(mut wgr) => {
+                match to_slice_cobs(msg, &mut wgr) {
+                    Ok(amt) => {
+                        let len = amt.len();
+                        wgr.commit(len);
+                        Ok(())
+                    }
+                    Err(_e) => {
+                        // TODO: See hack above, might not really be a parsing error
+                        Err(ClientIoError::ParsingError)
+                    }
+                }
+            }
+            Err(_e) => Err(ClientIoError::OutputFull),
+        }
+    }
+}

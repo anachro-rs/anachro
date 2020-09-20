@@ -10,6 +10,9 @@ edition = "2018"
 anachro-icd = { path = "../../crates/icd" }
 anachro-client = { path = "../../crates/client" }
 serde = "1.0.115"
+anachro-spi = { path = "../../spi", features = ["tcp"] }
+bbqueue = "0.4.10"
+
 
 [dependencies.postcard]
 version = "0.5.1"

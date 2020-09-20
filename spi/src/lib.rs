@@ -6,6 +6,9 @@ use bbqueue::{
 pub mod component;
 pub mod arbitrator;
 
+#[cfg(feature = "tcp")]
+pub mod tcp;
+
 #[derive(Debug)]
 pub enum Error {
     TxQueueFull,

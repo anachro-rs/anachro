@@ -10,50 +10,19 @@ use postcard;
 
 use serde::{Deserialize, Serialize};
 
-struct TcpAnachro {
-    stream: TcpStream,
-    scratch: Vec<u8>,
-    current: Option<Vec<u8>>,
-}
+use anachro_spi::{
+    tcp::TcpSpiComLL,
+    component::EncLogicHLComponent,
+};
 
-impl ClientIo for TcpAnachro {
-    fn recv(&mut self) -> Result<Option<Arbitrator>, ClientIoError> {
-        let mut scratch = [0u8; 1024];
+use bbqueue::{
+    ConstBBBuffer,
+    BBBuffer,
+    consts::*,
+};
 
-        loop {
-            match self.stream.read(&mut scratch) {
-                Ok(n) if n > 0 => {
-                    self.scratch.extend_from_slice(&scratch[..n]);
-
-                    if let Some(p) = self.scratch.iter().position(|c| *c == 0x00) {
-                        let mut remainder = self.scratch.split_off(p + 1);
-                        core::mem::swap(&mut remainder, &mut self.scratch);
-                        self.current = Some(remainder);
-
-                        if let Some(ref mut payload) = self.current {
-                            if let Ok(msg) = from_bytes_cobs::<Arbitrator>(payload.as_mut_slice()) {
-                                println!("GIVING: {:?}", msg);
-                                return Ok(Some(msg));
-                            }
-                        }
-
-                        return Err(ClientIoError::ParsingError);
-                    }
-                }
-                Ok(_) => return Ok(None),
-                Err(_) => return Ok(None),
-            }
-        }
-    }
-    fn send(&mut self, msg: &Component) -> Result<(), ClientIoError> {
-        println!("SENDING: {:?}", msg);
-        let ser = to_stdvec_cobs(msg).map_err(|_| ClientIoError::ParsingError)?;
-        self.stream
-            .write_all(&ser)
-            .map_err(|_| ClientIoError::OutputFull)?;
-        Ok(())
-    }
-}
+static BUF_OUT: BBBuffer<U4096> = BBBuffer( ConstBBBuffer::new() );
+static BUF_INP: BBBuffer<U4096> = BBBuffer( ConstBBBuffer::new() );
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
@@ -78,11 +47,11 @@ fn main() {
     let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
-    let mut cio = TcpAnachro {
-        stream,
-        scratch: Vec::new(),
-        current: None,
-    };
+    let mut cio = EncLogicHLComponent::new(
+        TcpSpiComLL::new(stream),
+        &BUF_OUT,
+        &BUF_INP,
+    ).unwrap();
 
     // name: &str,
     // version: Version,
@@ -106,6 +75,10 @@ fn main() {
     );
 
     while !client.is_connected() {
+        // AJM: We shouldn't have to manually poll the IO like this
+        cio.poll().unwrap(); // TODO!
+        // AJM: We shouldn't have to manually poll the IO like this
+
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => println!("Got: {:?}", msg),
             Ok(None) => {}
@@ -121,6 +94,7 @@ fn main() {
     let mut last_tx = Instant::now();
 
     while ctr < 10 {
+        cio.poll().unwrap();
         if last_tx.elapsed() >= Duration::from_secs(2) {
             last_tx = Instant::now();
             ctr += 1;
