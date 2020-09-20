@@ -10,19 +10,12 @@ use postcard;
 
 use serde::{Deserialize, Serialize};
 
-use anachro_spi::{
-    tcp::TcpSpiComLL,
-    component::EncLogicHLComponent,
-};
+use anachro_spi::{component::EncLogicHLComponent, tcp::TcpSpiComLL};
 
-use bbqueue::{
-    ConstBBBuffer,
-    BBBuffer,
-    consts::*,
-};
+use bbqueue::{consts::*, BBBuffer, ConstBBBuffer};
 
-static BUF_OUT: BBBuffer<U4096> = BBBuffer( ConstBBBuffer::new() );
-static BUF_INP: BBBuffer<U4096> = BBBuffer( ConstBBBuffer::new() );
+static BUF_OUT: BBBuffer<U4096> = BBBuffer(ConstBBBuffer::new());
+static BUF_INP: BBBuffer<U4096> = BBBuffer(ConstBBBuffer::new());
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
@@ -47,11 +40,7 @@ fn main() {
     let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
-    let mut cio = EncLogicHLComponent::new(
-        TcpSpiComLL::new(stream),
-        &BUF_OUT,
-        &BUF_INP,
-    ).unwrap();
+    let mut cio = EncLogicHLComponent::new(TcpSpiComLL::new(stream), &BUF_OUT, &BUF_INP).unwrap();
 
     // name: &str,
     // version: Version,
@@ -77,7 +66,7 @@ fn main() {
     while !client.is_connected() {
         // AJM: We shouldn't have to manually poll the IO like this
         cio.poll().unwrap(); // TODO!
-        // AJM: We shouldn't have to manually poll the IO like this
+                             // AJM: We shouldn't have to manually poll the IO like this
 
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => println!("Got: {:?}", msg),
