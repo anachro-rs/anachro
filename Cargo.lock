@@ -51,6 +51,9 @@ dependencies = [
 [[package]]
 name = "anachro-spi"
 version = "0.1.0"
+dependencies = [
+ "bbqueue",
+]
 
 [[package]]
 name = "arbitrator-spi-tcp"

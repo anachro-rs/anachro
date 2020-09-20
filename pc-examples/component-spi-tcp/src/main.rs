@@ -1,6 +1,11 @@
 #![allow(unused_imports)]
 
-use anachro_spi::{self as spi, EncLogicLLComponent, Error as SpiError, Result as SpiResult};
+use anachro_spi::{
+    self as spi,
+    Error as SpiError,
+    Result as SpiResult,
+    component::EncLogicLLComponent,
+};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
