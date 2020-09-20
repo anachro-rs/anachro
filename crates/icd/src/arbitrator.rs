@@ -47,6 +47,43 @@ pub enum Arbitrator<'a> {
     Mailbox,
 }
 
+// // UGH
+// impl<'a> Arbitrator<'a> {
+//     fn to_owned(&self) -> Arbitrator<'static> {
+//         match self {
+//             Arbitrator::Control(ctrl) => {
+//                 Arbitrator::Control((*ctrl).clone())
+//             },
+//             Arbitrator::Mailbox => Arbitrator::Mailbox,
+//             Arbitrator::ObjStore => Arbitrator::ObjStore,
+//             Arbitrator::PubSub(res) => {
+//                 match res {
+//                     Ok(msg) => {
+//                         match msg {
+//                             PubSubResponse::SubAck { path } => {
+//                                 match path {
+//                                     PubSubPath::Long(mng) => Arbitrator::PubSub(Ok(PubSubResponse::SubAck { path: PubSubPath::Long(mng.try_to_owned().unwrap()) })),
+//                                     PubSubPath::Short(id) => Arbitrator::PubSub(Ok(PubSubResponse::SubAck { path: PubSubPath::Short(*id) })),
+//                                 }
+//                             }
+//                             PubSubResponse::SubMsg(msg) => {
+//                                 Arbitrator::PubSub(Ok(PubSubResponse::SubMsg(SubMsg {
+//                                     path: match msg.path {
+//                                         PubSubPath::Long(mng) => PubSubPath::Long(mng.try_to_owned().unwrap()),
+//                                         PubSubPath::Short(id) => PubSubPath::Short(id),
+//                                     },
+//                                     payload: msg.payload, // :(((((((
+//                                 })))
+//                             }
+//                         }
+//                     },
+//                     Err(e) => Arbitrator::PubSub(Err(*e)),
+//                 }
+//             },
+//         }
+//     }
+// }
+
 /// An Arbitrator Response to a Pub/Sub message
 ///
 /// These are any Arbitrator -> Client relevant messages
@@ -90,7 +127,7 @@ pub struct SubMsg<'a> {
 /// This is the 'control channel', used for establishing
 /// and managing connections between the Arbitrator and
 /// Client(s).
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Control {
     /// Sequence Number
     ///
@@ -108,7 +145,7 @@ pub struct Control {
 /// Control Response
 ///
 /// A successful response to a Client's request
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
 pub enum ControlResponse {
     /// The client/component has registered
     ComponentRegistration(Uuid),
@@ -118,14 +155,14 @@ pub enum ControlResponse {
 }
 
 /// Control Message Errors
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
 pub enum ControlError {
     NoWildcardsInShorts,
     ResetConnection,
 }
 
 /// Publish/Subscribe Errors
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
 pub enum PubSubError {}
 
 #[cfg(test)]

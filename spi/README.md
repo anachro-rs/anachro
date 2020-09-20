@@ -64,5 +64,43 @@ Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
 * [ ] Get Enc/Logic working over TCP (SPI simulator)
     * [x] Low Level Interface
     * [x] High Level Interface
+* Struct or Trait for HL interface?
+* What to do for storage?
 * [ ] Get Physical layer working (embedded-hal?)
 * [ ] Get it working on two actual physical nrf52840s
+
+# Thoughts on Network Layers
+
+
+```
+6. Application:  [ Application Data                                   ]
+5. Routing:      [ Routing                                            ]
+4. Client:       [ Anachro Session State                              ]
+3. ClientIo:     [ Anachro ICD Data Types - Anachro Protocol          ]
+2. Enc/Logic:    [ Serde/Postcard Encoded Data                        ]
+1. Enc     :     [ ?COBS Encoded Data?   ][    State Logic            ] **** first
+0. Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
+
+TODO: Do these match?
+
+
+6: [ ?????? ]           User Applications
+       ^
+       v
+5: [ router ]           Logical Topics/App Protocol
+       ^
+       v
+4: [ struct ]           (Client)
+       ^
+       v
+3: [ trait  ]           (ClientIo)
+       ^
+       v
+2: [ struct ]           (EncLogicHLComponent)
+       ^
+       v
+1: [ trait  ]           (EncLogicLLComponent)
+       ^
+       v
+0: [ struct ]           (TCPSpiClient, concrete protocol layer)
+```

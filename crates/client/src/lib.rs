@@ -11,7 +11,7 @@ pub use {
         table::{Table, TableError},
     },
     anachro_icd::{self, arbitrator::SubMsg, ManagedString, Path, PubSubPath, Version},
-    postcard::{from_bytes, to_slice},
+    postcard::{from_bytes, to_slice, from_bytes_cobs, to_slice_cobs},
 };
 
 mod client;
