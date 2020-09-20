@@ -1,6 +1,17 @@
-use crate::Result;
+use crate::{Result, BBFullDuplex};
+
+use bbqueue::{
+    framed::{FrameGrantR, FrameGrantW},
+    ArrayLength, BBBuffer,
+};
 
 pub trait EncLogicLLComponent {
+    /// Process low level messages
+    fn process(&mut self) -> Result<()>;
+
+    /// Is the Component requesting a transaction?
+    fn is_ready_active(&mut self) -> Result<bool>;
+
     /// Set the READY line low (active)
     fn notify_ready(&mut self) -> Result<()>;
 
@@ -61,15 +72,171 @@ pub trait EncLogicLLComponent {
     fn abort_exchange(&mut self) -> Result<usize>;
 }
 
-pub trait EncLogicHLComponent {
-    /// Place a message to be sent over SPI
-    fn enqueue(&mut self, msg: &[u8]) -> Result<()>;
 
-    /// Attempt to receive a message over SPI
-    fn dequeue<'a>(&mut self, msg_out: &'a mut [u8]) -> Result<Option<&'a [u8]>>;
-
-    /// Periodic poll. Should be called regularly (or on interrupts?)
-    fn poll(&mut self) -> Result<()>;
-
-    fn get_ll<LL: EncLogicLLComponent>(&mut self) -> &mut LL;
+pub struct EncLogicHLComponent<LL, CT>
+where
+    CT: ArrayLength<u8>,
+    LL: EncLogicLLComponent,
+{
+    ll: LL,
+    outgoing_msgs: BBFullDuplex<CT>,
+    incoming_msgs: BBFullDuplex<CT>,
+    out_grant: Option<FrameGrantR<'static, CT>>,
+    in_grant: Option<FrameGrantW<'static, CT>>,
+    out_buf: [u8; 4],
+    sent_hdr: bool,
+    triggered: bool,
 }
+
+impl<LL, CT> EncLogicHLComponent<LL, CT>
+where
+    CT: ArrayLength<u8>,
+    LL: EncLogicLLComponent,
+{
+    pub fn new(
+        ll: LL,
+        outgoing: &'static BBBuffer<CT>,
+        incoming: &'static BBBuffer<CT>
+    ) -> Result<Self> {
+        Ok(EncLogicHLComponent {
+            ll,
+            outgoing_msgs: BBFullDuplex::new(outgoing)?,
+            incoming_msgs: BBFullDuplex::new(incoming)?,
+            out_buf: [0u8; 4],
+            out_grant: None,
+            in_grant: None,
+            sent_hdr: false,
+            triggered: false,
+        })
+    }
+
+    pub fn dequeue(&mut self) -> Option<FrameGrantR<CT>> {
+        self.incoming_msgs.cons.read()
+    }
+
+    pub fn enqueue(&mut self, msg: &[u8]) -> Result<()> {
+        let len = msg.len();
+        let mut wgr = self.outgoing_msgs.prod.grant(len)?;
+        wgr.copy_from_slice(msg);
+        wgr.commit(len);
+        Ok(())
+    }
+
+    pub fn poll(&mut self) -> Result<()> {
+        self.ll.process()?;
+
+        if !self.ll.is_exchange_active().unwrap() {
+            // TODO: We probably also should occasionally just
+            // poll for incoming messages, even when we don't
+            // have any outgoing messages to process
+            if let Some(msg) = self.outgoing_msgs.cons.read() {
+                if !self.sent_hdr {
+                    let igr_ptr;
+                    match self.incoming_msgs.prod.grant(4) {
+                        Ok(mut igr) => {
+                            igr_ptr = igr.as_mut_ptr();
+                            assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
+                            self.in_grant = Some(igr);
+                        }
+                        Err(_) => {
+                            todo!("Handle insufficient size available for incoming");
+                        }
+                    }
+                    // TODO: Do I want to save the grant here? I just need to "peek" to
+                    // get the header values
+
+                    // println!("Starting exchange, header!");
+                    self.out_buf = (msg.len() as u32).to_le_bytes();
+
+                    self.ll
+                        .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
+                        .unwrap();
+                } else {
+                    let out_ptr = msg.as_ptr();
+                    let out_len = msg.len();
+                    self.out_grant = Some(msg);
+
+                    let amt = match self.in_grant.take() {
+                        Some(igr) => {
+                            // Note: Drop IGR without commit by taking
+                            assert_eq!(igr.len(), 4, "wrong header igr?");
+                            let mut buf = [0u8; 4];
+                            buf.copy_from_slice(&igr);
+                            u32::from_le_bytes(buf) as usize
+                        }
+                        None => {
+                            panic!("Why don't we have a header igr?");
+                        }
+                    };
+
+                    let in_ptr;
+                    self.in_grant = match self.incoming_msgs.prod.grant(amt) {
+                        Ok(mut igr) => {
+                            in_ptr = igr.as_mut_ptr();
+                            Some(igr)
+                        }
+                        Err(_) => {
+                            todo!("Handle insufficient size of igr")
+                        }
+                    };
+
+                    // println!("Starting exchange, data!");
+                    self.ll
+                        .prepare_exchange(out_ptr, out_len, in_ptr, amt)
+                        .unwrap();
+                }
+            }
+        } else {
+            if !self.triggered {
+                if self.ll.is_go_active().unwrap() {
+                    // println!("triggering!");
+                    self.ll.trigger_exchange().unwrap();
+                    self.triggered = true;
+                }
+            } else {
+                if let Ok(false) = self.ll.is_go_active() {
+                    // println!("aborting!");
+                    self.ll.abort_exchange().ok();
+                }
+                match self.ll.complete_exchange(self.sent_hdr) {
+                    Err(_) => {}
+                    Ok(amt) => {
+                        // println!("got {:?}!", in_buf);
+                        if self.sent_hdr {
+                            // Note: relax this for "empty" requests to the arbitrator
+                            assert!(self.in_grant.is_some(), "Why no in grant on completion?");
+
+                            if let Some(igr) = self.in_grant.take() {
+                                if amt != 0 {
+                                    igr.commit(amt);
+                                }
+                            }
+
+                            if let Some(ogr) = self.out_grant.take() {
+                                ogr.release();
+                            }
+                        }
+                        self.triggered = false;
+                        self.sent_hdr = !self.sent_hdr;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+
+// pub trait EncLogicHLComponent {
+//     /// Place a message to be sent over SPI
+//     fn enqueue(&mut self, msg: &[u8]) -> Result<()>;
+
+//     /// Attempt to receive a message over SPI
+//     fn dequeue<'a>(&mut self, msg_out: &'a mut [u8]) -> Result<Option<&'a [u8]>>;
+
+//     /// Periodic poll. Should be called regularly (or on interrupts?)
+//     fn poll(&mut self) -> Result<()>;
+
+//     fn get_ll<LL: EncLogicLLComponent>(&mut self) -> &mut LL;
+// }

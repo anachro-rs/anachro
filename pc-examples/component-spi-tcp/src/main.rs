@@ -4,7 +4,7 @@ use anachro_spi::{
     self as spi,
     Error as SpiError,
     Result as SpiResult,
-    component::EncLogicLLComponent,
+    component::{EncLogicLLComponent, EncLogicHLComponent},
 };
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
@@ -28,37 +28,16 @@ use bbqueue::{
 static BB_OUT: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
 static BB_INP: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
 
-struct BBFullDuplex<CT>
-where
-    CT: ArrayLength<u8>,
-{
-    prod: FrameProducer<'static, CT>,
-    cons: FrameConsumer<'static, CT>,
-}
-
-impl<CT> BBFullDuplex<CT>
-where
-    CT: ArrayLength<u8>,
-{
-    fn new(
-        a: &'static BBBuffer<CT>,
-    ) -> Result<BBFullDuplex<CT>, ()> {
-        let (prod, cons) = a.try_split_framed().map_err(drop)?;
-
-        Ok(BBFullDuplex {
-            prod,
-            cons,
-        })
-    }
-}
-
-
 fn main() {
     let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
     println!("Component connected!");
-    let mut com = TcpSpiComHL::new(stream, &BB_OUT, &BB_INP).unwrap();
+    let mut com = EncLogicHLComponent::new(
+        TcpSpiComLL::new(stream),
+        &BB_OUT,
+        &BB_INP
+    ).unwrap();
 
     let mut last_tx = Instant::now();
 
@@ -81,158 +60,6 @@ enum TcpSpiMsg {
     ReadyState(bool),
     GoState(bool),
     Payload(Vec<u8>),
-}
-
-struct TcpSpiComHL<CT>
-where
-    CT: ArrayLength<u8>,
-{
-    ll: TcpSpiComLL,
-    outgoing_msgs: BBFullDuplex<CT>,
-    incoming_msgs: BBFullDuplex<CT>,
-    out_grant: Option<FrameGrantR<'static, CT>>,
-    in_grant: Option<FrameGrantW<'static, CT>>,
-    out_buf: [u8; 4],
-    sent_hdr: bool,
-    triggered: bool,
-}
-
-impl<CT> TcpSpiComHL<CT>
-where
-    CT: ArrayLength<u8>
-{
-    pub fn new(
-        stream: TcpStream,
-        outgoing: &'static BBBuffer<CT>,
-        incoming: &'static BBBuffer<CT>
-    ) -> Result<Self, ()> {
-        Ok(TcpSpiComHL {
-            ll: TcpSpiComLL::new(stream),
-            outgoing_msgs: BBFullDuplex::new(outgoing)?,
-            incoming_msgs: BBFullDuplex::new(incoming)?,
-            out_buf: [0u8; 4],
-            out_grant: None,
-            in_grant: None,
-            sent_hdr: false,
-            triggered: false,
-        })
-    }
-
-    pub fn dequeue(&mut self) -> Option<FrameGrantR<CT>> {
-        self.incoming_msgs.cons.read()
-    }
-
-    pub fn enqueue(&mut self, msg: &[u8]) -> Result<(), ()> {
-        let len = msg.len();
-        let mut wgr = self.outgoing_msgs.prod.grant(len).map_err(drop)?;
-        wgr.copy_from_slice(msg);
-        wgr.commit(len);
-        Ok(())
-    }
-
-    pub fn poll(&mut self) -> Result<(), ()> {
-        self.ll.process()?;
-
-        if !self.ll.is_exchange_active().unwrap() {
-            // TODO: We probably also should occasionally just
-            // poll for incoming messages, even when we don't
-            // have any outgoing messages to process
-            if let Some(msg) = self.outgoing_msgs.cons.read() {
-                if !self.sent_hdr {
-                    let igr_ptr;
-                    match self.incoming_msgs.prod.grant(4) {
-                        Ok(mut igr) => {
-                            igr_ptr = igr.as_mut_ptr();
-                            assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
-                            self.in_grant = Some(igr);
-                        }
-                        Err(_) => {
-                            todo!("Handle insufficient size available for incoming");
-                        }
-                    }
-                    // TODO: Do I want to save the grant here? I just need to "peek" to
-                    // get the header values
-
-                    // println!("Starting exchange, header!");
-                    self.out_buf = (msg.len() as u32).to_le_bytes();
-
-                    self.ll
-                        .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
-                        .unwrap();
-                } else {
-                    let out_ptr = msg.as_ptr();
-                    let out_len = msg.len();
-                    self.out_grant = Some(msg);
-
-                    let amt = match self.in_grant.take() {
-                        Some(igr) => {
-                            // Note: Drop IGR without commit by taking
-                            assert_eq!(igr.len(), 4, "wrong header igr?");
-                            let mut buf = [0u8; 4];
-                            buf.copy_from_slice(&igr);
-                            u32::from_le_bytes(buf) as usize
-                        }
-                        None => {
-                            panic!("Why don't we have a header igr?");
-                        }
-                    };
-
-                    let in_ptr;
-                    self.in_grant = match self.incoming_msgs.prod.grant(amt) {
-                        Ok(mut igr) => {
-                            in_ptr = igr.as_mut_ptr();
-                            Some(igr)
-                        }
-                        Err(_) => {
-                            todo!("Handle insufficient size of igr")
-                        }
-                    };
-
-                    // println!("Starting exchange, data!");
-                    self.ll
-                        .prepare_exchange(out_ptr, out_len, in_ptr, amt)
-                        .unwrap();
-                }
-            }
-        } else {
-            if !self.triggered {
-                if self.ll.is_go_active().unwrap() {
-                    // println!("triggering!");
-                    self.ll.trigger_exchange().unwrap();
-                    self.triggered = true;
-                }
-            } else {
-                if let Ok(false) = self.ll.is_go_active() {
-                    // println!("aborting!");
-                    self.ll.abort_exchange().ok();
-                }
-                match self.ll.complete_exchange(self.sent_hdr) {
-                    Err(_) => {}
-                    Ok(amt) => {
-                        // println!("got {:?}!", in_buf);
-                        if self.sent_hdr {
-                            // Note: relax this for "empty" requests to the arbitrator
-                            assert!(self.in_grant.is_some(), "Why no in grant on completion?");
-
-                            if let Some(igr) = self.in_grant.take() {
-                                if amt != 0 {
-                                    igr.commit(amt);
-                                }
-                            }
-
-                            if let Some(ogr) = self.out_grant.take() {
-                                ogr.release();
-                            }
-                        }
-                        self.triggered = false;
-                        self.sent_hdr = !self.sent_hdr;
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
 }
 
 struct TcpSpiComLL {
@@ -267,8 +94,11 @@ impl TcpSpiComLL {
             pending_exchange: None,
         }
     }
+}
 
-    fn process(&mut self) -> Result<(), ()> {
+impl EncLogicLLComponent for TcpSpiComLL {
+
+    fn process(&mut self) -> SpiResult<()> {
         let mut buf = [0u8; 1024];
 
         // Receive incoming messages
@@ -318,9 +148,11 @@ impl TcpSpiComLL {
 
         Ok(())
     }
-}
 
-impl EncLogicLLComponent for TcpSpiComLL {
+    fn is_ready_active(&mut self) -> SpiResult<bool> {
+        Ok(self.ready_state)
+    }
+
     fn is_go_active(&mut self) -> SpiResult<bool> {
         self.go_state.ok_or(SpiError::ToDo)
     }
