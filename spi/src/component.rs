@@ -110,7 +110,7 @@ where
     // I *think* this is the best we can do without radically re-architecting
     // how the entire stack works, switching to something like heapless::Pool,
     // or totally reconsidering zero-copy entirely.
-    side_bet: Option<FrameGrantR<'static, CT>>,
+    current_grant: Option<FrameGrantR<'static, CT>>,
 }
 
 impl<LL, CT> EncLogicHLComponent<LL, CT>
@@ -132,7 +132,7 @@ where
             in_grant: None,
             sent_hdr: false,
             triggered: false,
-            side_bet: None,
+            current_grant: None,
         })
     }
 
@@ -260,13 +260,18 @@ where
 {
     /// Attempt to receive one message FROM the Arbitrator/Broker, TO the Client
     fn recv(&mut self) -> core::result::Result<Option<Arbitrator>, ClientIoError> {
-        self.side_bet = None;
+        // Note: This is fine because we've made the grant (if any) auto-release,
+        // so the data will be released on drop.
+        //
+        // Todo: In the future I wonder if I can make this drop happen sooner,
+        // e.g. when the borrow of &self is released, to free up space faster
+        self.current_grant = None;
         match self.dequeue() {
             Some(mut msg) => {
                 // Set message to automatically release on drop
                 msg.auto_release(true);
-                self.side_bet = Some(msg);
-                let sbr = self.side_bet.as_mut().unwrap();
+                self.current_grant = Some(msg);
+                let sbr = self.current_grant.as_mut().unwrap();
 
                 // TODO: Cobs encoding at this level is probably not super necessary,
                 // because for now we only handle one message exchange at a time. In the

@@ -104,3 +104,16 @@ TODO: Do these match?
        v
 0: [ struct ]           (TCPSpiClient, concrete protocol layer)
 ```
+
+# 2020-09-26 notes
+
+* I need to figure out how to "plug in" the TCP impls
+  * Right now Client/Component has a good `ClientIo` trait, I don't think the arb has that
+  * How can I trait-ify the client impl?
+    * I need some kind of "inversion of control" - the server should probably own an IO provider
+    * The client might want to own it, but I actually DON'T want that for the arbitrator, because it might have multiple IO transports, like ESB, SPI, UART, ETH, etc. Unless I expect people to impl their own wrapper struct that contains all of these? That might be possible, but for now, just passing in the ClientIO might just be easier.
+    * I wonder if it would make lifetimes easier to just own the ClientIo. Maybe an experiment for another day.
+* Once I have something like a `ServerIo` trait, I can provide an impl for TCP SPI
+* Once that works, I should start impl'ing the SPI arbitrator for nrf52 (and maybe embedded-hal) SPI interfaces
+  * Probably SPI controller can be embedded-hal, and get nrf52 for free
+  * There aren't any SPI peripheral traits, so that's probably going to be direct for now

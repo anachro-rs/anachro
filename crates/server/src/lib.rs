@@ -10,6 +10,7 @@ use {
         component::{
             Component, ComponentInfo, Control, ControlType, PubSub, PubSubShort, PubSubType,
         },
+        ManagedString,
     },
     core::default::Default,
     heapless::{consts, Vec},
@@ -44,6 +45,7 @@ pub enum ServerError {
     ConnectionError,
     ResourcesExhausted,
     UnknownShortcode,
+    InternalError,
 }
 
 pub const RESET_MESSAGE: Arbitrator = Arbitrator::Control(AControl {
@@ -121,41 +123,59 @@ impl Broker {
     /// that client to force them to reconnect. You may also want to `remove_client`
     /// or `reset_client`, depending on the situation. This will hopefully be handled
     /// automatically in the future.
-    pub fn process_msg<'a, 'b: 'a>(
-        &'b mut self,
-        req: &'a Request<'a>,
-    ) -> Result<Vec<Response<'a>, consts::U8>, ServerError> {
-        let mut responses = Vec::new();
+    pub fn process_msg<'req, 'sio, 'me: 'req, SI: ServerIoIn, SO: ServerIoOut<'req>>(
+        &'me mut self,
+        sio_in: &'req mut SI,
+        sio_out: &'sio mut SO,
+    ) -> Result<(), ServerError> {
+        let Request {
+            source,
+            msg,
+        } = match sio_in.recv() {
+            Ok(Some(req)) => req,
+            Ok(None) => return Ok(()),
+            Err(e) => {
+                // TODO: Actual error handling
+                match e {
+                    ServerIoError::ToDo => {
+                        // TODO: This is probably not always right
+                        return Err(ServerError::ClientDisconnected);
+                    }
+                }
+            }
+        };
 
-        match &req.msg {
+        match msg {
             Component::Control(ctrl) => {
-                let client = self.client_by_id_mut(&req.source)?;
+                let client = self.client_by_id_mut(&source)?;
 
                 if let Some(msg) = client.process_control(&ctrl)? {
-                    responses
-                        .push(msg)
+                    sio_out
+                        .push_response(msg)
                         .map_err(|_| ServerError::ResourcesExhausted)?;
                 }
             }
-            Component::PubSub(PubSub { ref path, ref ty }) => match ty {
-                PubSubType::Pub { ref payload } => {
-                    responses = self.process_publish(path, payload, &req.source)?;
-                }
-                PubSubType::Sub => {
-                    let client = self.client_by_id_mut(&req.source)?;
-                    responses
-                        .push(client.process_subscribe(&path)?)
-                        .map_err(|_| ServerError::ResourcesExhausted)?;
-                }
-                PubSubType::Unsub => {
-                    let client = self.client_by_id_mut(&req.source)?;
-                    client.process_unsub(&path)?;
-                    todo!()
+            Component::PubSub(PubSub { ref path, ref ty }) => {
+                match ty {
+                    PubSubType::Pub { ref payload } => {
+                        self.process_publish(sio_out, path, payload, source)?;
+                    }
+                    PubSubType::Sub => {
+                        let client = self.client_by_id_mut(&source)?;
+                        sio_out
+                            .push_response(client.process_subscribe(path)?)
+                            .map_err(|_| ServerError::ResourcesExhausted)?;
+                    }
+                    PubSubType::Unsub => {
+                        let client = self.client_by_id_mut(&source)?;
+                        client.process_unsub(path)?;
+                        todo!()
+                    }
                 }
             },
         }
 
-        Ok(responses)
+        Ok(())
     }
 }
 
@@ -168,12 +188,13 @@ impl Broker {
             .ok_or(ServerError::UnknownClient)
     }
 
-    fn process_publish<'b: 'a, 'a>(
-        &'b mut self,
-        path: &'a PubSubPath,
-        payload: &'a [u8],
-        source: &'a Uuid,
-    ) -> Result<Vec<Response<'a>, consts::U8>, ServerError> {
+    fn process_publish<'req, 'sio, 'me: 'req, SO: ServerIoOut<'req>>(
+        &'me mut self,
+        sio: &'sio mut SO,
+        path: &PubSubPath<'req>,
+        payload: &'req [u8],
+        source: Uuid,
+    ) -> Result<(), ServerError> {
         // TODO: Make sure we're not publishing to wildcards
 
         // First, find the sender's path
@@ -181,28 +202,44 @@ impl Broker {
             .clients
             .iter()
             .filter_map(|c| c.state.as_connected().ok().map(|x| (c, x)))
-            .find(|(c, _x)| &c.id == source)
+            .find(|(c, _x)| c.id == source)
             .ok_or(ServerError::UnknownClient)?;
         let path = match path {
-            PubSubPath::Long(lp) => lp.as_str(),
-            PubSubPath::Short(sid) => &source_id
+            // TODO: I need to make sure this is &'req, NOT &'path! That would only happen
+            // if I had an Owned string here.
+            PubSubPath::Long(lp) => {
+                match lp {
+                    ManagedString::Owned(_) => {
+                        // So, we should never have an owned string here.
+                        // Having one would severely mess up our lifetimes,
+                        // and would generally be bad sauce.
+                        //
+                        // I should get rid of ManagedString, but until then,
+                        // let's just cut off this lifetime path
+                        return Err(ServerError::InternalError);
+                    }
+                    ManagedString::Borrow(lp) => *lp,
+                }
+            },
+            PubSubPath::Short(sid) => {
+                &source_id
                 .1
                 .shortcuts
                 .iter()
                 .find(|s| &s.short == sid)
                 .ok_or(ServerError::UnknownShortcode)?
                 .long
-                .as_str(),
+                .as_str()
+            },
         };
 
         // Then, find all applicable destinations, max of 1 per destination
-        let mut responses = Vec::new();
         'client: for (client, state) in self
             .clients
             .iter()
             .filter_map(|c| c.state.as_connected().ok().map(|x| (c, x)))
         {
-            if &client.id == source {
+            if client.id == source {
                 // Don't send messages back to the sender
                 continue;
             }
@@ -219,8 +256,8 @@ impl Broker {
                                     payload,
                                 },
                             )));
-                            responses
-                                .push(Response {
+                            sio
+                                .push_response(Response {
                                     dest: client.id,
                                     msg,
                                 })
@@ -233,8 +270,8 @@ impl Broker {
                         path: PubSubPath::Long(Path::borrow_from_str(path)),
                         payload,
                     })));
-                    responses
-                        .push(Response {
+                    sio
+                        .push_response(Response {
                             dest: client.id,
                             msg,
                         })
@@ -244,7 +281,7 @@ impl Broker {
             }
         }
 
-        Ok(responses)
+        Ok(())
     }
 }
 
@@ -339,7 +376,7 @@ impl Client {
         Ok(response)
     }
 
-    fn process_subscribe<'a>(&mut self, path: &'a PubSubPath) -> Result<Response<'a>, ServerError> {
+    fn process_subscribe<'a, 'b>(&mut self, path: &'a PubSubPath<'b>) -> Result<Response<'b>, ServerError> {
         let state = self.state.as_connected_mut()?;
 
         // Determine canonical path
@@ -435,4 +472,16 @@ pub struct Request<'a> {
 pub struct Response<'a> {
     pub dest: Uuid,
     pub msg: Arbitrator<'a>,
+}
+
+pub enum ServerIoError {
+    ToDo,
+}
+
+pub trait ServerIoIn {
+    fn recv<'a, 'b: 'a>(&'b mut self) -> Result<Option<Request<'b>>, ServerIoError>;
+}
+
+pub trait ServerIoOut<'resp> {
+    fn push_response(&mut self, resp: Response<'resp>) -> Result<(), ServerIoError>;
 }

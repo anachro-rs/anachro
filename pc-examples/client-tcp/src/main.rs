@@ -1,11 +1,9 @@
-use anachro_icd::{arbitrator::Arbitrator, component::Component, Version};
-use postcard::{from_bytes_cobs, to_stdvec_cobs};
-use std::io::prelude::*;
+use anachro_icd::Version;
 use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use anachro_client::{pubsub_table, Client, ClientIo, ClientIoError, Error};
+use anachro_client::{pubsub_table, Client, ClientIoError, Error};
 use postcard;
 
 use serde::{Deserialize, Serialize};
@@ -66,7 +64,6 @@ fn main() {
     while !client.is_connected() {
         // AJM: We shouldn't have to manually poll the IO like this
         cio.poll().unwrap(); // TODO!
-                             // AJM: We shouldn't have to manually poll the IO like this
 
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => println!("Got: {:?}", msg),

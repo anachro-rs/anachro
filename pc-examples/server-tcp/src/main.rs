@@ -7,7 +7,7 @@ use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use anachro_server::{Broker, Request, Response, Uuid, RESET_MESSAGE};
+use anachro_server::{Broker, Request, Response, Uuid, RESET_MESSAGE, ServerIoIn, ServerIoOut, ServerIoError};
 
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
 
@@ -27,7 +27,60 @@ struct SessionManager {
 struct Connect {
     stream: TcpStream,
     pending_data: Vec<u8>,
+    current_data: Vec<u8>,
+    key: Uuid,
 }
+
+#[derive(Default)]
+struct ConnectOut<'a> {
+    data: Vec<Response<'a>>,
+}
+
+impl ServerIoIn for Connect {
+    fn recv<'a, 'b: 'a>(&'b mut self) -> Result<Option<Request<'b>>, ServerIoError> {
+        let mut buf = [0u8; 1024];
+        match self.stream.read(&mut buf) {
+            Ok(n) if n > 0 => {
+                self.pending_data.extend_from_slice(&buf[..n]);
+            }
+            // Ignore empty reports
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::WouldBlock => {}
+
+            // Evict on bad messages
+            Err(e) => {
+                println!("bad because: {:?}. Removing", e);
+
+                return Err(ServerIoError::ToDo);
+                // bad_keys.insert(key.clone());
+            }
+        }
+
+        if let Some(p) = self.pending_data.iter().position(|c| *c == 0x00) {
+            let mut remainder = self.pending_data.split_off(p + 1);
+            core::mem::swap(&mut remainder, &mut self.pending_data);
+            self.current_data = remainder;
+
+            // println!("From {:?} got {:?}", key, payload);
+
+            if let Ok(msg) = from_bytes_cobs(&mut self.current_data) {
+                let src = self.key.clone();
+                let req = Request { source: src, msg };
+                return Ok(Some(req));
+            }
+        }
+
+        Ok(None)
+    }
+}
+
+impl<'resp> ServerIoOut<'resp> for ConnectOut<'resp> {
+    fn push_response(&mut self, resp: Response<'resp>) -> Result<(), ServerIoError> {
+        self.data.push(resp);
+        Ok(())
+    }
+}
+
 
 use rand::random;
 
@@ -51,8 +104,10 @@ fn main() {
             lock.session_mgr.new_sessions.push((
                 uuid,
                 Connect {
+                    key: uuid,
                     stream,
                     pending_data: vec![],
+                    current_data: vec![],
                 },
             ));
         }
@@ -82,11 +137,11 @@ fn main() {
             let mut responses = vec![];
 
             // As a session manager, catch up with any messages
-            for (key, connect) in sessions.iter_mut() {
+            for (key, connect_in) in sessions.iter_mut() {
                 // !!!!!
-                match connect.stream.read(&mut buf) {
+                match connect_in.stream.read(&mut buf) {
                     Ok(n) if n > 0 => {
-                        connect.pending_data.extend_from_slice(&buf[..n]);
+                        connect_in.pending_data.extend_from_slice(&buf[..n]);
                     }
                     // Ignore empty reports
                     Ok(_) => {}
@@ -100,36 +155,23 @@ fn main() {
                 }
 
                 // Process any messages
-                while let Some(p) = connect.pending_data.iter().position(|c| *c == 0x00) {
-                    let mut remainder = connect.pending_data.split_off(p + 1);
-                    core::mem::swap(&mut remainder, &mut connect.pending_data);
-                    let mut payload = remainder;
+                let mut connect_out = ConnectOut { data: vec![] };
+                let mut resps = match broker.process_msg(connect_in, &mut connect_out) {
+                    Ok(()) => {
+                        connect_out.data
+                    },
+                    Err(e) => {
+                        println!("Error: {:?}, resetting client", e);
+                        vec![Response {
+                            dest: *key,
+                            msg: RESET_MESSAGE,
+                        }]
+                    }
+                };
 
-                    println!("From {:?} got {:?}", key, payload);
-
-                    if let Ok(msg) = from_bytes_cobs(&mut payload) {
-                        let src = key.clone();
-                        let req = Request { source: src, msg };
-
-                        let resps = match broker.process_msg(&req) {
-                            Ok(resps) => resps,
-                            Err(e) => {
-                                println!("Error: {:?}, resetting client", e);
-                                let mut resp = heapless::Vec::new();
-                                resp.push(Response {
-                                    dest: src,
-                                    msg: RESET_MESSAGE,
-                                })
-                                .ok();
-                                resp
-                            }
-                        };
-
-                        for respmsg in resps {
-                            if let Ok(resp) = to_stdvec_cobs(&respmsg.msg) {
-                                responses.push((respmsg.dest, resp));
-                            }
-                        }
+                for respmsg in resps.drain(..) {
+                    if let Ok(resp) = to_stdvec_cobs(&respmsg.msg) {
+                        responses.push((respmsg.dest, resp));
                     }
                 }
             }
