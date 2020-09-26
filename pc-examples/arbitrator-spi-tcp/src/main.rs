@@ -10,6 +10,7 @@ use anachro_spi::{
     },
     tcp::TcpSpiArbLL,
 };
+use anachro_icd::Uuid;
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
@@ -44,6 +45,7 @@ fn main() {
         stream.set_nonblocking(true).unwrap();
         println!("{:?} connected", addr);
         let mut arb = EncLogicHLArbitrator::new(
+            Uuid::from_bytes([0u8; 16]), // TODO
             TcpSpiArbLL::new(stream),
             &BB_OUT,
             &BB_INP

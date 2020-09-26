@@ -11,9 +11,10 @@ use anachro_server::{
     Request,
     Response,
     from_bytes_cobs,
+    anachro_icd::Uuid,
 };
 
-pub trait EncLogicLLArbitrator {
+pub trait EncLogicLLArbitrator: Send {
     /// Process low level messages
     fn process(&mut self) -> Result<()>;
 
@@ -77,12 +78,20 @@ pub trait EncLogicLLArbitrator {
     fn abort_exchange(&mut self) -> Result<usize>;
 }
 
+
+// unsafe impl<LL, CT> Send for EncLogicHLArbitrator<LL, CT>
+// where
+//     CT: ArrayLength<u8>,
+//     LL: EncLogicLLArbitrator,
+// {}
+
 pub struct EncLogicHLArbitrator<LL, CT>
 where
     CT: ArrayLength<u8>,
     LL: EncLogicLLArbitrator,
 {
     ll: LL,
+    uuid: Uuid,
     outgoing_msgs: BBFullDuplex<CT>,
     incoming_msgs: BBFullDuplex<CT>,
     out_grant: Option<FrameGrantR<'static, CT>>,
@@ -112,12 +121,14 @@ where
     LL: EncLogicLLArbitrator,
 {
     pub fn new(
+        uuid: Uuid,
         ll: LL,
         outgoing: &'static BBBuffer<CT>,
         incoming: &'static BBBuffer<CT>
     ) -> Result<Self> {
         Ok(EncLogicHLArbitrator {
             ll,
+            uuid,
             outgoing_msgs: BBFullDuplex::new(outgoing)?,
             incoming_msgs: BBFullDuplex::new(incoming)?,
             out_buf: [0u8; 4],
@@ -233,7 +244,7 @@ where
                     }
                 }
                 Ok(false) if self.ll.is_go_active()? => {
-                    // println!("clearing go!");
+                    println!("clearing go!");
                     self.ll.clear_go().unwrap();
                     self.sent_hdr = false;
                 }
@@ -241,7 +252,7 @@ where
             }
         } else {
             if !self.ll.is_ready_active().unwrap() {
-                // println!("aborting!");
+                println!("aborting!");
                 self.ll.abort_exchange().ok();
                 self.sent_hdr = false;
 
@@ -255,13 +266,12 @@ where
                 Err(_) => {}
                 Ok(amt) => {
 
-                    // println!("got {:?}!", in_buf_inner);
-
                     if self.sent_hdr {
 
                         assert!(self.in_grant.is_some(), "Why don't we have an in grant at the end of exchange?");
 
                         if let Some(igr) = self.in_grant.take() {
+                            println!("got {:?}!", &igr[..amt]);
                             igr.commit(amt);
                         }
                         if let Some(ogr) = self.out_grant.take() {
@@ -288,12 +298,13 @@ where
     LL: EncLogicLLArbitrator,
 {
     fn recv<'a, 'b: 'a>(&'b mut self) -> core::result::Result<Option<Request<'b>>, ServerIoError> {
-        self.in_grant = None;
+        self.current_grant = None;
         match self.dequeue() {
             Some(mut msg) => {
                 msg.auto_release(true);
                 self.current_grant = Some(msg);
                 let sbr = self.current_grant.as_mut().unwrap();
+                let len = sbr.len();
 
                 // TODO: Cobs encoding at this level is probably not super necessary,
                 // because for now we only handle one message exchange at a time. In the
@@ -302,12 +313,16 @@ where
                 match from_bytes_cobs(sbr) {
                     Ok(deser) => {
                         Ok(Some(Request {
-                            source: Uuid::from_bytes([0u8; 16]),
+                            source: self.uuid,
                             msg: deser,
                         }))
                     }
                     Err(_) => {
-                        Err(ServerIoError::ToDo)
+                        if len == 0 {
+                            Ok(None)
+                        } else {
+                            Err(ServerIoError::ToDo)
+                        }
                     }
                 }
             }
@@ -315,20 +330,3 @@ where
         }
     }
 }
-
-impl<'resp, LL, CT> ServerIoOut<'resp> for EncLogicHLArbitrator<LL, CT>
-where
-    CT: ArrayLength<u8>,
-    LL: EncLogicLLArbitrator,
-{
-    fn push_response(&mut self, resp: Response<'resp>) -> core::result::Result<(), ServerIoError> {
-        todo!()
-    }
-}
-
-// pub trait ServerIoIn {
-// }
-
-// pub trait ServerIoOut<'resp> {
-//     fn push_response(&mut self, resp: Response<'resp>) -> Result<(), ServerIoError>;
-// }

@@ -68,6 +68,7 @@ dependencies = [
 name = "arbitrator-spi-tcp"
 version = "0.1.0"
 dependencies = [
+ "anachro-icd",
  "anachro-spi",
  "bbqueue",
  "postcard",

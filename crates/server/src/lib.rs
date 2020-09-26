@@ -13,7 +13,7 @@ use {
         ManagedString,
     },
     core::default::Default,
-    heapless::{consts, Vec},
+    heapless::{consts, Vec, ArrayLength},
 };
 
 pub use anachro_icd::{self, Name, Path, PubSubPath, Uuid, Version};
@@ -462,6 +462,7 @@ struct Shortcut {
 /// A request FROM the Client, TO the Broker
 ///
 /// This message is addressed by a UUID used when registering the client
+#[derive(Debug)]
 pub struct Request<'a> {
     pub source: Uuid,
     pub msg: Component<'a>,
@@ -470,6 +471,7 @@ pub struct Request<'a> {
 /// A response TO the Client, FROM the Broker
 ///
 /// This message is addressed by a UUID used when registering the client
+#[derive(Debug)]
 pub struct Response<'a> {
     pub dest: Uuid,
     pub msg: Arbitrator<'a>,
@@ -485,4 +487,13 @@ pub trait ServerIoIn {
 
 pub trait ServerIoOut<'resp> {
     fn push_response(&mut self, resp: Response<'resp>) -> Result<(), ServerIoError>;
+}
+
+impl<'resp, CT> ServerIoOut<'resp> for Vec<Response<'resp>, CT>
+where
+    CT: ArrayLength<Response<'resp>>,
+{
+    fn push_response(&mut self, resp: Response<'resp>) -> core::result::Result<(), ServerIoError> {
+        self.push(resp).map_err(|_| ServerIoError::ToDo)
+    }
 }

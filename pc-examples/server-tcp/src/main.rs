@@ -10,6 +10,16 @@ use std::time::Duration;
 use anachro_server::{Broker, Request, Response, Uuid, RESET_MESSAGE, ServerIoIn, ServerIoOut, ServerIoError};
 
 use postcard::{from_bytes_cobs, to_stdvec_cobs};
+use anachro_spi::{
+    arbitrator::EncLogicHLArbitrator,
+    tcp::TcpSpiArbLL,
+};
+use heapless::{
+    Vec as HVec,
+    consts,
+};
+
+use bbqueue::BBBuffer;
 
 #[derive(Default)]
 struct TcpBroker {
@@ -20,68 +30,9 @@ struct TcpBroker {
 // Thinks in terms of uuids
 #[derive(Default)]
 struct SessionManager {
-    new_sessions: Vec<(Uuid, Connect)>,
-    sessions: HashMap<Uuid, Connect>,
+    new_sessions: Vec<(Uuid, EncLogicHLArbitrator<TcpSpiArbLL, consts::U4096>)>,
+    sessions: HashMap<Uuid, EncLogicHLArbitrator<TcpSpiArbLL, consts::U4096>>,
 }
-
-struct Connect {
-    stream: TcpStream,
-    pending_data: Vec<u8>,
-    current_data: Vec<u8>,
-    key: Uuid,
-}
-
-#[derive(Default)]
-struct ConnectOut<'a> {
-    data: Vec<Response<'a>>,
-}
-
-impl ServerIoIn for Connect {
-    fn recv<'a, 'b: 'a>(&'b mut self) -> Result<Option<Request<'b>>, ServerIoError> {
-        let mut buf = [0u8; 1024];
-        match self.stream.read(&mut buf) {
-            Ok(n) if n > 0 => {
-                self.pending_data.extend_from_slice(&buf[..n]);
-            }
-            // Ignore empty reports
-            Ok(_) => {}
-            Err(e) if e.kind() == ErrorKind::WouldBlock => {}
-
-            // Evict on bad messages
-            Err(e) => {
-                println!("bad because: {:?}. Removing", e);
-
-                return Err(ServerIoError::ToDo);
-                // bad_keys.insert(key.clone());
-            }
-        }
-
-        if let Some(p) = self.pending_data.iter().position(|c| *c == 0x00) {
-            let mut remainder = self.pending_data.split_off(p + 1);
-            core::mem::swap(&mut remainder, &mut self.pending_data);
-            self.current_data = remainder;
-
-            // println!("From {:?} got {:?}", key, payload);
-
-            if let Ok(msg) = from_bytes_cobs(&mut self.current_data) {
-                let src = self.key.clone();
-                let req = Request { source: src, msg };
-                return Ok(Some(req));
-            }
-        }
-
-        Ok(None)
-    }
-}
-
-impl<'resp> ServerIoOut<'resp> for ConnectOut<'resp> {
-    fn push_response(&mut self, resp: Response<'resp>) -> Result<(), ServerIoError> {
-        self.data.push(resp);
-        Ok(())
-    }
-}
-
-
 use rand::random;
 
 fn main() {
@@ -101,19 +52,25 @@ fn main() {
             stream.set_nonblocking(true).unwrap();
             println!("{:?} connected as {:?}", addr, uuid);
             let mut lock = tcpb_2.lock().unwrap();
+
+            // TODO: keep these around somewhere?
+            let out_leak = &*Box::leak(Box::new(BBBuffer::new()));
+            let inc_leak = &*Box::leak(Box::new(BBBuffer::new()));
+
             lock.session_mgr.new_sessions.push((
                 uuid,
-                Connect {
-                    key: uuid,
-                    stream,
-                    pending_data: vec![],
-                    current_data: vec![],
-                },
+                EncLogicHLArbitrator::new(
+                    uuid,
+                    TcpSpiArbLL::new(stream),
+                    out_leak,
+                    inc_leak,
+                ).unwrap()
             ));
+
+            drop(out_leak);
+            drop(inc_leak);
         }
     });
-
-    let mut buf = [0u8; 1024];
 
     loop {
         {
@@ -133,52 +90,25 @@ fn main() {
             }
 
             let mut bad_keys = HashSet::new();
-
             let mut responses = vec![];
 
-            // As a session manager, catch up with any messages
-            for (key, connect_in) in sessions.iter_mut() {
-                // !!!!!
-                match connect_in.stream.read(&mut buf) {
-                    Ok(n) if n > 0 => {
-                        connect_in.pending_data.extend_from_slice(&buf[..n]);
-                    }
-                    // Ignore empty reports
-                    Ok(_) => {}
-                    Err(e) if e.kind() == ErrorKind::WouldBlock => {}
-
-                    // Evict on bad messages
-                    Err(e) => {
-                        println!("{:?} is bad because: {:?}. Removing", key, e);
-                        bad_keys.insert(key.clone());
-                    }
-                }
-
-                // Process any messages
-                let mut connect_out = ConnectOut { data: vec![] };
-                let mut resps = match broker.process_msg(connect_in, &mut connect_out) {
-                    Ok(()) => {
-                        connect_out.data
-                    },
-                    Err(e) => {
-                        println!("Error: {:?}, resetting client", e);
-                        vec![Response {
-                            dest: *key,
-                            msg: RESET_MESSAGE,
-                        }]
-                    }
-                };
-
-                for respmsg in resps.drain(..) {
-                    if let Ok(resp) = to_stdvec_cobs(&respmsg.msg) {
-                        responses.push((respmsg.dest, resp));
+            // TODO: This is going to be awkward without a heap/temp bbqueue
+            // and multiple copies :|
+            for (_uuid, connect) in sessions.iter_mut() {
+                connect.poll().unwrap();
+                let mut out_msgs: HVec<_, consts::U16> = HVec::new();
+                broker.process_msg(connect, &mut out_msgs).unwrap();
+                for msg in out_msgs {
+                    println!("Sending: {:?}", msg);
+                    if let Ok(resp) = to_stdvec_cobs(&msg.msg) {
+                        responses.push((msg.dest, resp));
                     }
                 }
             }
 
             for (dest, resp) in responses.drain(..) {
                 if let Some(conn) = sessions.get_mut(&dest) {
-                    let fail = conn.stream.write_all(&resp).is_err();
+                    let fail = conn.enqueue(&resp).is_err();
 
                     if fail {
                         println!("Removing {:?}", dest);
@@ -196,6 +126,6 @@ fn main() {
             }
         }
 
-        sleep(Duration::from_millis(50));
+        sleep(Duration::from_millis(1));
     }
 }

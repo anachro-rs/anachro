@@ -58,7 +58,7 @@ fn main() {
         987,
         AnachroTable::sub_paths(),
         AnachroTable::pub_paths(),
-        Some(100),
+        Some(255),
     );
 
     while !client.is_connected() {

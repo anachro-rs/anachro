@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 anachro-spi = { path = "../../spi" }
+anachro-icd = { path = "../../crates/icd" }
 serde = { version = "1.0", features = ["derive"] }
 postcard = { version = "0.5.1", features = ["use-std"] }
 bbqueue = "0.4.10"

@@ -29,6 +29,9 @@ pub struct TcpSpiComLL {
     pending_exchange: Option<PendingExchange>,
 }
 
+// TODO: Is this sound?
+unsafe impl Send for PendingExchange {}
+
 struct PendingExchange {
     data_out: *const u8,
     data_out_len: usize,
@@ -121,8 +124,8 @@ impl EncLogicLLComponent for TcpSpiComLL {
         let msg = TcpSpiMsg::ReadyState(true);
         let payload = to_stdvec_cobs(&msg).map_err(|_| Error::ToDo)?;
         self.stream
-            .write_all(&payload)
-            .map_err(|_| Error::ToDo)?;
+            .write_all(&payload).unwrap();
+            // .map_err(|_| Error::ToDo)?;
         Ok(())
     }
 
@@ -154,6 +157,7 @@ impl EncLogicLLComponent for TcpSpiComLL {
         data_in_max: usize,
     ) -> Result<()> {
         if self.pending_exchange.is_some() {
+            println!("ALREADY IS PENDING");
             return Err(Error::ToDo);
         }
         self.pending_exchange = Some(PendingExchange {
@@ -396,9 +400,11 @@ impl EncLogicLLArbitrator for TcpSpiArbLL {
         data_in_max: usize,
     ) -> Result<()> {
         if self.pending_exchange.is_some() {
+            println!("ALREADY PENDING");
             return Err(Error::ToDo);
         }
         if !self.is_ready_active()? {
+            println!("NOT ACTIVE");
             return Err(Error::ToDo);
         }
 

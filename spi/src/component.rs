@@ -165,7 +165,7 @@ where
                             self.in_grant = Some(igr);
                         }
                         Err(_) => {
-                            todo!("Handle insufficient size available for incoming");
+                            todo!("1 Handle insufficient size available for incoming");
                         }
                     }
                     // TODO: Do I want to save the grant here? I just need to "peek" to
@@ -211,6 +211,66 @@ where
                         .prepare_exchange(out_ptr, out_len, in_ptr, amt)
                         .unwrap();
                 }
+            } else if self.ll.is_go_active().is_ok() {
+                // TODO!!! THIS IS A HACK!!! ^^^^^^^
+
+
+                // TODO: Rate limiting
+                // TODO: Set a flag to make sure we don't get a message-mid promiscuous ping
+                if !self.sent_hdr {
+                    let igr_ptr;
+                    match self.incoming_msgs.prod.grant(4) {
+                        Ok(mut igr) => {
+                            igr_ptr = igr.as_mut_ptr();
+                            assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
+                            self.in_grant = Some(igr);
+                        }
+                        Err(_) => {
+                            todo!("2 Handle insufficient size available for incoming");
+                        }
+                    }
+                    // TODO: Do I want to save the grant here? I just need to "peek" to
+                    // get the header values
+
+                    // println!("Starting exchange, header!");
+                    self.out_buf = (0u32).to_le_bytes();
+
+                    self.ll
+                        .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
+                        .unwrap();
+                } else {
+                    let out_ptr = self.out_buf.as_ptr();
+                    let out_len = 0;
+
+                    let amt = match self.in_grant.take() {
+                        Some(igr) => {
+                            // Note: Drop IGR without commit by taking
+                            assert_eq!(igr.len(), 4, "wrong header igr?");
+                            let mut buf = [0u8; 4];
+                            buf.copy_from_slice(&igr);
+                            u32::from_le_bytes(buf) as usize
+                        }
+                        None => {
+                            panic!("Why don't we have a header igr?");
+                        }
+                    };
+
+                    let in_ptr;
+                    self.in_grant = match self.incoming_msgs.prod.grant(amt) {
+                        Ok(mut igr) => {
+                            in_ptr = igr.as_mut_ptr();
+                            Some(igr)
+                        }
+                        Err(_) => {
+                            todo!("Handle insufficient size of igr")
+                        }
+                    };
+
+                    // println!("Starting exchange, data!");
+                    self.ll
+                        .prepare_exchange(out_ptr, out_len, in_ptr, amt)
+                        .unwrap();
+                }
             }
         } else {
             if !self.triggered {
@@ -221,19 +281,20 @@ where
                 }
             } else {
                 if let Ok(false) = self.ll.is_go_active() {
-                    // println!("aborting!");
+                    println!("aborting!");
                     self.ll.abort_exchange().ok();
                 }
                 match self.ll.complete_exchange(self.sent_hdr) {
                     Err(_) => {}
                     Ok(amt) => {
-                        // println!("got {:?}!", in_buf);
+
                         if self.sent_hdr {
                             // Note: relax this for "empty" requests to the arbitrator
                             assert!(self.in_grant.is_some(), "Why no in grant on completion?");
 
                             if let Some(igr) = self.in_grant.take() {
                                 if amt != 0 {
+                                    println!("got {:?}!", &igr[..amt]);
                                     igr.commit(amt);
                                 }
                             }
@@ -269,6 +330,7 @@ where
         match self.dequeue() {
             Some(mut msg) => {
                 // Set message to automatically release on drop
+                println!("recv: {:?}", &msg[..]);
                 msg.auto_release(true);
                 self.current_grant = Some(msg);
                 let sbr = self.current_grant.as_mut().unwrap();
@@ -279,9 +341,11 @@ where
                 // a single frame. But for now, we only handle one.
                 match from_bytes_cobs(sbr) {
                     Ok(deser) => {
-                        Ok(deser)
+                        println!("yay! {:?}", deser);
+                        Ok(Some(deser))
                     }
                     Err(_) => {
+                        println!("Parsing Error!");
                         Err(ClientIoError::ParsingError)
                     }
                 }

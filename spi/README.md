@@ -117,3 +117,6 @@ TODO: Do these match?
 * Once that works, I should start impl'ing the SPI arbitrator for nrf52 (and maybe embedded-hal) SPI interfaces
   * Probably SPI controller can be embedded-hal, and get nrf52 for free
   * There aren't any SPI peripheral traits, so that's probably going to be direct for now
+
+* I think I want to move the Client connection inside of the broker. This would clean some stuff up, but I can think of these problems:
+  * I pretty much have to make this `dyn Trait`, if I want the clients to have different types/buffer sizes

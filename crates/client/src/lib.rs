@@ -2,7 +2,7 @@
 //!
 //! This crate is used by devices acting as a Client of the Anachro Protocol
 
-#![no_std]
+// #![no_std]
 
 pub use {
     crate::{
