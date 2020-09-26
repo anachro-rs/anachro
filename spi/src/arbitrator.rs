@@ -4,6 +4,14 @@ use bbqueue::{
     framed::{FrameGrantR, FrameGrantW},
     ArrayLength, BBBuffer,
 };
+use anachro_server::{
+    ServerIoIn,
+    ServerIoOut,
+    ServerIoError,
+    Request,
+    Response,
+    from_bytes_cobs,
+};
 
 pub trait EncLogicLLArbitrator {
     /// Process low level messages
@@ -81,6 +89,20 @@ where
     in_grant: Option<FrameGrantW<'static, CT>>,
     out_buf: [u8; 4],
     sent_hdr: bool,
+
+    // NOTE: This is the grant from the incoming queue, used to return
+    // messages up the protocol stack. By holding the grant HERE, we tie
+    // the zero-copy message to the borrow of self, which means that
+    // the higher levels of the stack MUST release the incoming message
+    // before they do anything else with Self. We then just drop the grant
+    // the next time the user asks us to receive a message, which works,
+    // because they've already let go of the reference to the data contained
+    // by the grant (by releasing the borrow of Self).
+    //
+    // I *think* this is the best we can do without radically re-architecting
+    // how the entire stack works, switching to something like heapless::Pool,
+    // or totally reconsidering zero-copy entirely.
+    current_grant: Option<FrameGrantR<'static, CT>>,
 }
 
 
@@ -102,10 +124,11 @@ where
             out_grant: None,
             in_grant: None,
             sent_hdr: false,
+            current_grant: None,
         })
     }
 
-    pub fn dequeue(&mut self) -> Option<FrameGrantR<CT>> {
+    pub fn dequeue(&mut self) -> Option<FrameGrantR<'static, CT>> {
         self.incoming_msgs.cons.read()
     }
 
@@ -259,16 +282,53 @@ where
     }
 }
 
+impl<LL, CT> ServerIoIn for EncLogicHLArbitrator<LL, CT>
+where
+    CT: ArrayLength<u8>,
+    LL: EncLogicLLArbitrator,
+{
+    fn recv<'a, 'b: 'a>(&'b mut self) -> core::result::Result<Option<Request<'b>>, ServerIoError> {
+        self.in_grant = None;
+        match self.dequeue() {
+            Some(mut msg) => {
+                msg.auto_release(true);
+                self.current_grant = Some(msg);
+                let sbr = self.current_grant.as_mut().unwrap();
 
-// pub trait EncLogicHLArbitrator {
-//     /// Place a message to be sent over SPI
-//     fn enqueue(&mut self, msg: &[u8]) -> Result<()>;
+                // TODO: Cobs encoding at this level is probably not super necessary,
+                // because for now we only handle one message exchange at a time. In the
+                // future, it might be possible to pack multiple datagrams together into
+                // a single frame. But for now, we only handle one.
+                match from_bytes_cobs(sbr) {
+                    Ok(deser) => {
+                        Ok(Some(Request {
+                            source: Uuid::from_bytes([0u8; 16]),
+                            msg: deser,
+                        }))
+                    }
+                    Err(_) => {
+                        Err(ServerIoError::ToDo)
+                    }
+                }
+            }
+            None => return Ok(None),
+        }
+    }
+}
 
-//     /// Attempt to receive a message over SPI
-//     fn dequeue<'a>(&mut self, msg_out: &'a mut [u8]) -> Result<Option<&'a [u8]>>;
+impl<'resp, LL, CT> ServerIoOut<'resp> for EncLogicHLArbitrator<LL, CT>
+where
+    CT: ArrayLength<u8>,
+    LL: EncLogicLLArbitrator,
+{
+    fn push_response(&mut self, resp: Response<'resp>) -> core::result::Result<(), ServerIoError> {
+        todo!()
+    }
+}
 
-//     /// Periodic poll. Should be called regularly (or on interrupts?)
-//     fn poll(&mut self) -> Result<()>;
+// pub trait ServerIoIn {
+// }
 
-//     fn get_ll<LL: EncLogicLLArbitrator>(&mut self) -> &mut LL;
+// pub trait ServerIoOut<'resp> {
+//     fn push_response(&mut self, resp: Response<'resp>) -> Result<(), ServerIoError>;
 // }

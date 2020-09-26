@@ -8,6 +8,12 @@ edition = "2018"
 
 [dependencies]
 anachro-icd = { path = "../../crates/icd" }
+anachro-server = { path = "../../crates/server" }
+serde = "1.0.115"
+anachro-spi = { path = "../../spi", features = ["tcp"] }
+bbqueue = "0.4.10"
+
+# ???
 rand = "0.7.3"
 heapless = "0.5.5"
 
@@ -15,5 +21,3 @@ heapless = "0.5.5"
 version = "0.5.1"
 features = ["use-std"]
 
-[dependencies.anachro-server]
-path = "../../crates/server"

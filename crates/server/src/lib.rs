@@ -17,6 +17,7 @@ use {
 };
 
 pub use anachro_icd::{self, Name, Path, PubSubPath, Uuid, Version};
+pub use postcard::from_bytes_cobs;
 
 type ClientStore = Vec<Client, consts::U8>;
 

@@ -17,8 +17,3 @@ bbqueue = "0.4.10"
 [dependencies.postcard]
 version = "0.5.1"
 features = ["use-std"]
-
-[dependencies.uuid]
-version = "0.8.1"
-default-features = false
-features = ["serde", "v4"]
