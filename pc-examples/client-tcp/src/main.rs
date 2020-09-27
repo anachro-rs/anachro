@@ -63,7 +63,10 @@ fn main() {
 
     while !client.is_connected() {
         // AJM: We shouldn't have to manually poll the IO like this
-        cio.poll().unwrap(); // TODO!
+        if let Err(e) = cio.poll() {
+            client.reset_connection();
+            continue;
+        }
 
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => println!("Got: {:?}", msg),

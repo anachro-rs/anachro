@@ -374,6 +374,9 @@ impl Client {
             }
         };
 
+        println!("got pr mesg!");
+
+
         if let Arbitrator::Control(AControl { seq, response }) = msg {
             if seq != self.ctr {
                 println!("ctr mismatch! {} {}", seq, self.ctr);
@@ -392,6 +395,7 @@ impl Client {
                 Err(Error::UnexpectedMessage)
             }
         } else {
+            println!("??? {:?}?", msg);
             self.current_tick = self.current_tick.saturating_add(1);
             Ok(())
         }

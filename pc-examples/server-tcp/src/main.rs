@@ -94,8 +94,11 @@ fn main() {
 
             // TODO: This is going to be awkward without a heap/temp bbqueue
             // and multiple copies :|
-            for (_uuid, connect) in sessions.iter_mut() {
-                connect.poll().unwrap();
+            for (uuid, connect) in sessions.iter_mut() {
+                if connect.poll().is_err() {
+                    bad_keys.insert(*uuid);
+                    continue;
+                }
                 let mut out_msgs: HVec<_, consts::U16> = HVec::new();
                 broker.process_msg(connect, &mut out_msgs).unwrap();
                 for msg in out_msgs {

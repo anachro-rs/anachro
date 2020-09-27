@@ -329,7 +329,7 @@ impl EncLogicLLArbitrator for TcpSpiArbLL {
                 }
                 Err(e) => {
                     eprintln!("TCP Error: {:?}", e);
-                    panic!()
+                    return Err(Error::ConnectionFailure);
                 }
             }
         }

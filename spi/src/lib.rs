@@ -17,6 +17,7 @@ pub enum Error {
     ArbitratorHungUp,
     InitializationFailed,
     BBQueueError(BBError),
+    ConnectionFailure,
 }
 
 impl From<BBError> for Error {

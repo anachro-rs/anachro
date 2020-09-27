@@ -1,4 +1,4 @@
-use crate::{Result, BBFullDuplex};
+use crate::{Result, BBFullDuplex, Error};
 
 use bbqueue::{
     framed::{FrameGrantR, FrameGrantW},
@@ -83,6 +83,34 @@ pub trait EncLogicLLComponent {
     fn abort_exchange(&mut self) -> Result<usize>;
 }
 
+#[derive(Debug)]
+enum SendingState<CT>
+where
+    CT: ArrayLength<u8>
+{
+    Idle,
+    DataHeader(FrameGrantR<'static, CT>),
+    DataBody(usize),
+    EmptyHeader,
+    EmptyBody(usize),
+}
+
+impl<CT> PartialEq for SendingState<CT>
+where
+    CT: ArrayLength<u8>
+{
+    fn eq(&self, other: &SendingState<CT>) -> bool {
+        match (self, other) {
+            (SendingState::Idle, SendingState::Idle) => true,
+            (SendingState::DataHeader(_), SendingState::DataHeader(_)) => true,
+            (SendingState::DataBody(_), SendingState::DataBody(_)) => true,
+            (SendingState::EmptyHeader, SendingState::EmptyHeader) => true,
+            (SendingState::EmptyBody(_), SendingState::EmptyBody(_)) => true,
+            _ => false,
+        }
+    }
+}
+
 
 pub struct EncLogicHLComponent<LL, CT>
 where
@@ -95,8 +123,11 @@ where
     out_grant: Option<FrameGrantR<'static, CT>>,
     in_grant: Option<FrameGrantW<'static, CT>>,
     out_buf: [u8; 4],
-    sent_hdr: bool,
+    // sent_hdr: bool,
     triggered: bool,
+    // empty_sending: bool,
+
+    send_state: SendingState<CT>,
 
     // NOTE: This is the grant from the incoming queue, used to return
     // messages up the protocol stack. By holding the grant HERE, we tie
@@ -130,10 +161,19 @@ where
             out_buf: [0u8; 4],
             out_grant: None,
             in_grant: None,
-            sent_hdr: false,
+            // sent_hdr: false,
             triggered: false,
             current_grant: None,
+            // empty_sending: false,
+            send_state: SendingState::Idle,
         })
+    }
+
+    fn drop_grants(&mut self) {
+        self.current_grant = None;
+        self.out_grant = None;
+        self.in_grant = None;
+        self.triggered = false;
     }
 
     pub fn dequeue(&mut self) -> Option<FrameGrantR<'static, CT>> {
@@ -148,153 +188,227 @@ where
         Ok(())
     }
 
+    fn setup_data(&mut self, msg: &FrameGrantR<'static, CT>) -> Result<()> {
+        let igr_ptr;
+        match self.incoming_msgs.prod.grant(4) {
+            Ok(mut igr) => {
+                igr_ptr = igr.as_mut_ptr();
+                assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
+                self.in_grant = Some(igr);
+            }
+            Err(_) => {
+                todo!("1 Handle insufficient size available for incoming");
+            }
+        }
+        // TODO: Do I want to save the grant here? I just need to "peek" to
+        // get the header values
+
+        // println!("Starting exchange, header!");
+        self.out_buf = (msg.len() as u32).to_le_bytes();
+
+        self.ll
+            .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
+            .unwrap();
+
+        Ok(())
+    }
+
+    fn setup_empty(&mut self) -> Result<()> {
+        let igr_ptr;
+        match self.incoming_msgs.prod.grant(4) {
+            Ok(mut igr) => {
+                igr_ptr = igr.as_mut_ptr();
+                assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
+                self.in_grant = Some(igr);
+            }
+            Err(_) => {
+                todo!("2 Handle insufficient size available for incoming");
+            }
+        }
+        // TODO: Do I want to save the grant here? I just need to "peek" to
+        // get the header values
+
+        // println!("Starting exchange, header!");
+        self.out_buf = (0u32).to_le_bytes();
+
+        self.ll
+            .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
+            .unwrap();
+
+        Ok(())
+    }
+
+    fn complete_data_header(&mut self, msg: FrameGrantR<'static, CT>) -> Result<SendingState<CT>> {
+        let out_ptr = msg.as_ptr();
+        let out_len = msg.len();
+        self.out_grant = Some(msg);
+
+        let amt = match self.in_grant.take() {
+            Some(igr) => {
+                // Note: Drop IGR without commit by taking
+                assert_eq!(igr.len(), 4, "wrong header igr?");
+                let mut buf = [0u8; 4];
+                buf.copy_from_slice(&igr);
+                u32::from_le_bytes(buf) as usize
+            }
+            None => {
+                panic!("Why don't we have a header igr?");
+            }
+        };
+
+        let in_ptr;
+        self.in_grant = match self.incoming_msgs.prod.grant(amt) {
+            Ok(mut igr) => {
+                in_ptr = igr.as_mut_ptr();
+                Some(igr)
+            }
+            Err(_) => {
+                todo!("Handle insufficient size of igr")
+            }
+        };
+
+        // println!("Starting exchange, data!");
+        self.ll
+            .prepare_exchange(out_ptr, out_len, in_ptr, amt)
+            .unwrap();
+
+        Ok(SendingState::DataBody(amt))
+    }
+
+    fn complete_empty_header(&mut self) -> Result<SendingState<CT>> {
+        let out_ptr = self.out_buf.as_ptr();
+        let out_len = 0;
+
+        let amt = match self.in_grant.take() {
+            Some(igr) => {
+                // Note: Drop IGR without commit by taking
+                assert_eq!(igr.len(), 4, "wrong header igr?");
+                let mut buf = [0u8; 4];
+                buf.copy_from_slice(&igr);
+                u32::from_le_bytes(buf) as usize
+            }
+            None => {
+                panic!("Why don't we have a header igr?");
+            }
+        };
+
+        let in_ptr;
+        self.in_grant = match self.incoming_msgs.prod.grant(amt) {
+            Ok(mut igr) => {
+                in_ptr = igr.as_mut_ptr();
+                Some(igr)
+            }
+            Err(_) => {
+                todo!("Handle insufficient size of igr")
+            }
+        };
+
+        // println!("Starting exchange, data!");
+        self.ll
+            .prepare_exchange(out_ptr, out_len, in_ptr, amt)
+            .unwrap();
+
+        Ok(SendingState::EmptyBody(amt))
+    }
+
     pub fn poll(&mut self) -> Result<()> {
+        // println!("Ding");
         self.ll.process()?;
 
-        if !self.ll.is_exchange_active().unwrap() {
-            // TODO: We probably also should occasionally just
-            // poll for incoming messages, even when we don't
-            // have any outgoing messages to process
-            if let Some(msg) = self.outgoing_msgs.cons.read() {
-                if !self.sent_hdr {
-                    let igr_ptr;
-                    match self.incoming_msgs.prod.grant(4) {
-                        Ok(mut igr) => {
-                            igr_ptr = igr.as_mut_ptr();
-                            assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
-                            self.in_grant = Some(igr);
-                        }
-                        Err(_) => {
-                            todo!("1 Handle insufficient size available for incoming");
-                        }
-                    }
-                    // TODO: Do I want to save the grant here? I just need to "peek" to
-                    // get the header values
+        let exchange_active = match self.ll.is_exchange_active() {
+            Ok(act) => act,
+            Err(_e) => {
+                // TODO: error handling
+                return Ok(());
+            }
+        };
 
-                    // println!("Starting exchange, header!");
-                    self.out_buf = (msg.len() as u32).to_le_bytes();
+        let go_active = match self.ll.is_go_active() {
+            Ok(go) => go,
+            Err(_e) => {
+                // TODO: error handling
+                return Ok(());
+            }
+        };
 
-                    self.ll
-                        .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
-                        .unwrap();
+        let old_state = core::mem::replace(&mut self.send_state, SendingState::Idle);
+
+        self.send_state = match (exchange_active, go_active, self.triggered, old_state) {
+            (false, false, false, SendingState::Idle) => {
+                // println!("IDLE");
+                if self.ll.is_go_active().is_err() {
+                    // TODO: This is a hack
+                    SendingState::Idle
+                } else if let Some(msg) = self.outgoing_msgs.cons.read() {
+                    self.setup_data(&msg)?;
+                    SendingState::DataHeader(msg)
                 } else {
-                    let out_ptr = msg.as_ptr();
-                    let out_len = msg.len();
-                    self.out_grant = Some(msg);
-
-                    let amt = match self.in_grant.take() {
-                        Some(igr) => {
-                            // Note: Drop IGR without commit by taking
-                            assert_eq!(igr.len(), 4, "wrong header igr?");
-                            let mut buf = [0u8; 4];
-                            buf.copy_from_slice(&igr);
-                            u32::from_le_bytes(buf) as usize
-                        }
-                        None => {
-                            panic!("Why don't we have a header igr?");
-                        }
-                    };
-
-                    let in_ptr;
-                    self.in_grant = match self.incoming_msgs.prod.grant(amt) {
-                        Ok(mut igr) => {
-                            in_ptr = igr.as_mut_ptr();
-                            Some(igr)
-                        }
-                        Err(_) => {
-                            todo!("Handle insufficient size of igr")
-                        }
-                    };
-
-                    // println!("Starting exchange, data!");
-                    self.ll
-                        .prepare_exchange(out_ptr, out_len, in_ptr, amt)
-                        .unwrap();
-                }
-            } else if self.ll.is_go_active().is_ok() {
-                // TODO!!! THIS IS A HACK!!! ^^^^^^^
-
-
-                // TODO: Rate limiting
-                // TODO: Set a flag to make sure we don't get a message-mid promiscuous ping
-                if !self.sent_hdr {
-                    let igr_ptr;
-                    match self.incoming_msgs.prod.grant(4) {
-                        Ok(mut igr) => {
-                            igr_ptr = igr.as_mut_ptr();
-                            assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
-                            self.in_grant = Some(igr);
-                        }
-                        Err(_) => {
-                            todo!("2 Handle insufficient size available for incoming");
-                        }
-                    }
-                    // TODO: Do I want to save the grant here? I just need to "peek" to
-                    // get the header values
-
-                    // println!("Starting exchange, header!");
-                    self.out_buf = (0u32).to_le_bytes();
-
-                    self.ll
-                        .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
-                        .unwrap();
-                } else {
-                    let out_ptr = self.out_buf.as_ptr();
-                    let out_len = 0;
-
-                    let amt = match self.in_grant.take() {
-                        Some(igr) => {
-                            // Note: Drop IGR without commit by taking
-                            assert_eq!(igr.len(), 4, "wrong header igr?");
-                            let mut buf = [0u8; 4];
-                            buf.copy_from_slice(&igr);
-                            u32::from_le_bytes(buf) as usize
-                        }
-                        None => {
-                            panic!("Why don't we have a header igr?");
-                        }
-                    };
-
-                    let in_ptr;
-                    self.in_grant = match self.incoming_msgs.prod.grant(amt) {
-                        Ok(mut igr) => {
-                            in_ptr = igr.as_mut_ptr();
-                            Some(igr)
-                        }
-                        Err(_) => {
-                            todo!("Handle insufficient size of igr")
-                        }
-                    };
-
-                    // println!("Starting exchange, data!");
-                    self.ll
-                        .prepare_exchange(out_ptr, out_len, in_ptr, amt)
-                        .unwrap();
+                    self.setup_empty()?;
+                    SendingState::EmptyHeader
                 }
             }
-        } else {
-            if !self.triggered {
-                if self.ll.is_go_active().unwrap() {
-                    // println!("triggering!");
-                    self.ll.trigger_exchange().unwrap();
-                    self.triggered = true;
+            (_, _, _, SendingState::Idle) => {
+                // println!("!IDLE");
+                // This is an error.
+                // Exch/Go/Trigger shouldn't be set while idle
+                self.ll.abort_exchange().ok();
+                self.drop_grants();
+                SendingState::Idle // TODO: return Err?
+            }
+            (false, true, true, state) => {
+                // println!("!!!done!!!");
+                panic!()
+            }
+            (false, _, _, _) => {
+                // println!("ABORT1");
+                // This is an error.
+                // exchange should be active
+                self.ll.abort_exchange().ok();
+                self.drop_grants();
+                SendingState::Idle // TODO: return Err?
+            }
+            (true, false, _, _) => {
+                // println!("ABORT2");
+                // This is an error. Go has fallen during exchange
+                self.drop_grants();
+                self.ll.abort_exchange().ok();
+                SendingState::Idle // TODO: return Err?
+            }
+            (true, true, false, state) => {
+                // println!("TRIGGER");
+                // TRIGGER
+                match state {
+                    SendingState::Idle => {
+                        return Err(Error::ToDo);
+                    },
+                    state => {
+                        self.ll.trigger_exchange()?;
+                        // println!("TRIGGERED");
+                        self.triggered = true;
+                        state
+                    }
                 }
-            } else {
-                if let Ok(false) = self.ll.is_go_active() {
-                    println!("aborting!");
-                    self.ll.abort_exchange().ok();
-                }
-                match self.ll.complete_exchange(self.sent_hdr) {
-                    Err(_) => {}
+            }
+            (true, true, true, state) => {
+                // Did we just finish sending a body?
+                let body_done = match state {
+                    SendingState::EmptyBody(_) |  SendingState::DataBody(_) => true,
+                    _ => false,
+                };
+
+                match self.ll.complete_exchange(body_done) {
+                    Err(_) => {
+                        // Probably not an error, the other end just hung up
+                        return Err(Error::ToDo);
+                    }
                     Ok(amt) => {
 
-                        if self.sent_hdr {
-                            // Note: relax this for "empty" requests to the arbitrator
+                        if body_done {
                             assert!(self.in_grant.is_some(), "Why no in grant on completion?");
 
                             if let Some(igr) = self.in_grant.take() {
                                 if amt != 0 {
-                                    println!("got {:?}!", &igr[..amt]);
+                                    // println!("got {:?}!", &igr[..amt]);
                                     igr.commit(amt);
                                 }
                             }
@@ -304,11 +418,29 @@ where
                             }
                         }
                         self.triggered = false;
-                        self.sent_hdr = !self.sent_hdr;
                     }
                 }
-            }
-        }
+
+
+                match state {
+                    SendingState::Idle => {
+                        return Err(Error::ToDo);
+                    },
+                    SendingState::DataHeader(gr) => {
+                        self.complete_data_header(gr)?
+                    }
+                    SendingState::DataBody(amt) => {
+                        SendingState::Idle
+                    }
+                    SendingState::EmptyHeader => {
+                        self.complete_empty_header()?
+                    }
+                    SendingState::EmptyBody(amt) => {
+                        SendingState::Idle
+                    }
+                }
+            },
+        };
 
         Ok(())
     }
@@ -330,7 +462,7 @@ where
         match self.dequeue() {
             Some(mut msg) => {
                 // Set message to automatically release on drop
-                println!("recv: {:?}", &msg[..]);
+                // println!("recv: {:?}", &msg[..]);
                 msg.auto_release(true);
                 self.current_grant = Some(msg);
                 let sbr = self.current_grant.as_mut().unwrap();
@@ -341,11 +473,11 @@ where
                 // a single frame. But for now, we only handle one.
                 match from_bytes_cobs(sbr) {
                     Ok(deser) => {
-                        println!("yay! {:?}", deser);
+                        // println!("yay! {:?}", deser);
                         Ok(Some(deser))
                     }
                     Err(_) => {
-                        println!("Parsing Error!");
+                        // println!("Parsing Error!");
                         Err(ClientIoError::ParsingError)
                     }
                 }

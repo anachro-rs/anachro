@@ -188,8 +188,7 @@ where
                                 self.out_buf.len(),
                                 in_ptr,
                                 4,
-                            )
-                            .unwrap();
+                            )?;
                     } else {
                         // println!("Got READY, start data exchange!");
 
@@ -252,7 +251,7 @@ where
             }
         } else {
             if !self.ll.is_ready_active().unwrap() {
-                println!("aborting!");
+                // println!("aborting!");
                 self.ll.abort_exchange().ok();
                 self.sent_hdr = false;
 
@@ -271,8 +270,10 @@ where
                         assert!(self.in_grant.is_some(), "Why don't we have an in grant at the end of exchange?");
 
                         if let Some(igr) = self.in_grant.take() {
-                            println!("got {:?}!", &igr[..amt]);
-                            igr.commit(amt);
+                            if amt != 0 {
+                                println!("got {:?}!", &igr[..amt]);
+                                igr.commit(amt);
+                            }
                         }
                         if let Some(ogr) = self.out_grant.take() {
                             ogr.release();
