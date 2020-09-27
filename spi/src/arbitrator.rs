@@ -243,7 +243,7 @@ where
                     }
                 }
                 Ok(false) if self.ll.is_go_active()? => {
-                    println!("clearing go!");
+                    // println!("clearing go!");
                     self.ll.clear_go().unwrap();
                     self.sent_hdr = false;
                 }
@@ -271,7 +271,7 @@ where
 
                         if let Some(igr) = self.in_grant.take() {
                             if amt != 0 {
-                                println!("got {:?}!", &igr[..amt]);
+                                // println!("got {:?}!", &igr[..amt]);
                                 igr.commit(amt);
                             }
                         }

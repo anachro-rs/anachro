@@ -236,7 +236,7 @@ impl Client {
                 self.pending_registration(cio)?;
 
                 if self.timeout_violated() {
-                    println!("violated!");
+                    // println!("violated!");
                     self.state = ClientState::Disconnected;
                     self.current_tick = 0;
                 }
@@ -374,12 +374,12 @@ impl Client {
             }
         };
 
-        println!("got pr mesg!");
+        // println!("got pr mesg!");
 
 
         if let Arbitrator::Control(AControl { seq, response }) = msg {
             if seq != self.ctr {
-                println!("ctr mismatch! {} {}", seq, self.ctr);
+                // println!("ctr mismatch! {} {}", seq, self.ctr);
                 self.current_tick = self.current_tick.saturating_add(1);
                 // TODO, restart connection process? Just disregard?
                 Err(Error::UnexpectedMessage)
@@ -390,12 +390,12 @@ impl Client {
                 Ok(())
             } else {
                 self.current_tick = self.current_tick.saturating_add(1);
-                println!("Other Error");
+                // println!("Other Error");
                 // TODO, restart connection process? Just disregard?
                 Err(Error::UnexpectedMessage)
             }
         } else {
-            println!("??? {:?}?", msg);
+            // println!("??? {:?}?", msg);
             self.current_tick = self.current_tick.saturating_add(1);
             Ok(())
         }

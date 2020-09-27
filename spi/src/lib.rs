@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "tcp"), no_std)]
+
 use bbqueue::{
     framed::{FrameConsumer, FrameProducer},
     ArrayLength, BBBuffer, Error as BBError,

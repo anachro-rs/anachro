@@ -90,9 +90,9 @@ where
 {
     Idle,
     DataHeader(FrameGrantR<'static, CT>),
-    DataBody(usize),
+    DataBody,
     EmptyHeader,
-    EmptyBody(usize),
+    EmptyBody,
 }
 
 impl<CT> PartialEq for SendingState<CT>
@@ -103,9 +103,9 @@ where
         match (self, other) {
             (SendingState::Idle, SendingState::Idle) => true,
             (SendingState::DataHeader(_), SendingState::DataHeader(_)) => true,
-            (SendingState::DataBody(_), SendingState::DataBody(_)) => true,
+            (SendingState::DataBody, SendingState::DataBody) => true,
             (SendingState::EmptyHeader, SendingState::EmptyHeader) => true,
-            (SendingState::EmptyBody(_), SendingState::EmptyBody(_)) => true,
+            (SendingState::EmptyBody, SendingState::EmptyBody) => true,
             _ => false,
         }
     }
@@ -272,7 +272,7 @@ where
             .prepare_exchange(out_ptr, out_len, in_ptr, amt)
             .unwrap();
 
-        Ok(SendingState::DataBody(amt))
+        Ok(SendingState::DataBody)
     }
 
     fn complete_empty_header(&mut self) -> Result<SendingState<CT>> {
@@ -308,7 +308,7 @@ where
             .prepare_exchange(out_ptr, out_len, in_ptr, amt)
             .unwrap();
 
-        Ok(SendingState::EmptyBody(amt))
+        Ok(SendingState::EmptyBody)
     }
 
     pub fn poll(&mut self) -> Result<()> {
@@ -355,9 +355,11 @@ where
                 self.drop_grants();
                 SendingState::Idle // TODO: return Err?
             }
-            (false, true, true, state) => {
-                // println!("!!!done!!!");
-                panic!()
+            (false, true, true, _state) => {
+                // This is an error.
+                self.ll.abort_exchange().ok();
+                self.drop_grants();
+                SendingState::Idle // TODO: return Err?
             }
             (false, _, _, _) => {
                 // println!("ABORT1");
@@ -392,7 +394,7 @@ where
             (true, true, true, state) => {
                 // Did we just finish sending a body?
                 let body_done = match state {
-                    SendingState::EmptyBody(_) |  SendingState::DataBody(_) => true,
+                    SendingState::EmptyBody |  SendingState::DataBody => true,
                     _ => false,
                 };
 
@@ -429,13 +431,13 @@ where
                     SendingState::DataHeader(gr) => {
                         self.complete_data_header(gr)?
                     }
-                    SendingState::DataBody(amt) => {
+                    SendingState::DataBody => {
                         SendingState::Idle
                     }
                     SendingState::EmptyHeader => {
                         self.complete_empty_header()?
                     }
-                    SendingState::EmptyBody(amt) => {
+                    SendingState::EmptyBody => {
                         SendingState::Idle
                     }
                 }
