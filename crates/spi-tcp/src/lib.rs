@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 
 use postcard::{to_stdvec_cobs, from_bytes_cobs};
 
-use crate::{
+use anachro_spi::{
     Result, Error,
     component::EncLogicLLComponent,
     arbitrator::EncLogicLLArbitrator,

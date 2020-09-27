@@ -10,7 +10,8 @@ edition = "2018"
 anachro-icd = { path = "../../crates/icd" }
 anachro-server = { path = "../../crates/server" }
 serde = "1.0.115"
-anachro-spi = { path = "../../spi", features = ["tcp"] }
+anachro-spi = { path = "../../crates/spi" }
+anachro-spi-tcp = { path = "../../crates/spi-tcp" }
 bbqueue = "0.4.10"
 
 # ???

@@ -4,11 +4,12 @@ members = [
     "crates/client",
     "crates/icd",
     "crates/server",
+    "crates/spi",
+    "crates/spi-tcp",
 
     "pc-examples/client-tcp",
     "pc-examples/server-tcp",
     "pc-examples/component-spi-tcp",
     "pc-examples/arbitrator-spi-tcp",
 
-    "spi",
 ]

@@ -11,23 +11,11 @@ bbqueue = "0.4.10"
 
 [dependencies.anachro-client]
 version = "0.1"
-path = "../crates/client"
+path = "../client"
 
 [dependencies.anachro-server]
 version = "0.1"
-path = "../crates/server"
+path = "../server"
 
-[dependencies.serde]
-version = "1.0"
-optional = true
-default-features = true
-features = ["derive"]
 
-[dependencies.postcard]
-version = "0.5"
-optional = true
-features = ["use-std"]
-
-[features]
-tcp = ["serde", "postcard"]
 

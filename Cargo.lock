@@ -16,6 +16,7 @@ dependencies = [
  "anachro-client",
  "anachro-icd",
  "anachro-spi",
+ "anachro-spi-tcp",
  "bbqueue",
  "postcard",
  "serde",
@@ -46,6 +47,7 @@ dependencies = [
  "anachro-icd",
  "anachro-server",
  "anachro-spi",
+ "anachro-spi-tcp",
  "bbqueue",
  "heapless",
  "postcard",
@@ -60,6 +62,16 @@ dependencies = [
  "anachro-client",
  "anachro-server",
  "bbqueue",
+]
+
+[[package]]
+name = "anachro-spi-tcp"
+version = "0.1.0"
+dependencies = [
+ "anachro-client",
+ "anachro-server",
+ "anachro-spi",
+ "bbqueue",
  "postcard",
  "serde",
 ]
@@ -70,6 +82,7 @@ version = "0.1.0"
 dependencies = [
  "anachro-icd",
  "anachro-spi",
+ "anachro-spi-tcp",
  "bbqueue",
  "postcard",
  "serde",
@@ -112,6 +125,7 @@ name = "component-spi-tcp"
 version = "0.1.0"
 dependencies = [
  "anachro-spi",
+ "anachro-spi-tcp",
  "bbqueue",
  "postcard",
  "serde",

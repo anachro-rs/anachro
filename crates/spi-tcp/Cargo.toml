@@ -1,0 +1,29 @@
+[package]
+name = "anachro-spi-tcp"
+version = "0.1.0"
+authors = ["James Munns <james.munns@ferrous-systems.com>"]
+edition = "2018"
+
+[dependencies]
+bbqueue = "0.4.10"
+
+[dependencies.anachro-spi]
+version = "0.1"
+path = "../spi"
+
+[dependencies.anachro-client]
+version = "0.1"
+path = "../client"
+
+[dependencies.anachro-server]
+version = "0.1"
+path = "../server"
+
+[dependencies.serde]
+version = "1.0"
+default-features = true
+features = ["derive"]
+
+[dependencies.postcard]
+version = "0.5"
+features = ["use-std"]

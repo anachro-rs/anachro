@@ -8,8 +8,8 @@ use anachro_spi::{
         EncLogicLLArbitrator,
         EncLogicHLArbitrator,
     },
-    tcp::TcpSpiArbLL,
 };
+use anachro_spi_tcp::TcpSpiArbLL;
 use anachro_icd::Uuid;
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};

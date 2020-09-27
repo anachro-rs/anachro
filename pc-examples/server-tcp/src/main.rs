@@ -1,19 +1,16 @@
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 
 use std::collections::{HashMap, HashSet};
 use std::default::Default;
-use std::io::{ErrorKind, Read, Write};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use anachro_server::{Broker, Request, Response, Uuid, RESET_MESSAGE, ServerIoIn, ServerIoOut, ServerIoError};
+use anachro_server::{Broker, Uuid};
 
-use postcard::{from_bytes_cobs, to_stdvec_cobs};
-use anachro_spi::{
-    arbitrator::EncLogicHLArbitrator,
-    tcp::TcpSpiArbLL,
-};
+use postcard::to_stdvec_cobs;
+use anachro_spi::arbitrator::EncLogicHLArbitrator;
+use anachro_spi_tcp::TcpSpiArbLL;
 use heapless::{
     Vec as HVec,
     consts,

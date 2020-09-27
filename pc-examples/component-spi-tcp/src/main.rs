@@ -1,7 +1,5 @@
-use anachro_spi::{
-    component::EncLogicHLComponent,
-    tcp::TcpSpiComLL,
-};
+use anachro_spi::component::EncLogicHLComponent;
+use anachro_spi_tcp::TcpSpiComLL;
 use std::net::TcpStream;
 
 use std::time::{Duration, Instant};

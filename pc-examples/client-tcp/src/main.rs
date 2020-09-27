@@ -8,7 +8,8 @@ use postcard;
 
 use serde::{Deserialize, Serialize};
 
-use anachro_spi::{component::EncLogicHLComponent, tcp::TcpSpiComLL};
+use anachro_spi::component::EncLogicHLComponent;
+use anachro_spi_tcp::TcpSpiComLL;
 
 use bbqueue::{consts::*, BBBuffer, ConstBBBuffer};
 
@@ -64,6 +65,7 @@ fn main() {
     while !client.is_connected() {
         // AJM: We shouldn't have to manually poll the IO like this
         if let Err(e) = cio.poll() {
+            println!("{:?}", e);
             client.reset_connection();
             continue;
         }
