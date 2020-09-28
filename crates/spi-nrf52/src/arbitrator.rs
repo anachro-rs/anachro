@@ -148,10 +148,16 @@ where
         };
 
         spis.enable();
-        let txfr = spis.transfer_split(
+        let txfr = match spis.transfer_split(
             ConstRawSlice { ptr: data_out, len: data_out_len },
             MutRawSlice { ptr: data_in, len: data_in_max },
-        ).unwrap();
+        ) {
+            Ok(t) => t,
+            Err((_e, p, _tx, _rx)) => {
+                self.periph = Periph::Idle(p);
+                return Err(Error::ToDo);
+            }
+        };
 
         self.periph = Periph::Pending(txfr);
         self.notify_go().ok();

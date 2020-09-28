@@ -15,6 +15,9 @@ members = [
 
 ]
 
-excludes = [
+exclude = [
     "vendor/nrf-hal"
 ]
+
+[patch.crates-io]
+nrf-hal-common = { path = "vendor/nrf-hal/nrf-hal-common" }

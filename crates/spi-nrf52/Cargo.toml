@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nrf52840-hal = { version = "0.11", git = "https://github.com/nrf-rs/nrf-hal", rev = "3ce300c0d4c3ed0d62bbf247ce14cb2de9f0bade" }
+nrf52840-hal = { version = "0.11" }
 anachro-spi = { path = "../spi" }
 embedded-hal = "0.2.4"
 embedded-dma = "0.1.1"
