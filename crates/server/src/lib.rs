@@ -13,7 +13,7 @@ use {
         ManagedString,
     },
     core::default::Default,
-    heapless::{consts, Vec, ArrayLength},
+    heapless::{consts, ArrayLength, Vec},
 };
 
 pub use anachro_icd::{self, Name, Path, PubSubPath, Uuid, Version};
@@ -129,10 +129,7 @@ impl Broker {
         sio_in: &'req mut SI,
         sio_out: &'sio mut SO,
     ) -> Result<(), ServerError> {
-        let Request {
-            source,
-            msg,
-        } = match sio_in.recv() {
+        let Request { source, msg } = match sio_in.recv() {
             Ok(Some(req)) => req,
             Ok(None) => return Ok(()),
             Err(e) => {
@@ -156,22 +153,20 @@ impl Broker {
                         .map_err(|_| ServerError::ResourcesExhausted)?;
                 }
             }
-            Component::PubSub(PubSub { ref path, ref ty }) => {
-                match ty {
-                    PubSubType::Pub { ref payload } => {
-                        self.process_publish(sio_out, path, payload, source)?;
-                    }
-                    PubSubType::Sub => {
-                        let client = self.client_by_id_mut(&source)?;
-                        sio_out
-                            .push_response(client.process_subscribe(path)?)
-                            .map_err(|_| ServerError::ResourcesExhausted)?;
-                    }
-                    PubSubType::Unsub => {
-                        let client = self.client_by_id_mut(&source)?;
-                        client.process_unsub(path)?;
-                        todo!()
-                    }
+            Component::PubSub(PubSub { ref path, ref ty }) => match ty {
+                PubSubType::Pub { ref payload } => {
+                    self.process_publish(sio_out, path, payload, source)?;
+                }
+                PubSubType::Sub => {
+                    let client = self.client_by_id_mut(&source)?;
+                    sio_out
+                        .push_response(client.process_subscribe(path)?)
+                        .map_err(|_| ServerError::ResourcesExhausted)?;
+                }
+                PubSubType::Unsub => {
+                    let client = self.client_by_id_mut(&source)?;
+                    client.process_unsub(path)?;
+                    todo!()
                 }
             },
         }
@@ -221,17 +216,15 @@ impl Broker {
                     }
                     ManagedString::Borrow(lp) => *lp,
                 }
-            },
-            PubSubPath::Short(sid) => {
-                &source_id
+            }
+            PubSubPath::Short(sid) => &source_id
                 .1
                 .shortcuts
                 .iter()
                 .find(|s| &s.short == sid)
                 .ok_or(ServerError::UnknownShortcode)?
                 .long
-                .as_str()
-            },
+                .as_str(),
         };
 
         // Then, find all applicable destinations, max of 1 per destination
@@ -257,12 +250,11 @@ impl Broker {
                                     payload,
                                 },
                             )));
-                            sio
-                                .push_response(Response {
-                                    dest: client.id,
-                                    msg,
-                                })
-                                .map_err(|_| ServerError::ResourcesExhausted)?;
+                            sio.push_response(Response {
+                                dest: client.id,
+                                msg,
+                            })
+                            .map_err(|_| ServerError::ResourcesExhausted)?;
                             continue 'client;
                         }
                     }
@@ -271,12 +263,11 @@ impl Broker {
                         path: PubSubPath::Long(Path::borrow_from_str(path)),
                         payload,
                     })));
-                    sio
-                        .push_response(Response {
-                            dest: client.id,
-                            msg,
-                        })
-                        .map_err(|_| ServerError::ResourcesExhausted)?;
+                    sio.push_response(Response {
+                        dest: client.id,
+                        msg,
+                    })
+                    .map_err(|_| ServerError::ResourcesExhausted)?;
                     continue 'client;
                 }
             }
@@ -377,7 +368,10 @@ impl Client {
         Ok(response)
     }
 
-    fn process_subscribe<'a, 'b>(&mut self, path: &'a PubSubPath<'b>) -> Result<Response<'b>, ServerError> {
+    fn process_subscribe<'a, 'b>(
+        &mut self,
+        path: &'a PubSubPath<'b>,
+    ) -> Result<Response<'b>, ServerError> {
         let state = self.state.as_connected_mut()?;
 
         // Determine canonical path

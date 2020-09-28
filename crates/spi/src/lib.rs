@@ -5,8 +5,8 @@ use bbqueue::{
     ArrayLength, BBBuffer, Error as BBError,
 };
 
-pub mod component;
 pub mod arbitrator;
+pub mod component;
 
 #[derive(Debug)]
 pub enum Error {
@@ -39,14 +39,11 @@ impl<CT> BBFullDuplex<CT>
 where
     CT: ArrayLength<u8>,
 {
-    pub(crate) fn new(
-        a: &'static BBBuffer<CT>,
-    ) -> Result<BBFullDuplex<CT>> {
-        let (prod, cons) = a.try_split_framed().map_err(|_| Error::InitializationFailed)?;
+    pub(crate) fn new(a: &'static BBBuffer<CT>) -> Result<BBFullDuplex<CT>> {
+        let (prod, cons) = a
+            .try_split_framed()
+            .map_err(|_| Error::InitializationFailed)?;
 
-        Ok(BBFullDuplex {
-            prod,
-            cons,
-        })
+        Ok(BBFullDuplex { prod, cons })
     }
 }

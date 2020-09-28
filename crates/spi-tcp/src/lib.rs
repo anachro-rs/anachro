@@ -3,14 +3,12 @@ use std::net::TcpStream;
 use std::default::Default;
 use std::io::{ErrorKind, Read, Write};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use postcard::{to_stdvec_cobs, from_bytes_cobs};
+use postcard::{from_bytes_cobs, to_stdvec_cobs};
 
 use anachro_spi::{
-    Result, Error,
-    component::EncLogicLLComponent,
-    arbitrator::EncLogicLLArbitrator,
+    arbitrator::EncLogicLLArbitrator, component::EncLogicLLComponent, Error, Result,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,7 +56,6 @@ impl TcpSpiComLL {
 }
 
 impl EncLogicLLComponent for TcpSpiComLL {
-
     fn process(&mut self) -> Result<()> {
         let mut buf = [0u8; 1024];
 
@@ -123,9 +120,8 @@ impl EncLogicLLComponent for TcpSpiComLL {
         self.ready_state = true;
         let msg = TcpSpiMsg::ReadyState(true);
         let payload = to_stdvec_cobs(&msg).map_err(|_| Error::ToDo)?;
-        self.stream
-            .write_all(&payload).unwrap();
-            // .map_err(|_| Error::ToDo)?;
+        self.stream.write_all(&payload).unwrap();
+        // .map_err(|_| Error::ToDo)?;
         Ok(())
     }
 
@@ -134,9 +130,7 @@ impl EncLogicLLComponent for TcpSpiComLL {
         self.ready_state = false;
         let msg = TcpSpiMsg::ReadyState(false);
         let payload = to_stdvec_cobs(&msg).map_err(|_| Error::ToDo)?;
-        self.stream
-            .write_all(&payload)
-            .map_err(|_| Error::ToDo)?;
+        self.stream.write_all(&payload).map_err(|_| Error::ToDo)?;
         Ok(())
     }
 
@@ -311,7 +305,6 @@ impl TcpSpiArbLL {
 }
 
 impl EncLogicLLArbitrator for TcpSpiArbLL {
-
     fn process(&mut self) -> Result<()> {
         let mut buf = [0u8; 1024];
 
@@ -371,9 +364,7 @@ impl EncLogicLLArbitrator for TcpSpiArbLL {
         self.go_state = true;
         let msg = TcpSpiMsg::GoState(true);
         let payload = to_stdvec_cobs(&msg).map_err(|_| Error::ToDo)?;
-        self.stream
-            .write_all(&payload)
-            .map_err(|_| Error::ToDo)?;
+        self.stream.write_all(&payload).map_err(|_| Error::ToDo)?;
         Ok(())
     }
 
@@ -382,9 +373,7 @@ impl EncLogicLLArbitrator for TcpSpiArbLL {
         self.go_state = false;
         let msg = TcpSpiMsg::GoState(false);
         let payload = to_stdvec_cobs(&msg).map_err(|_| Error::ToDo)?;
-        self.stream
-            .write_all(&payload)
-            .map_err(|_| Error::ToDo)?;
+        self.stream.write_all(&payload).map_err(|_| Error::ToDo)?;
         Ok(())
     }
 

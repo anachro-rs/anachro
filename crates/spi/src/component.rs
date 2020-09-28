@@ -1,4 +1,4 @@
-use crate::{Result, BBFullDuplex, Error};
+use crate::{BBFullDuplex, Error, Result};
 
 use bbqueue::{
     framed::{FrameGrantR, FrameGrantW},
@@ -6,14 +6,8 @@ use bbqueue::{
 };
 
 use anachro_client::{
-    ClientIo,
-    ClientIoError,
-    anachro_icd::{
-        arbitrator::Arbitrator,
-        component::Component,
-    },
-    from_bytes_cobs,
-    to_slice_cobs,
+    anachro_icd::{arbitrator::Arbitrator, component::Component},
+    from_bytes_cobs, to_slice_cobs, ClientIo, ClientIoError,
 };
 
 pub trait EncLogicLLComponent {
@@ -86,7 +80,7 @@ pub trait EncLogicLLComponent {
 #[derive(Debug)]
 enum SendingState<CT>
 where
-    CT: ArrayLength<u8>
+    CT: ArrayLength<u8>,
 {
     Idle,
     DataHeader(FrameGrantR<'static, CT>),
@@ -97,7 +91,7 @@ where
 
 impl<CT> PartialEq for SendingState<CT>
 where
-    CT: ArrayLength<u8>
+    CT: ArrayLength<u8>,
 {
     fn eq(&self, other: &SendingState<CT>) -> bool {
         match (self, other) {
@@ -110,7 +104,6 @@ where
         }
     }
 }
-
 
 pub struct EncLogicHLComponent<LL, CT>
 where
@@ -126,7 +119,6 @@ where
     // sent_hdr: bool,
     triggered: bool,
     // empty_sending: bool,
-
     send_state: SendingState<CT>,
 
     // NOTE: This is the grant from the incoming queue, used to return
@@ -152,7 +144,7 @@ where
     pub fn new(
         ll: LL,
         outgoing: &'static BBBuffer<CT>,
-        incoming: &'static BBBuffer<CT>
+        incoming: &'static BBBuffer<CT>,
     ) -> Result<Self> {
         Ok(EncLogicHLComponent {
             ll,
@@ -193,7 +185,10 @@ where
         match self.incoming_msgs.prod.grant(4) {
             Ok(mut igr) => {
                 igr_ptr = igr.as_mut_ptr();
-                assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
+                assert!(
+                    self.in_grant.is_none(),
+                    "Why do we already have an in grant?"
+                );
                 self.in_grant = Some(igr);
             }
             Err(_) => {
@@ -218,7 +213,10 @@ where
         match self.incoming_msgs.prod.grant(4) {
             Ok(mut igr) => {
                 igr_ptr = igr.as_mut_ptr();
-                assert!(self.in_grant.is_none(), "Why do we already have an in grant?");
+                assert!(
+                    self.in_grant.is_none(),
+                    "Why do we already have an in grant?"
+                );
                 self.in_grant = Some(igr);
             }
             Err(_) => {
@@ -262,9 +260,7 @@ where
                 in_ptr = igr.as_mut_ptr();
                 Some(igr)
             }
-            Err(_) => {
-                todo!("Handle insufficient size of igr")
-            }
+            Err(_) => todo!("Handle insufficient size of igr"),
         };
 
         // println!("Starting exchange, data!");
@@ -298,9 +294,7 @@ where
                 in_ptr = igr.as_mut_ptr();
                 Some(igr)
             }
-            Err(_) => {
-                todo!("Handle insufficient size of igr")
-            }
+            Err(_) => todo!("Handle insufficient size of igr"),
         };
 
         // println!("Starting exchange, data!");
@@ -382,7 +376,7 @@ where
                 match state {
                     SendingState::Idle => {
                         return Err(Error::ToDo);
-                    },
+                    }
                     state => {
                         self.ll.trigger_exchange()?;
                         // println!("TRIGGERED");
@@ -394,7 +388,7 @@ where
             (true, true, true, state) => {
                 // Did we just finish sending a body?
                 let body_done = match state {
-                    SendingState::EmptyBody |  SendingState::DataBody => true,
+                    SendingState::EmptyBody | SendingState::DataBody => true,
                     _ => false,
                 };
 
@@ -404,7 +398,6 @@ where
                         return Err(Error::ToDo);
                     }
                     Ok(amt) => {
-
                         if body_done {
                             assert!(self.in_grant.is_some(), "Why no in grant on completion?");
 
@@ -423,25 +416,16 @@ where
                     }
                 }
 
-
                 match state {
                     SendingState::Idle => {
                         return Err(Error::ToDo);
-                    },
-                    SendingState::DataHeader(gr) => {
-                        self.complete_data_header(gr)?
                     }
-                    SendingState::DataBody => {
-                        SendingState::Idle
-                    }
-                    SendingState::EmptyHeader => {
-                        self.complete_empty_header()?
-                    }
-                    SendingState::EmptyBody => {
-                        SendingState::Idle
-                    }
+                    SendingState::DataHeader(gr) => self.complete_data_header(gr)?,
+                    SendingState::DataBody => SendingState::Idle,
+                    SendingState::EmptyHeader => self.complete_empty_header()?,
+                    SendingState::EmptyBody => SendingState::Idle,
                 }
-            },
+            }
         };
 
         Ok(())

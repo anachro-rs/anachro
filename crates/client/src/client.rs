@@ -376,7 +376,6 @@ impl Client {
 
         // println!("got pr mesg!");
 
-
         if let Arbitrator::Control(AControl { seq, response }) = msg {
             if seq != self.ctr {
                 // println!("ctr mismatch! {} {}", seq, self.ctr);

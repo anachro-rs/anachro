@@ -4,24 +4,17 @@ use std::net::TcpStream;
 
 use std::time::{Duration, Instant};
 
-use bbqueue::{
-    consts::*,
-    BBBuffer, ConstBBBuffer,
-};
+use bbqueue::{consts::*, BBBuffer, ConstBBBuffer};
 
-static BB_OUT: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
-static BB_INP: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
+static BB_OUT: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
+static BB_INP: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
 
 fn main() {
     let stream = TcpStream::connect("127.0.0.1:8080").unwrap();
     stream.set_nonblocking(true).unwrap();
 
     println!("Component connected!");
-    let mut com = EncLogicHLComponent::new(
-        TcpSpiComLL::new(stream),
-        &BB_OUT,
-        &BB_INP
-    ).unwrap();
+    let mut com = EncLogicHLComponent::new(TcpSpiComLL::new(stream), &BB_OUT, &BB_INP).unwrap();
 
     let mut last_tx = Instant::now();
 

@@ -1,17 +1,17 @@
-use crate::{Result, BBFullDuplex};
+use crate::{BBFullDuplex, Result};
 
+use anachro_server::{
+    anachro_icd::Uuid,
+    // Response,
+    from_bytes_cobs,
+    Request,
+    // ServerIoOut,
+    ServerIoError,
+    ServerIoIn,
+};
 use bbqueue::{
     framed::{FrameGrantR, FrameGrantW},
     ArrayLength, BBBuffer,
-};
-use anachro_server::{
-    ServerIoIn,
-    // ServerIoOut,
-    ServerIoError,
-    Request,
-    // Response,
-    from_bytes_cobs,
-    anachro_icd::Uuid,
 };
 
 pub trait EncLogicLLArbitrator: Send {
@@ -78,7 +78,6 @@ pub trait EncLogicLLArbitrator: Send {
     fn abort_exchange(&mut self) -> Result<usize>;
 }
 
-
 // unsafe impl<LL, CT> Send for EncLogicHLArbitrator<LL, CT>
 // where
 //     CT: ArrayLength<u8>,
@@ -114,7 +113,6 @@ where
     current_grant: Option<FrameGrantR<'static, CT>>,
 }
 
-
 impl<LL, CT> EncLogicHLArbitrator<LL, CT>
 where
     CT: ArrayLength<u8>,
@@ -124,7 +122,7 @@ where
         uuid: Uuid,
         ll: LL,
         outgoing: &'static BBBuffer<CT>,
-        incoming: &'static BBBuffer<CT>
+        incoming: &'static BBBuffer<CT>,
     ) -> Result<Self> {
         Ok(EncLogicHLArbitrator {
             ll,
@@ -160,14 +158,20 @@ where
                 Ok(true) => {
                     if !self.sent_hdr {
                         // println!("Got READY, start header exchange!");
-                        assert!(self.out_grant.is_none(), "Why do we have an out grant already?!");
-                        assert!(self.in_grant.is_none(), "Why do we have an in grant already?!");
+                        assert!(
+                            self.out_grant.is_none(),
+                            "Why do we have an out grant already?!"
+                        );
+                        assert!(
+                            self.in_grant.is_none(),
+                            "Why do we have an in grant already?!"
+                        );
 
                         // This will be a pointer to the incoming grant
                         let in_ptr;
 
                         // Note: Hardcoded to 4, as we are expecting a u32
-                        self.in_grant  = Some({
+                        self.in_grant = Some({
                             let mut igr = self.incoming_msgs.prod.grant(4)?;
                             in_ptr = igr.as_mut_ptr();
                             igr
@@ -182,13 +186,12 @@ where
                             .unwrap_or(0)
                             .to_le_bytes();
 
-                        self.ll
-                            .prepare_exchange(
-                                self.out_buf.as_ptr(),
-                                self.out_buf.len(),
-                                in_ptr,
-                                4,
-                            )?;
+                        self.ll.prepare_exchange(
+                            self.out_buf.as_ptr(),
+                            self.out_buf.len(),
+                            in_ptr,
+                            4,
+                        )?;
                     } else {
                         // println!("Got READY, start data exchange!");
 
@@ -218,7 +221,7 @@ where
                             Ok(mut igr) => {
                                 in_ptr = igr.as_mut_ptr();
                                 Some(igr)
-                            },
+                            }
                             Err(_) => {
                                 // TODO: probably want to abort and clear grants
                                 todo!("Handle insufficient size for incoming message")
@@ -232,14 +235,7 @@ where
                             (self.out_buf.as_ptr(), 0)
                         };
 
-                        self.ll
-                            .prepare_exchange(
-                                ptr,
-                                len,
-                                in_ptr,
-                                amt,
-                            )
-                            .unwrap();
+                        self.ll.prepare_exchange(ptr, len, in_ptr, amt).unwrap();
                     }
                 }
                 Ok(false) if self.ll.is_go_active()? => {
@@ -264,10 +260,11 @@ where
             match self.ll.complete_exchange(false) {
                 Err(_) => {}
                 Ok(amt) => {
-
                     if self.sent_hdr {
-
-                        assert!(self.in_grant.is_some(), "Why don't we have an in grant at the end of exchange?");
+                        assert!(
+                            self.in_grant.is_some(),
+                            "Why don't we have an in grant at the end of exchange?"
+                        );
 
                         if let Some(igr) = self.in_grant.take() {
                             if amt != 0 {
@@ -312,12 +309,10 @@ where
                 // future, it might be possible to pack multiple datagrams together into
                 // a single frame. But for now, we only handle one.
                 match from_bytes_cobs(sbr) {
-                    Ok(deser) => {
-                        Ok(Some(Request {
-                            source: self.uuid,
-                            msg: deser,
-                        }))
-                    }
+                    Ok(deser) => Ok(Some(Request {
+                        source: self.uuid,
+                        msg: deser,
+                    })),
                     Err(_) => {
                         if len == 0 {
                             Ok(None)

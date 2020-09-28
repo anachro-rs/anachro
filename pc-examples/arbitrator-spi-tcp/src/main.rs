@@ -1,16 +1,12 @@
 #![allow(unused_imports)]
 
+use anachro_icd::Uuid;
 use anachro_spi::{
     self as spi,
-    Error as SpiError,
-    Result as SpiResult,
-    arbitrator::{
-        EncLogicLLArbitrator,
-        EncLogicHLArbitrator,
-    },
+    arbitrator::{EncLogicHLArbitrator, EncLogicLLArbitrator},
+    Error as SpiError, Result as SpiResult,
 };
 use anachro_spi_tcp::TcpSpiArbLL;
-use anachro_icd::Uuid;
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
@@ -25,14 +21,14 @@ use serde::{Deserialize, Serialize};
 
 use bbqueue::{
     consts::*,
-    framed::{FrameConsumer, FrameProducer, FrameGrantR, FrameGrantW},
+    framed::{FrameConsumer, FrameGrantR, FrameGrantW, FrameProducer},
     ArrayLength, BBBuffer, ConstBBBuffer,
 };
 
 // NOTE: For arbitrator, I will need 2xBBQueues per connection.
 // this might be sort of unwieldy for something like 7-8 connections?
-static BB_OUT: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
-static BB_INP: BBBuffer<U2048> = BBBuffer( ConstBBBuffer::new() );
+static BB_OUT: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
+static BB_INP: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
 
 fn main() {
     // FOR NOW, just accept a single connection.
@@ -48,8 +44,9 @@ fn main() {
             Uuid::from_bytes([0u8; 16]), // TODO
             TcpSpiArbLL::new(stream),
             &BB_OUT,
-            &BB_INP
-        ).unwrap();
+            &BB_INP,
+        )
+        .unwrap();
 
         while let Ok(_) = arb.poll() {
             while let Some(msg) = arb.dequeue() {

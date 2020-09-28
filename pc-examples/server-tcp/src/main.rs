@@ -8,13 +8,10 @@ use std::time::Duration;
 
 use anachro_server::{Broker, Uuid};
 
-use postcard::to_stdvec_cobs;
 use anachro_spi::arbitrator::EncLogicHLArbitrator;
 use anachro_spi_tcp::TcpSpiArbLL;
-use heapless::{
-    Vec as HVec,
-    consts,
-};
+use heapless::{consts, Vec as HVec};
+use postcard::to_stdvec_cobs;
 
 use bbqueue::BBBuffer;
 
@@ -56,12 +53,8 @@ fn main() {
 
             lock.session_mgr.new_sessions.push((
                 uuid,
-                EncLogicHLArbitrator::new(
-                    uuid,
-                    TcpSpiArbLL::new(stream),
-                    out_leak,
-                    inc_leak,
-                ).unwrap()
+                EncLogicHLArbitrator::new(uuid, TcpSpiArbLL::new(stream), out_leak, inc_leak)
+                    .unwrap(),
             ));
 
             drop(out_leak);

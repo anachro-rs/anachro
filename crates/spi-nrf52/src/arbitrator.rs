@@ -1,36 +1,15 @@
 use nrf52840_hal::{
-    spis::{
-        Spis,
-        Instance,
-        Mode,
-        TransferSplit,
-    },
-    gpio::{
-        Pin,
-        Output,
-        Input,
-        Floating,
-        PushPull,
-    }
+    gpio::{Floating, Input, Output, Pin, PushPull},
+    spis::{Instance, Mode, Spis, TransferSplit},
 };
 
-use embedded_hal::digital::v2::{
-    StatefulOutputPin,
-    OutputPin,
-    InputPin,
-};
+use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin};
 
 use embedded_dma::{ReadBuffer, WriteBuffer};
 
-use anachro_spi::{
-    Result, Error,
-    arbitrator::EncLogicLLArbitrator,
-};
+use anachro_spi::{arbitrator::EncLogicLLArbitrator, Error, Result};
 
-unsafe impl<S> Send for Periph<S>
-where
-    S: Instance + Send,
-{ }
+unsafe impl<S> Send for Periph<S> where S: Instance + Send {}
 
 enum Periph<S>
 where
@@ -55,7 +34,11 @@ impl<S> NrfSpiArbLL<S>
 where
     S: Instance + Send,
 {
-    pub fn new(spis: Spis<S>, ready_pin: Pin<Input<Floating>>, mut go_pin: Pin<Output<PushPull>>) -> Self {
+    pub fn new(
+        spis: Spis<S>,
+        ready_pin: Pin<Input<Floating>>,
+        mut go_pin: Pin<Output<PushPull>>,
+    ) -> Self {
         go_pin.set_high().ok();
         spis.set_default_char(0x00)
             .set_orc(0x00)
@@ -73,12 +56,10 @@ where
     }
 }
 
-
 impl<S> EncLogicLLArbitrator for NrfSpiArbLL<S>
 where
     S: Instance + Send,
 {
-
     fn process(&mut self) -> Result<()> {
         let mut current = Periph::Unstable;
         core::mem::swap(&mut current, &mut self.periph);
@@ -123,10 +104,9 @@ where
         data_in_max: usize,
     ) -> Result<()> {
         match self.is_ready_active() {
-            Ok(true) => {},
+            Ok(true) => {}
             _ => return Err(Error::ToDo),
         }
-
 
         let mut old_periph = Periph::Unstable;
         core::mem::swap(&mut self.periph, &mut old_periph);
@@ -135,7 +115,7 @@ where
             Periph::Idle(spis) => spis,
             Periph::Pending(_) | Periph::Aborted(_) | Periph::Unstable => {
                 self.periph = old_periph;
-                return Err(Error::ToDo)
+                return Err(Error::ToDo);
             }
         };
 
@@ -149,8 +129,14 @@ where
 
         spis.enable();
         let txfr = match spis.transfer_split(
-            ConstRawSlice { ptr: data_out, len: data_out_len },
-            MutRawSlice { ptr: data_in, len: data_in_max },
+            ConstRawSlice {
+                ptr: data_out,
+                len: data_out_len,
+            },
+            MutRawSlice {
+                ptr: data_in,
+                len: data_in_max,
+            },
         ) {
             Ok(t) => t,
             Err((_e, p, _tx, _rx)) => {
@@ -161,7 +147,6 @@ where
 
         self.periph = Periph::Pending(txfr);
         self.notify_go().ok();
-
 
         Ok(())
     }
@@ -230,7 +215,7 @@ where
                 } else {
                     Periph::Aborted(p)
                 }
-            },
+            }
             Periph::Aborted(p) => Periph::Aborted(p),
             Periph::Unstable => Periph::Unstable,
         };
