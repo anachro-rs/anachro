@@ -6,10 +6,15 @@ members = [
     "crates/server",
     "crates/spi",
     "crates/spi-tcp",
+    "crates/spi-nrf52",
 
     "pc-examples/client-tcp",
     "pc-examples/server-tcp",
     "pc-examples/component-spi-tcp",
     "pc-examples/arbitrator-spi-tcp",
 
+]
+
+excludes = [
+    "vendor/nrf-hal"
 ]
