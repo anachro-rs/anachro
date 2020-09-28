@@ -13,6 +13,8 @@ members = [
     "pc-examples/component-spi-tcp",
     "pc-examples/arbitrator-spi-tcp",
 
+    "emb-tests/spi-loopback",
+
 ]
 
 exclude = [
