@@ -23,3 +23,4 @@ exclude = [
 
 [patch.crates-io]
 nrf-hal-common = { path = "vendor/nrf-hal/nrf-hal-common" }
+nrf52840-hal   = { path = "vendor/nrf-hal/nrf52840-hal" }

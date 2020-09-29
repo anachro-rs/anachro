@@ -3,8 +3,8 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use defmt_rtt as _; // global logger
-use panic_probe as _;
-use nrf52840_hal as _; // memory layout
+use nrf52840_hal as _;
+use panic_probe as _; // memory layout
 
 #[defmt::timestamp]
 fn timestamp() -> u64 {

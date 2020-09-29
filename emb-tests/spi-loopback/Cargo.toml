@@ -7,6 +7,14 @@ version = "0.1.0"
 [workspace]
 members = ["testsuite"]
 
+[dependencies]
+cortex-m = "0.6.3"
+cortex-m-rt = "0.6.12"
+nrf52840-hal = { version = "0.11", features = ["rt"] }
+bbqueue = "0.4.10"
+embedded-hal = "0.2.4"
+embedded-dma = "0.1.1"
+
 [dependencies.defmt]
 git = "https://github.com/knurling-rs/defmt"
 branch = "main"
@@ -18,11 +26,6 @@ branch = "main"
 [dependencies.panic-probe]
 git = "https://github.com/knurling-rs/probe-run"
 branch = "main"
-
-[dependencies]
-cortex-m = "0.6.3"
-cortex-m-rt = "0.6.12"
-nrf52840-hal = { version = "0.11", features = ["rt"] }
 
 [features]
 # set logging levels here
@@ -47,6 +50,14 @@ incremental = false
 opt-level = 3 # <-
 overflow-checks = true # <-
 
+# do not optimize proc-macro crates = faster builds from scratch
+[profile.dev.build-override]
+codegen-units = 8
+debug = false
+debug-assertions = false
+opt-level = 0
+overflow-checks = false
+
 [profile.release]
 codegen-units = 1
 debug = 2
@@ -56,17 +67,13 @@ lto = 'fat'
 opt-level = 3 # <-
 overflow-checks = false # <-
 
-# do not optimize proc-macro crates = faster builds from scratch
-[profile.dev.build-override]
-codegen-units = 8
-debug = false
-debug-assertions = false
-opt-level = 0
-overflow-checks = false
-
 [profile.release.build-override]
 codegen-units = 8
 debug = false
 debug-assertions = false
 opt-level = 0
 overflow-checks = false
+
+[patch.crates-io]
+nrf-hal-common = { path = "../../vendor/nrf-hal/nrf-hal-common" }
+bbqueue = { path = "../../vendor/bbqueue/core" }

@@ -1,3 +1,6 @@
 [submodule "vendor/nrf-hal"]
 	path = vendor/nrf-hal
 	url = git@github.com:nrf-rs/nrf-hal.git
+[submodule "vendor/bbqueue"]
+	path = vendor/bbqueue
+	url = git@github.com:jamesmunns/bbqueue.git
