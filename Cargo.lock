@@ -71,6 +71,18 @@ dependencies = [
  "anachro-client",
  "anachro-server",
  "bbqueue",
+ "defmt",
+]
+
+[[package]]
+name = "anachro-spi-nrf52"
+version = "0.1.0"
+dependencies = [
+ "anachro-spi",
+ "defmt",
+ "embedded-dma",
+ "embedded-hal",
+ "nrf52840-hal",
 ]
 
 [[package]]
@@ -121,9 +133,9 @@ dependencies = [
 [[package]]
 name = "bbqueue"
 version = "0.4.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e6ffd9a6d04298eb55d5ac6d0fde48c2f991468b5ba8aa263fe2d1ea7288c0a"
 dependencies = [
+ "defmt",
+ "embedded-dma",
  "generic-array 0.13.2",
 ]
 
@@ -197,6 +209,36 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "defmt"
+version = "0.1.0"
+source = "git+https://github.com/knurling-rs/defmt?branch=main#3aa4e70ee73067aaaa736afa42bba2e43d576be7"
+dependencies = [
+ "defmt-common",
+ "defmt-macros",
+]
+
+[[package]]
+name = "defmt-common"
+version = "0.1.0"
+source = "git+https://github.com/knurling-rs/defmt?branch=main#3aa4e70ee73067aaaa736afa42bba2e43d576be7"
+
+[[package]]
+name = "defmt-macros"
+version = "0.1.0"
+source = "git+https://github.com/knurling-rs/defmt?branch=main#3aa4e70ee73067aaaa736afa42bba2e43d576be7"
+dependencies = [
+ "defmt-parser",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "defmt-parser"
+version = "0.1.0"
+source = "git+https://github.com/knurling-rs/defmt?branch=main#3aa4e70ee73067aaaa736afa42bba2e43d576be7"
 
 [[package]]
 name = "embedded-dma"
@@ -480,16 +522,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "spi-nrf52"
-version = "0.1.0"
-dependencies = [
- "anachro-spi",
- "embedded-dma",
- "embedded-hal",
- "nrf52840-hal",
-]
-
-[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -550,3 +582,7 @@ name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
+
+[[patch.unused]]
+name = "nrf52840-hal"
+version = "0.11.1"

@@ -13,14 +13,14 @@ members = [
     "pc-examples/component-spi-tcp",
     "pc-examples/arbitrator-spi-tcp",
 
-    "emb-tests/spi-loopback",
-
 ]
 
 exclude = [
-    "vendor/nrf-hal"
+    "vendor/nrf-hal",
+    "emb-tests",
 ]
 
 [patch.crates-io]
 nrf-hal-common = { path = "vendor/nrf-hal/nrf-hal-common" }
 nrf52840-hal   = { path = "vendor/nrf-hal/nrf52840-hal" }
+bbqueue        = { path = "vendor/bbqueue/core" }

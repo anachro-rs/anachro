@@ -10,7 +10,7 @@ use nrf52840_hal::{
     spis::{Pins as SpisPins, Spis, Transfer},
     timer::Timer,
 };
-use spi_loopback as _; // global logger + panicking-behavior + memory layout
+use anachro_loopback as _; // global logger + panicking-behavior + memory layout
 use bbqueue::{
     consts::*,
     BBBuffer,
@@ -57,7 +57,7 @@ fn main() -> ! {
         cs: p1.p1_02.into_floating_input().degrade(),
     };
 
-    let mut spim = SpimState::Periph(Spim::new(board.SPIM0, spim0_pins, Frequency::K125, MODE_0, 0x00));
+    let mut spim = SpimState::Periph(Spim::new(board.SPIM0, spim0_pins, Frequency::M1, MODE_0, 0x00));
     let mut spis = SpisState::Periph(Spis::new(board.SPIS1, spis1_pins));
 
     let (mut out_prod, mut out_cons) = BB_OUT.try_split_framed().unwrap();
@@ -95,7 +95,7 @@ fn main() -> ! {
         if let SpisState::Periph(spis_m) = spis_inner {
             spis_inner = SpisState::Transfer(spis_m.transfer(igr).map_err(drop).unwrap());
         } else {
-            spi_loopback::exit();
+            anachro_loopback::exit();
         }
 
         if let SpimState::Periph(spim_m) = spim_inner {
@@ -103,21 +103,7 @@ fn main() -> ! {
             spim_inner = SpimState::Transfer(spim_m.dma_transfer_split(tgr, ogr).map_err(drop).unwrap());
         }
 
-        defmt::info!("Waiting 1ms to abort (~1/2 way)...");
-        timer.delay_ms(1u8);
-        defmt::info!("Bailing!");
-
-        let buf = if let SpisState::Transfer(mut xfrs) = spis_inner {
-            let (amt, buf, p) = xfrs.bail();
-            defmt::info!("made it {:?} bytes", amt);
-            core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
-            defmt::info!("spis immediate: {:?}", &buf[..]);
-            p.enable();
-            spis = SpisState::Periph(p);
-            buf
-        } else {
-            spi_loopback::exit();
-        };
+        defmt::info!("Waiting for Spim to finish...");
 
         loop {
             if let SpimState::Transfer(mut xfrm) = spim_inner {
@@ -133,15 +119,28 @@ fn main() -> ! {
             }
         }
 
-        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
-        defmt::info!("spis delayed: {:?}", &buf[..]);
+        defmt::info!("Waiting for Spis to finish...");
+
+        loop {
+            if let SpisState::Transfer(mut xfrs) = spis_inner {
+                if xfrs.is_done() {
+                    let (_buf, p) = xfrs.wait();
+                    spis = SpisState::Periph(p);
+                    break;
+                } else {
+                    spis_inner = SpisState::Transfer(xfrs);
+                }
+            } else {
+                anachro_loopback::exit();
+            }
+        }
 
         defmt::info!("All finished!");
 
         timer.delay_ms(1000u32);
     }
 
-    // spi_loopback::exit()
+    // anachro_loopback::exit()
 }
 
 enum SpisState {

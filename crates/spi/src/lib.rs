@@ -4,14 +4,14 @@ use bbqueue::{
     framed::{FrameConsumer, FrameProducer},
     ArrayLength, BBBuffer, Error as BBError,
 };
+use defmt::Format;
 
 pub mod arbitrator;
 pub mod component;
 
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum Error {
     TxQueueFull,
-    ToDo, // REMOVEME
     IncompleteTransaction(usize),
     ArbitratorHungUp,
     InitializationFailed,

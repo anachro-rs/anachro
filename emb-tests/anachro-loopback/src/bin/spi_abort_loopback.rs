@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+#![allow(unused_variables, unused_mut)]
+
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::blocking::delay::DelayMs;
 use nrf52840_hal::{
@@ -10,7 +12,7 @@ use nrf52840_hal::{
     spis::{Pins as SpisPins, Spis, Transfer},
     timer::Timer,
 };
-use spi_loopback as _; // global logger + panicking-behavior + memory layout
+use anachro_loopback as _; // global logger + panicking-behavior + memory layout
 use bbqueue::{
     consts::*,
     BBBuffer,
@@ -95,7 +97,7 @@ fn main() -> ! {
         if let SpisState::Periph(spis_m) = spis_inner {
             spis_inner = SpisState::Transfer(spis_m.transfer(igr).map_err(drop).unwrap());
         } else {
-            spi_loopback::exit();
+            anachro_loopback::exit();
         }
 
         if let SpimState::Periph(spim_m) = spim_inner {
@@ -108,15 +110,14 @@ fn main() -> ! {
         defmt::info!("Bailing!");
 
         let buf = if let SpisState::Transfer(mut xfrs) = spis_inner {
-            let (amt, buf, p) = xfrs.bail();
-            defmt::info!("made it {:?} bytes", amt);
+            let (buf, p) = xfrs.bail();
             core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
             defmt::info!("spis immediate: {:?}", &buf[..]);
             p.enable();
             spis = SpisState::Periph(p);
             buf
         } else {
-            spi_loopback::exit();
+            anachro_loopback::exit();
         };
 
         loop {
@@ -141,7 +142,7 @@ fn main() -> ! {
         timer.delay_ms(1000u32);
     }
 
-    // spi_loopback::exit()
+    // anachro_loopback::exit()
 }
 
 enum SpisState {

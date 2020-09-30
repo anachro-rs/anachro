@@ -6,8 +6,9 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-bbqueue = "0.4.10"
+[dependencies.bbqueue]
+version = "0.4.10"
+features = ["enable-defmt"]
 
 [dependencies.anachro-client]
 version = "0.1"
@@ -17,5 +18,15 @@ path = "../client"
 version = "0.1"
 path = "../server"
 
+[dependencies.defmt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"
 
-
+[features]
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []

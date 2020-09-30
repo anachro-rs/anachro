@@ -1,5 +1,5 @@
 [package]
-name = "spi-nrf52"
+name = "anachro-spi-nrf52"
 version = "0.1.0"
 authors = ["James Munns <james.munns@ferrous-systems.com>"]
 edition = "2018"
@@ -11,3 +11,16 @@ nrf52840-hal = { version = "0.11" }
 anachro-spi = { path = "../spi" }
 embedded-hal = "0.2.4"
 embedded-dma = "0.1.1"
+
+[dependencies.defmt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"
+
+[features]
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []

@@ -5,9 +5,9 @@ use nrf52840_hal::{
 
 use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin};
 
-use embedded_dma::{ReadBuffer, WriteBuffer};
-
 use anachro_spi::{arbitrator::EncLogicLLArbitrator, Error, Result};
+
+use crate::{ConstRawSlice, MutRawSlice};
 
 unsafe impl<S> Send for Periph<S> where S: Instance + Send {}
 
@@ -224,28 +224,3 @@ where
     }
 }
 
-struct ConstRawSlice {
-    ptr: *const u8,
-    len: usize,
-}
-
-struct MutRawSlice {
-    ptr: *mut u8,
-    len: usize,
-}
-
-unsafe impl WriteBuffer for MutRawSlice {
-    type Word = u8;
-
-    unsafe fn write_buffer(&mut self) -> (*mut Self::Word, usize) {
-        (self.ptr, self.len)
-    }
-}
-
-unsafe impl ReadBuffer for ConstRawSlice {
-    type Word = u8;
-
-    unsafe fn read_buffer(&self) -> (*const Self::Word, usize) {
-        (self.ptr, self.len)
-    }
-}
