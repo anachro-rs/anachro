@@ -7,6 +7,7 @@ members = [
     "crates/spi",
     "crates/spi-tcp",
     "crates/spi-nrf52",
+    "crates/groundhog",
 
     "pc-examples/client-tcp",
     "pc-examples/server-tcp",
