@@ -14,6 +14,7 @@ name = "anachro-client"
 version = "0.1.0"
 dependencies = [
  "anachro-icd",
+ "defmt",
  "postcard",
  "serde",
 ]
@@ -45,6 +46,7 @@ name = "anachro-server"
 version = "0.1.0"
 dependencies = [
  "anachro-icd",
+ "defmt",
  "heapless",
  "postcard",
 ]

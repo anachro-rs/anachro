@@ -36,14 +36,14 @@ use postcard::to_slice_cobs;
 use serde::{Deserialize, Serialize};
 
 // COMPONENT     ARBITRATOR
-// P0.03   <=>   P1.05          SCK
-// P0.04   <=>   P1.04          CIPO
-// P0.28   <=>   P1.03          COPI
-// P0.29   <=>   P1.02          GO      // CSn
-// P0.30   <=>   P1.01          READY
+// P0.03   <=>   P1.05              SCK
+// P0.04   <=>   P1.04              CIPO
+// P0.28   <=>   P1.03              COPI
+// P0.29   <=>   P1.02      P1.15   GO
+// P0.30   <=>   P1.01              READY
 
 // P0.31   <=>   P1.06          SCK
-// P1.15   <=>   P1.07          CIPO
+// ~P1.15~   <=>   P1.07          CIPO
 // P1.14   <=>   P1.08          COPI
 // P1.13   <=>   P1.10          GO      // CSn
 // P1.12   <=>   P1.11          READY
@@ -98,8 +98,8 @@ fn main() -> ! {
         // the GO pin and the real CSn? Then we can control when
         // things start/stop.
         //
-        // NOTE: Common'd to p1.p1_15
-        cs: p1.p1_01.into_floating_input().degrade(),
+        // NOTE: Common'd to p1.p1_02/p0.29
+        cs: p1.p1_15.into_floating_input().degrade(),
     };
 
     // Wrong polarity
@@ -107,13 +107,13 @@ fn main() -> ! {
     let mut arb_go = p1.p1_02.into_push_pull_output(Level::High).degrade();
 
     let mut con_ready = p0.p0_30.into_push_pull_output(Level::High).degrade();
-    // TODO: See `cs` note
-    let mut arb_ready = p1.p1_15.into_floating_input().degrade();
+    let mut arb_ready = p1.p1_01.into_floating_input().degrade();
 
     let mut arb_spis = Spis::new(board.SPIS1, arb_pins);
     let mut con_spim = Spim::new(board.SPIM0, con_pins, Frequency::K125, MODE_0, 0x00);
 
-
+    let mut ts_timer = Timer::new(board.TIMER2);
+    ts_timer.start(0xFFFF_FFFF);
 
     // let (mut bbo1_p, mut bbo1_c) = BB_ARB_OUT.try_split_framed().unwrap();
     // let (mut )
@@ -129,23 +129,39 @@ fn main() -> ! {
     let mut com_buf_tx = [0xACu8; 64];
     let mut com_buf_rx = [0xABu8; 64];
 
-    com_ll.prepare_exchange(
+    match com_ll.prepare_exchange(
         com_buf_tx.as_mut_ptr(),
         com_buf_tx.len(),
         com_buf_rx.as_mut_ptr(),
         com_buf_rx.len(),
-    ).unwrap();
+    ) {
+        Ok(_) => defmt::info!("com prepped"),
+        Err(e) => defmt::error!("com error: {:?}", e),
+    }
 
-    defmt::info!("com prepped");
 
-    arb_ll.prepare_exchange(
+
+    match arb_ll.prepare_exchange(
         arb_buf_tx.as_mut_ptr(),
         arb_buf_tx.len(),
         arb_buf_rx.as_mut_ptr(),
         arb_buf_rx.len(),
-    ).unwrap();
+    ) {
+        Ok(_) => defmt::info!("arb prepped"),
+        Err(e) => defmt::error!("arb error: {:?}", e),
+    }
 
-    defmt::info!("arb prepped");
+    match com_ll.trigger_exchange() {
+        Ok(_) => defmt::info!("com exch triggered"),
+        Err(e) => defmt::error!("com et error: {:?}", e),
+    }
+
+    // Wait for component to report done
+    loop {
+        match com_ll.complete_exchange(true) {
+            Ok(amt) => defmt::info!()
+        }
+    }
 
 
 

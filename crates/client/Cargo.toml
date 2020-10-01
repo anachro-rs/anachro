@@ -21,3 +21,16 @@ postcard = "0.5"
 version = "1.0.114"
 default-features = false
 features = ["derive"]
+
+[dependencies.defmt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"
+
+[features]
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []

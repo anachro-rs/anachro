@@ -62,23 +62,23 @@ where
 
     /// Is the Component requesting a transaction?
     fn is_ready_active(&mut self) -> Result<bool> {
-        self.ready_pin.is_set_low().map_err(|_| Error::ToDo)
+        self.ready_pin.is_set_low().map_err(|_| Error::GpioError)
     }
 
     /// Set the READY line low (active)
     fn notify_ready(&mut self) -> Result<()> {
-        self.ready_pin.set_low().map_err(|_| Error::ToDo)
+        self.ready_pin.set_low().map_err(|_| Error::GpioError)
     }
 
     /// Set the READY line high (inactive)
     fn clear_ready(&mut self) -> Result<()> {
-        self.ready_pin.set_high().map_err(|_| Error::ToDo)
+        self.ready_pin.set_high().map_err(|_| Error::GpioError)
     }
 
     /// Query whether the GO line is low (active)
     // TODO: just &self?
     fn is_go_active(&mut self) -> Result<bool> {
-        self.go_pin.is_low().map_err(|_| Error::ToDo)
+        self.go_pin.is_low().map_err(|_| Error::GpioError)
     }
 
     /// Prepare data to be exchanged. The data MUST not be referenced
@@ -104,9 +104,11 @@ where
             Periph::Idle(spim) => spim,
             Periph::Pending(_) | Periph::Awaiting(_) | Periph::Unstable => {
                 self.periph = old_periph;
-                return Err(Error::ToDo);
+                return Err(Error::IncorrectState);
             }
         };
+
+        defmt::trace!("preparing exchange, {:?} bytes out", data_out_len);
 
         self.periph = Periph::Awaiting((
             spim,
@@ -119,7 +121,7 @@ where
                 len: data_in_max,
             },
         ));
-        self.notify_ready().ok();
+        self.notify_ready()?;
 
         Ok(())
     }
@@ -135,8 +137,11 @@ where
             (p, crs, mrs)
         } else {
             core::mem::swap(&mut self.periph, &mut old_periph);
-            return Err(Error::ToDo);
+            return Err(Error::IncorrectState);
         };
+
+        defmt::info!("Triggering exchange");
+        defmt::trace!("tx_len: {:?}, rx_len: {:?}", crs.len, mrs.len);
 
         let txfr = match spim.dma_transfer_split(
             crs,
@@ -145,9 +150,11 @@ where
             Ok(t) => t,
             Err((p, _e)) => {
                 self.periph = Periph::Idle(p);
-                return Err(Error::ToDo);
+                return Err(Error::SpiError);
             }
         };
+
+        defmt::trace!("triggered exchange");
 
         self.periph = Periph::Pending(txfr);
 
@@ -161,7 +168,7 @@ where
             Periph::Idle(_) => Ok(false),
             Periph::Awaiting(_) => Ok(true),
             Periph::Pending(_) => Ok(true),
-            Periph::Unstable => Err(Error::ToDo),
+            Periph::Unstable => Err(Error::UnstableFailure),
         }
     }
 
@@ -184,14 +191,14 @@ where
         let amt = match current {
             Periph::Idle(p) => {
                 self.periph = Periph::Idle(p);
-                return Err(Error::ToDo);
+                return Err(Error::IncorrectState);
             }
             Periph::Awaiting((p, crs, mrs)) => {
                 self.periph = Periph::Awaiting((p, crs, mrs));
-                return Err(Error::ToDo);
+                return Err(Error::TransactionBusy);
             }
             Periph::Unstable => {
-                return Err(Error::ToDo);
+                return Err(Error::UnstableFailure);
             }
             Periph::Pending(mut p) => {
                 if p.is_done() {
@@ -201,7 +208,7 @@ where
                     amt
                 } else {
                     self.periph = Periph::Pending(p);
-                    return Err(Error::ToDo);
+                    return Err(Error::TransactionBusy);
                 }
             }
         };

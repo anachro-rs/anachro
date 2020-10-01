@@ -39,8 +39,11 @@ branch = "main"
 [features]
 # set logging levels here
 default = [
-  "defmt-default",
-  # "dependency-a/defmt-trace",
+  "defmt-trace",
+  "anachro-spi/defmt-trace",
+  "anachro-server/defmt-trace",
+  "anachro-client/defmt-trace",
+  "anachro-spi-nrf52/defmt-trace",
 ]
 
 # do NOT modify these features

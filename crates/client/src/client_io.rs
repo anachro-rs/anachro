@@ -17,9 +17,10 @@
 //! Or to enqueue/dequeue messages upon request.
 
 use anachro_icd::{arbitrator::Arbitrator, component::Component};
+use defmt::Format;
 
 /// The Error type of the ClientIo interface
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Format)]
 pub enum ClientIoError {
     /// The ClientIo implementor failed to deserialize an incoming message
     ParsingError,

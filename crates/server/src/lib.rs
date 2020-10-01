@@ -18,6 +18,7 @@ use {
 
 pub use anachro_icd::{self, Name, Path, PubSubPath, Uuid, Version};
 pub use postcard::from_bytes_cobs;
+use defmt::Format;
 
 type ClientStore = Vec<Client, consts::U8>;
 
@@ -38,7 +39,7 @@ pub struct Broker {
     clients: ClientStore,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Format)]
 pub enum ServerError {
     ClientAlreadyRegistered,
     UnknownClient,
@@ -47,6 +48,7 @@ pub enum ServerError {
     ResourcesExhausted,
     UnknownShortcode,
     InternalError,
+    DeserializeFailure,
 }
 
 pub const RESET_MESSAGE: Arbitrator = Arbitrator::Control(AControl {
@@ -135,9 +137,13 @@ impl Broker {
             Err(e) => {
                 // TODO: Actual error handling
                 match e {
-                    ServerIoError::ToDo => {
-                        // TODO: This is probably not always right
+                    ServerIoError::ResponsePushFailed => {
+                        // TODO: This is probably not always right. For now, report client
+                        // disconnection to reset connection
                         return Err(ServerError::ClientDisconnected);
+                    }
+                    ServerIoError::DeserializeFailure => {
+                        return Err(ServerError::DeserializeFailure);
                     }
                 }
             }
@@ -471,8 +477,10 @@ pub struct Response<'a> {
     pub msg: Arbitrator<'a>,
 }
 
+#[derive(Debug, Format)]
 pub enum ServerIoError {
-    ToDo,
+    ResponsePushFailed,
+    DeserializeFailure,
 }
 
 pub trait ServerIoIn {
@@ -488,6 +496,6 @@ where
     CT: ArrayLength<Response<'resp>>,
 {
     fn push_response(&mut self, resp: Response<'resp>) -> core::result::Result<(), ServerIoError> {
-        self.push(resp).map_err(|_| ServerIoError::ToDo)
+        self.push(resp).map_err(|_| ServerIoError::ResponsePushFailed)
     }
 }

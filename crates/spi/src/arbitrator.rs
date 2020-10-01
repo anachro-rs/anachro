@@ -97,6 +97,7 @@ where
     in_grant: Option<FrameGrantW<'static, CT>>,
     out_buf: [u8; 4],
     sent_hdr: bool,
+    sending_empty: bool,
 
     // NOTE: This is the grant from the incoming queue, used to return
     // messages up the protocol stack. By holding the grant HERE, we tie
@@ -134,15 +135,25 @@ where
             in_grant: None,
             sent_hdr: false,
             current_grant: None,
+            // TODO: remove this when refactoring to a state machine
+            sending_empty: false,
         })
     }
 
     pub fn dequeue(&mut self) -> Option<FrameGrantR<'static, CT>> {
-        self.incoming_msgs.cons.read()
+        let ret = self.incoming_msgs.cons.read();
+        if ret.is_some() {
+            defmt::info!("Dequeuing a message");
+        } else {
+            defmt::trace!("No message to dequeue");
+        }
+        ret
     }
 
     // TODO: `enqueue_with` function or something for zero-copy grants
     pub fn enqueue(&mut self, msg: &[u8]) -> Result<()> {
+        defmt::info!("enqueing message - {:?} bytes", msg.len());
+        defmt::trace!("message: {:?}", msg);
         let len = msg.len();
         let mut wgr = self.outgoing_msgs.prod.grant(len)?;
         wgr.copy_from_slice(msg);
@@ -151,6 +162,7 @@ where
     }
 
     pub fn poll(&mut self) -> Result<()> {
+        defmt::trace!("Polling...");
         self.ll.process()?;
 
         if !self.ll.is_exchange_active().unwrap() {
@@ -179,12 +191,15 @@ where
                         self.out_grant = self.outgoing_msgs.cons.read();
 
                         // Fill the output buffer with the size of the next body
-                        self.out_buf = self
+                        let out_len = self
                             .out_grant
                             .as_ref()
                             .map(|msg| msg.len() as u32)
-                            .unwrap_or(0)
-                            .to_le_bytes();
+                            .unwrap_or(0);
+
+                        defmt::info!("preparing header exchange, offering {:?} bytes", out_len);
+
+                        self.out_buf = out_len.to_le_bytes();
 
                         self.ll.prepare_exchange(
                             self.out_buf.as_ptr(),
@@ -194,6 +209,7 @@ where
                         )?;
                     } else {
                         // println!("Got READY, start data exchange!");
+                        defmt::info!("Got READY, start data exchange");
 
                         // TODO:
                         // * Parse the input data into a u32 to get the Component's len
@@ -213,12 +229,17 @@ where
                             panic!("logic error: No igr from header rx");
                         };
 
+                        defmt::info!("Expecting {:?} bytes", amt);
+
                         // HACK: Always request one byte so we'll get a grant for a valid pointer/
                         // to not handle potentially None grants. I might just want to have something
                         // else for this case
                         let in_ptr;
                         self.in_grant = match self.incoming_msgs.prod.grant(amt.max(1)) {
                             Ok(mut igr) => {
+                                if amt == 0 {
+                                    self.sending_empty = true;
+                                }
                                 in_ptr = igr.as_mut_ptr();
                                 Some(igr)
                             }
@@ -267,7 +288,7 @@ where
                         );
 
                         if let Some(igr) = self.in_grant.take() {
-                            if amt != 0 {
+                            if (amt != 0) && !self.sending_empty {
                                 // println!("got {:?}!", &igr[..amt]);
                                 igr.commit(amt);
                             }
@@ -275,6 +296,8 @@ where
                         if let Some(ogr) = self.out_grant.take() {
                             ogr.release();
                         }
+
+                        self.sending_empty = false;
                     }
                     // else NOTE: if we just finished sending the header, DON'T clean up yet, as we
                     // will do that at the start of the next transaction.
@@ -304,6 +327,8 @@ where
                 let sbr = self.current_grant.as_mut().unwrap();
                 let len = sbr.len();
 
+                defmt::trace!("Message contents: {:?}", &sbr[..]);
+
                 // TODO: Cobs encoding at this level is probably not super necessary,
                 // because for now we only handle one message exchange at a time. In the
                 // future, it might be possible to pack multiple datagrams together into
@@ -317,7 +342,9 @@ where
                         if len == 0 {
                             Ok(None)
                         } else {
-                            Err(ServerIoError::ToDo)
+                            defmt::error!("Bad message on arbitrator deser");
+                            Ok(None)
+                            // Err(ServerIoError::DeserializeFailure)
                         }
                     }
                 }

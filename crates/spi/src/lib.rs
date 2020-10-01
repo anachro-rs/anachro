@@ -15,8 +15,33 @@ pub enum Error {
     IncompleteTransaction(usize),
     ArbitratorHungUp,
     InitializationFailed,
+
+    // Consider swallowing the error to prevent defmt leakage
     BBQueueError(BBError),
+
+    // E_WOULD_BLOCK
+    TransactionBusy,
+
+    TransactionAborted,
+
     ConnectionFailure,
+
+    // We tried to prep a message, but the component had not
+    // marked itself as ready
+    ComponentNotReady,
+
+    // We were in an unexpected state when an event happened.
+    // This likely is indicative of an internal error.
+    IncorrectState,
+
+    // Something went wrong with my use of `Unstable` and buffer swaps
+    UnstableFailure,
+
+    // e-h gpio error
+    GpioError,
+
+    // e-h spi error
+    SpiError,
 }
 
 impl From<BBError> for Error {

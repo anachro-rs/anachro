@@ -36,14 +36,14 @@ use postcard::to_slice_cobs;
 use serde::{Deserialize, Serialize};
 
 // COMPONENT     ARBITRATOR
-// P0.03   <=>   P1.05          SCK
-// P0.04   <=>   P1.04          CIPO
-// P0.28   <=>   P1.03          COPI
-// P0.29   <=>   P1.02          GO      // CSn
-// P0.30   <=>   P1.01          READY
+// P0.03   <=>   P1.05              SCK
+// P0.04   <=>   P1.04              CIPO
+// P0.28   <=>   P1.03              COPI
+// P0.29   <=>   P1.02      P1.15   GO
+// P0.30   <=>   P1.01              READY
 
 // P0.31   <=>   P1.06          SCK
-// P1.15   <=>   P1.07          CIPO
+// ~P1.15~   <=>   P1.07          CIPO
 // P1.14   <=>   P1.08          COPI
 // P1.13   <=>   P1.10          GO      // CSn
 // P1.12   <=>   P1.11          READY
@@ -98,8 +98,8 @@ fn main() -> ! {
         // the GO pin and the real CSn? Then we can control when
         // things start/stop.
         //
-        // NOTE: Common'd to p1.p1_15
-        cs: p1.p1_01.into_floating_input().degrade(),
+        // NOTE: Common'd to p1.p1_02/p0.29
+        cs: p1.p1_15.into_floating_input().degrade(),
     };
 
     // Wrong polarity
@@ -107,13 +107,16 @@ fn main() -> ! {
     let mut arb_go = p1.p1_02.into_push_pull_output(Level::High).degrade();
 
     let mut con_ready = p0.p0_30.into_push_pull_output(Level::High).degrade();
-    // TODO: See `cs` note
-    let mut arb_ready = p1.p1_15.into_floating_input().degrade();
+    let mut arb_ready = p1.p1_01.into_floating_input().degrade();
 
     let mut arb_spis = Spis::new(board.SPIS1, arb_pins);
     let mut con_spim = Spim::new(board.SPIM0, con_pins, Frequency::K125, MODE_0, 0x00);
 
     let mut timer = Timer::new(board.TIMER0);
+
+    use embedded_hal::timer::CountDown;
+    let mut ts_timer = Timer::new(board.TIMER2);
+    ts_timer.start(0xFFFF_FFFFu32);
 
     let mut arb_port = EncLogicHLArbitrator::new(
         Uuid::from_bytes([0x01; 16]),
@@ -193,12 +196,24 @@ fn main() -> ! {
 
         let mut out_msgs: HVec<_, consts::U16> = HVec::new();
         defmt::info!("broker sending {:?} msgs", out_msgs.len());
-        broker.process_msg(&mut arb_port, &mut out_msgs).unwrap();
+        match broker.process_msg(&mut arb_port, &mut out_msgs) {
+            Ok(_) => {},
+            Err(e) => {
+                defmt::error!("broker proc msg: {:?}", e);
+                anachro_loopback::exit();
+            }
+        }
         for msg in out_msgs {
             // TODO: Routing
             defmt::info!("Out message!");
             if let Ok(resp) = to_slice_cobs(&msg.msg, &mut buf) {
-                cio.enqueue(resp).unwrap();
+                match cio.enqueue(resp) {
+                    Ok(_) => defmt::info!("cio enqueued."),
+                    Err(e) => {
+                        defmt::error!("enqueue failed: {:?}", e);
+                        anachro_loopback::exit();
+                    }
+                }
             }
         }
     }

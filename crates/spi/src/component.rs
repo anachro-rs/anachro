@@ -375,7 +375,7 @@ where
                 // TRIGGER
                 match state {
                     SendingState::Idle => {
-                        return Err(Error::ToDo);
+                        return Err(Error::IncorrectState);
                     }
                     state => {
                         self.ll.trigger_exchange()?;
@@ -395,7 +395,7 @@ where
                 match self.ll.complete_exchange(body_done) {
                     Err(_) => {
                         // Probably not an error, the other end just hung up
-                        return Err(Error::ToDo);
+                        return Err(Error::ArbitratorHungUp);
                     }
                     Ok(amt) => {
                         if body_done {
@@ -418,7 +418,7 @@ where
 
                 match state {
                     SendingState::Idle => {
-                        return Err(Error::ToDo);
+                        return Err(Error::IncorrectState);
                     }
                     SendingState::DataHeader(gr) => self.complete_data_header(gr)?,
                     SendingState::DataBody => SendingState::Idle,

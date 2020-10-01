@@ -17,3 +17,16 @@ license = "MIT OR Apache-2.0"
 anachro-icd = { version = "0.1.3", path = "../icd" }
 heapless = "0.5.5"
 postcard = "0.5"
+
+[dependencies.defmt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"
+
+[features]
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
