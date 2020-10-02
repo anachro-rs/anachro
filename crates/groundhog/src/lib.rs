@@ -6,8 +6,8 @@
 
 #![cfg_attr(not(test), no_std)]
 
-use sealed::{RollingSince, Promote};
 use core::ops::Div;
+use sealed::{Promote, RollingSince};
 
 pub trait RollingTimer {
     type Tick: RollingSince + Promote + Div<Output = Self::Tick>;
@@ -39,7 +39,10 @@ pub trait RollingTimer {
     /// then it will saturate at the max value
     fn millis_since(&self, rhs: Self::Tick) -> Self::Tick {
         let delta_tick = self.ticks_since(rhs);
-        delta_tick.mul_then_div(<Self::Tick as RollingSince>::MILLIS_PER_SECOND, Self::TICKS_PER_SECOND)
+        delta_tick.mul_then_div(
+            <Self::Tick as RollingSince>::MILLIS_PER_SECOND,
+            Self::TICKS_PER_SECOND,
+        )
     }
 
     /// Get the number of whole microseconds since the other measurement
@@ -50,18 +53,23 @@ pub trait RollingTimer {
     /// then it will saturate at the max value
     fn micros_since(&self, rhs: Self::Tick) -> Self::Tick {
         let delta_tick = self.ticks_since(rhs);
-        delta_tick.mul_then_div(<Self::Tick as RollingSince>::MICROS_PER_SECOND, Self::TICKS_PER_SECOND)
+        delta_tick.mul_then_div(
+            <Self::Tick as RollingSince>::MICROS_PER_SECOND,
+            Self::TICKS_PER_SECOND,
+        )
     }
 }
 
-
-
 mod sealed {
     use core::convert::TryInto;
-    use core::ops::{Mul, Div};
+    use core::ops::{Div, Mul};
 
     pub trait Promote: Sized + Copy {
-        type NextSize: From<Self> + Ord + TryInto<Self> + Mul<Output = Self::NextSize> + Div<Output = Self::NextSize>;
+        type NextSize: From<Self>
+            + Ord
+            + TryInto<Self>
+            + Mul<Output = Self::NextSize>
+            + Div<Output = Self::NextSize>;
         const MAX_VAL: Self::NextSize;
 
         fn promote(&self) -> Self::NextSize {
@@ -70,9 +78,7 @@ mod sealed {
         fn saturate_demote(other: Self::NextSize) -> Self {
             match Self::MAX_VAL.min(other).try_into() {
                 Ok(t) => t,
-                Err(_) => unsafe {
-                    core::hint::unreachable_unchecked()
-                }
+                Err(_) => unsafe { core::hint::unreachable_unchecked() },
             }
         }
 
@@ -155,7 +161,6 @@ mod test {
         // Out of range
         assert_eq!(timer.millis_since(0), 0xFFFF_FFFF);
         assert_eq!(timer.micros_since(0), 0xFFFF_FFFF);
-
 
         TIMER.store(0x4000_0000, Ordering::SeqCst);
 
