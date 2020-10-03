@@ -74,6 +74,7 @@ dependencies = [
  "anachro-server",
  "bbqueue",
  "defmt",
+ "groundhog 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -312,6 +313,12 @@ dependencies = [
 [[package]]
 name = "groundhog"
 version = "0.1.0"
+
+[[package]]
+name = "groundhog"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a062150ca10007e710aa3a7b106196d2adf93dc978a6f98e86e69bd7299c6af"
 
 [[package]]
 name = "hash32"

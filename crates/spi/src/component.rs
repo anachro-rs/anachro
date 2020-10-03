@@ -10,6 +10,10 @@ use anachro_client::{
     from_bytes_cobs, to_slice_cobs, ClientIo, ClientIoError,
 };
 
+use groundhog::RollingTimer;
+
+const T_MIN_US: u32 = 50;
+
 pub trait EncLogicLLComponent {
     /// Process low level messages
     fn process(&mut self) -> Result<()>;
@@ -17,11 +21,11 @@ pub trait EncLogicLLComponent {
     /// Is the Component requesting a transaction?
     fn is_ready_active(&mut self) -> Result<bool>;
 
-    /// Set the READY line low (active)
-    fn notify_ready(&mut self) -> Result<()>;
+    /// Set the CSn line low (active)
+    fn notify_csn(&mut self) -> Result<()>;
 
-    /// Set the READY line high (inactive)
-    fn clear_ready(&mut self) -> Result<()>;
+    /// Set the CSn line high (inactive)
+    fn clear_csn(&mut self) -> Result<()>;
 
     /// Query whether the GO line is low (active)
     // TODO: just &self?
@@ -30,13 +34,9 @@ pub trait EncLogicLLComponent {
     /// Prepare data to be exchanged. The data MUST not be referenced
     /// until `complete_exchange` or `abort_exchange` has been called.
     ///
-    /// NOTE: Data will not be sent until `trigger_exchange` has been
-    /// called. This will automatically set the READY line if it is
-    /// not already active.
-    ///
     /// An error will be returned if an exchange is already in progress
     // TODO: `embedded-dma`?
-    fn prepare_exchange(
+    fn begin_exchange(
         &mut self,
         data_out: *const u8,
         data_out_len: usize,
@@ -44,33 +44,22 @@ pub trait EncLogicLLComponent {
         data_in_max: usize,
     ) -> Result<()>;
 
-    /// Actually begin exchanging data
-    ///
-    /// Will return an error if READY and GO are not active
-    fn trigger_exchange(&mut self) -> Result<()>;
-
     /// Is a `exchange` action still in progress?
     fn is_exchange_active(&self) -> Result<bool>;
 
-    /// Attempt to complete a `exchange` action.
+    /// Attempt to complete an `exchange` action.
     ///
     /// Returns `Ok(())` if the `exchange` completed successfully.
     ///
-    /// If the exchange is successful and `clear_ready` is `true`,
-    /// then the READY line will be cleared.
-    ///
     /// Will return an error if the exchange is still in progress.
-    /// If the exchange is still in progress, `clear_ready` is ignored.
     ///
     /// Use `abort_exchange` to force the exchange to completion even
     /// if it is still in progress.
-    fn complete_exchange(&mut self, clear_ready: bool) -> Result<usize>;
+    fn complete_exchange(&mut self) -> Result<usize>;
 
     /// Stop the `exchange` action immediately
     ///
     /// Returns `Ok(())` if the exchange had already been completed.
-    ///
-    /// In all cases, the READY line will be cleared.
     ///
     /// If the exchange had not yet completed, an Error containing the
     /// number of successfully sent bytes will be returned.
@@ -78,48 +67,33 @@ pub trait EncLogicLLComponent {
 }
 
 #[derive(Debug)]
-enum SendingState<CT>
+enum SendingState<CT, RT>
 where
     CT: ArrayLength<u8>,
+    RT: RollingTimer,
 {
     Idle,
-    DataHeader(FrameGrantR<'static, CT>),
-    DataBody,
-    EmptyHeader,
-    EmptyBody,
+    HeaderStart(RT::Tick),
+    HeaderXfer,
+    HeaderComplete(RT::Tick),
+    BodyStart(RT::Tick),
+    BodyXfer(Option<FrameGrantR<'static, CT>>, Option<FrameGrantW<'static, CT>>),
+    BodyComplete(RT::Tick),
 }
 
-impl<CT> PartialEq for SendingState<CT>
-where
-    CT: ArrayLength<u8>,
-{
-    fn eq(&self, other: &SendingState<CT>) -> bool {
-        match (self, other) {
-            (SendingState::Idle, SendingState::Idle) => true,
-            (SendingState::DataHeader(_), SendingState::DataHeader(_)) => true,
-            (SendingState::DataBody, SendingState::DataBody) => true,
-            (SendingState::EmptyHeader, SendingState::EmptyHeader) => true,
-            (SendingState::EmptyBody, SendingState::EmptyBody) => true,
-            _ => false,
-        }
-    }
-}
-
-pub struct EncLogicHLComponent<LL, CT>
+pub struct EncLogicHLComponent<LL, CT, RT>
 where
     CT: ArrayLength<u8>,
     LL: EncLogicLLComponent,
+    RT: RollingTimer<Tick=u32>,
 {
     ll: LL,
     outgoing_msgs: BBFullDuplex<CT>,
     incoming_msgs: BBFullDuplex<CT>,
-    out_grant: Option<FrameGrantR<'static, CT>>,
-    in_grant: Option<FrameGrantW<'static, CT>>,
-    out_buf: [u8; 4],
-    // sent_hdr: bool,
-    triggered: bool,
-    // empty_sending: bool,
-    send_state: SendingState<CT>,
+    smol_buf_in: [u8; 4],
+    smol_buf_out: [u8; 4],
+    send_state: SendingState<CT, RT>,
+    timer: RT,
 
     // NOTE: This is the grant from the incoming queue, used to return
     // messages up the protocol stack. By holding the grant HERE, we tie
@@ -136,36 +110,28 @@ where
     current_grant: Option<FrameGrantR<'static, CT>>,
 }
 
-impl<LL, CT> EncLogicHLComponent<LL, CT>
+impl<LL, CT, RT> EncLogicHLComponent<LL, CT, RT>
 where
     CT: ArrayLength<u8>,
     LL: EncLogicLLComponent,
+    RT: RollingTimer<Tick=u32>,
 {
     pub fn new(
         ll: LL,
         outgoing: &'static BBBuffer<CT>,
         incoming: &'static BBBuffer<CT>,
+        timer: RT,
     ) -> Result<Self> {
         Ok(EncLogicHLComponent {
             ll,
             outgoing_msgs: BBFullDuplex::new(outgoing)?,
             incoming_msgs: BBFullDuplex::new(incoming)?,
-            out_buf: [0u8; 4],
-            out_grant: None,
-            in_grant: None,
-            // sent_hdr: false,
-            triggered: false,
-            current_grant: None,
-            // empty_sending: false,
+            smol_buf_in: [0u8; 4],
+            smol_buf_out: [0u8; 4],
             send_state: SendingState::Idle,
+            timer,
+            current_grant: None,
         })
-    }
-
-    fn drop_grants(&mut self) {
-        self.current_grant = None;
-        self.out_grant = None;
-        self.in_grant = None;
-        self.triggered = false;
     }
 
     pub fn dequeue(&mut self) -> Option<FrameGrantR<'static, CT>> {
@@ -180,250 +146,203 @@ where
         Ok(())
     }
 
-    fn setup_data(&mut self, msg: &FrameGrantR<'static, CT>) -> Result<()> {
-        let igr_ptr;
-        match self.incoming_msgs.prod.grant(4) {
-            Ok(mut igr) => {
-                igr_ptr = igr.as_mut_ptr();
-                assert!(
-                    self.in_grant.is_none(),
-                    "Why do we already have an in grant?"
-                );
-                self.in_grant = Some(igr);
-            }
-            Err(_) => {
-                todo!("1 Handle insufficient size available for incoming");
-            }
-        }
-        // TODO: Do I want to save the grant here? I just need to "peek" to
-        // get the header values
-
-        // println!("Starting exchange, header!");
-        self.out_buf = (msg.len() as u32).to_le_bytes();
-
-        self.ll
-            .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
-            .unwrap();
-
-        Ok(())
-    }
-
-    fn setup_empty(&mut self) -> Result<()> {
-        let igr_ptr;
-        match self.incoming_msgs.prod.grant(4) {
-            Ok(mut igr) => {
-                igr_ptr = igr.as_mut_ptr();
-                assert!(
-                    self.in_grant.is_none(),
-                    "Why do we already have an in grant?"
-                );
-                self.in_grant = Some(igr);
-            }
-            Err(_) => {
-                todo!("2 Handle insufficient size available for incoming");
-            }
-        }
-        // TODO: Do I want to save the grant here? I just need to "peek" to
-        // get the header values
-
-        // println!("Starting exchange, header!");
-        self.out_buf = (0u32).to_le_bytes();
-
-        self.ll
-            .prepare_exchange(self.out_buf.as_ptr(), 4, igr_ptr, 4)
-            .unwrap();
-
-        Ok(())
-    }
-
-    fn complete_data_header(&mut self, msg: FrameGrantR<'static, CT>) -> Result<SendingState<CT>> {
-        let out_ptr = msg.as_ptr();
-        let out_len = msg.len();
-        self.out_grant = Some(msg);
-
-        let amt = match self.in_grant.take() {
-            Some(igr) => {
-                // Note: Drop IGR without commit by taking
-                assert_eq!(igr.len(), 4, "wrong header igr?");
-                let mut buf = [0u8; 4];
-                buf.copy_from_slice(&igr);
-                u32::from_le_bytes(buf) as usize
-            }
-            None => {
-                panic!("Why don't we have a header igr?");
-            }
-        };
-
-        let in_ptr;
-        self.in_grant = match self.incoming_msgs.prod.grant(amt) {
-            Ok(mut igr) => {
-                in_ptr = igr.as_mut_ptr();
-                Some(igr)
-            }
-            Err(_) => todo!("Handle insufficient size of igr"),
-        };
-
-        // println!("Starting exchange, data!");
-        self.ll
-            .prepare_exchange(out_ptr, out_len, in_ptr, amt)
-            .unwrap();
-
-        Ok(SendingState::DataBody)
-    }
-
-    fn complete_empty_header(&mut self) -> Result<SendingState<CT>> {
-        let out_ptr = self.out_buf.as_ptr();
-        let out_len = 0;
-
-        let amt = match self.in_grant.take() {
-            Some(igr) => {
-                // Note: Drop IGR without commit by taking
-                assert_eq!(igr.len(), 4, "wrong header igr?");
-                let mut buf = [0u8; 4];
-                buf.copy_from_slice(&igr);
-                u32::from_le_bytes(buf) as usize
-            }
-            None => {
-                panic!("Why don't we have a header igr?");
-            }
-        };
-
-        let in_ptr;
-        self.in_grant = match self.incoming_msgs.prod.grant(amt) {
-            Ok(mut igr) => {
-                in_ptr = igr.as_mut_ptr();
-                Some(igr)
-            }
-            Err(_) => todo!("Handle insufficient size of igr"),
-        };
-
-        // println!("Starting exchange, data!");
-        self.ll
-            .prepare_exchange(out_ptr, out_len, in_ptr, amt)
-            .unwrap();
-
-        Ok(SendingState::EmptyBody)
-    }
-
     pub fn poll(&mut self) -> Result<()> {
-        // println!("Ding");
+        // First things first, set the current state to idle. If we bail out
+        // at any point after this, we'll just be sitting back in the idle state
+        let old_state = core::mem::replace(&mut self.send_state, SendingState::Idle);
+
+        // Let the ll driver chew on packets
         self.ll.process()?;
 
-        let exchange_active = match self.ll.is_exchange_active() {
-            Ok(act) => act,
-            Err(_e) => {
-                // TODO: error handling
-                return Ok(());
-            }
-        };
-
+        // Is the go line (still) active?
         let go_active = match self.ll.is_go_active() {
             Ok(go) => go,
             Err(_e) => {
                 // TODO: error handling
+                self.ll.clear_csn()?;
                 return Ok(());
             }
         };
 
-        let old_state = core::mem::replace(&mut self.send_state, SendingState::Idle);
+        // Is there an exchange still in progress?
+        let exchange_active = match self.ll.is_exchange_active() {
+            Ok(act) => act,
+            Err(_e) => {
+                // TODO: error handling
+                self.ll.clear_csn()?;
+                return Ok(());
+            }
+        };
 
-        self.send_state = match (exchange_active, go_active, self.triggered, old_state) {
-            (false, false, false, SendingState::Idle) => {
-                // println!("IDLE");
-                if self.ll.is_go_active().is_err() {
-                    // TODO: This is a hack
-                    SendingState::Idle
-                } else if let Some(msg) = self.outgoing_msgs.cons.read() {
-                    self.setup_data(&msg)?;
-                    SendingState::DataHeader(msg)
+        // Someone hung up, or we aren't active
+        if !go_active {
+            if exchange_active {
+                defmt::warn!("Aborting active exchange!");
+                self.ll.abort_exchange().ok();
+            }
+            self.ll.clear_csn()?;
+            return Ok(());
+        }
+
+        let completed_exchange = if !exchange_active {
+            None
+        } else {
+            match self.ll.complete_exchange() {
+                Ok(amt) => Some(amt),
+                Err(Error::TransactionBusy) => None,
+                Err(_e) => {
+                    defmt::error!("Exchange error! Aborting exchange");
+                    self.ll.abort_exchange().ok();
+                    self.ll.clear_csn()?;
+                    return Ok(());
+                }
+            }
+        };
+
+        // TODO: Actually complete exchange, currently using exchange_active wrong
+
+        self.send_state = match old_state {
+            SendingState::Idle => {
+                debug_assert!(!exchange_active);
+
+                self.ll.notify_csn()?;
+                SendingState::HeaderStart(self.timer.get_ticks())
+            }
+            SendingState::HeaderStart(t_start) => {
+                debug_assert!(!exchange_active);
+
+                if self.timer.micros_since(t_start) > T_MIN_US {
+                    let next_amt = self.outgoing_msgs.cons.read().map(|gr| gr.len()).unwrap_or(0);
+
+                    self.smol_buf_in = (0u32).to_le_bytes();
+                    self.smol_buf_out = (next_amt as u32).to_le_bytes();
+
+                    self.ll.begin_exchange(
+                        self.smol_buf_out.as_ptr(), 4,
+                        self.smol_buf_in.as_mut_ptr(), 4
+                    )?;
+
+                    SendingState::HeaderXfer
                 } else {
-                    self.setup_empty()?;
-                    SendingState::EmptyHeader
+                    SendingState::HeaderStart(t_start)
                 }
             }
-            (_, _, _, SendingState::Idle) => {
-                // println!("!IDLE");
-                // This is an error.
-                // Exch/Go/Trigger shouldn't be set while idle
-                self.ll.abort_exchange().ok();
-                self.drop_grants();
-                SendingState::Idle // TODO: return Err?
-            }
-            (false, true, true, _state) => {
-                // This is an error.
-                self.ll.abort_exchange().ok();
-                self.drop_grants();
-                SendingState::Idle // TODO: return Err?
-            }
-            (false, _, _, _) => {
-                // println!("ABORT1");
-                // This is an error.
-                // exchange should be active
-                self.ll.abort_exchange().ok();
-                self.drop_grants();
-                SendingState::Idle // TODO: return Err?
-            }
-            (true, false, _, _) => {
-                // println!("ABORT2");
-                // This is an error. Go has fallen during exchange
-                self.drop_grants();
-                self.ll.abort_exchange().ok();
-                SendingState::Idle // TODO: return Err?
-            }
-            (true, true, false, state) => {
-                // println!("TRIGGER");
-                // TRIGGER
-                match state {
-                    SendingState::Idle => {
-                        return Err(Error::IncorrectState);
+            SendingState::HeaderXfer => {
+                if let Some(amt) = completed_exchange {
+                    self.ll.clear_csn()?;
+
+                    if amt != 4 {
+                        defmt::error!("Header size mismatch?");
+                        self.ll.clear_csn()?;
+                        return Ok(());
                     }
-                    state => {
-                        self.ll.trigger_exchange()?;
-                        // println!("TRIGGERED");
-                        self.triggered = true;
-                        state
+
+                    let amt_in = u32::from_le_bytes(self.smol_buf_in);
+                    let amt_out = u32::from_le_bytes(self.smol_buf_out);
+
+                    if (amt_in == 0) && (amt_out == 0) {
+                        // Nothing to do here!
+                        self.ll.clear_csn()?;
+                        return Ok(());
                     }
+
+                    SendingState::HeaderComplete(self.timer.get_ticks())
+                } else {
+                    SendingState::HeaderXfer
                 }
             }
-            (true, true, true, state) => {
-                // Did we just finish sending a body?
-                let body_done = match state {
-                    SendingState::EmptyBody | SendingState::DataBody => true,
-                    _ => false,
-                };
+            SendingState::HeaderComplete(t_start) => {
+                debug_assert!(!exchange_active);
 
-                match self.ll.complete_exchange(body_done) {
-                    Err(_) => {
-                        // Probably not an error, the other end just hung up
-                        return Err(Error::ArbitratorHungUp);
-                    }
-                    Ok(amt) => {
-                        if body_done {
-                            assert!(self.in_grant.is_some(), "Why no in grant on completion?");
+                if self.timer.micros_since(t_start) > T_MIN_US {
+                    self.ll.notify_csn()?;
+                    SendingState::BodyStart(self.timer.get_ticks())
+                } else {
+                    SendingState::HeaderComplete(t_start)
+                }
+            }
+            SendingState::BodyStart(t_start) => {
+                debug_assert!(!exchange_active);
 
-                            if let Some(igr) = self.in_grant.take() {
-                                if amt != 0 {
-                                    // println!("got {:?}!", &igr[..amt]);
-                                    igr.commit(amt);
-                                }
-                            }
+                if self.timer.micros_since(t_start) > T_MIN_US {
+                    let out_ptr;
+                    let out_len;
+                    let in_ptr;
+                    let in_len;
 
-                            if let Some(ogr) = self.out_grant.take() {
-                                ogr.release();
-                            }
+                    let amt_in = u32::from_le_bytes(self.smol_buf_in);
+
+                    let wgr = if amt_in == 0 {
+                        out_ptr = self.smol_buf_in.as_ptr();
+                        out_len = 0;
+                        None
+                    } else {
+                        let wgr = self.incoming_msgs.prod.grant(amt_in as usize)?;
+                        out_len = amt_in as usize;
+                        out_ptr = wgr.as_ptr();
+                        Some(wgr)
+                    };
+
+                    let rgr = match self.outgoing_msgs.cons.read() {
+                        Some(mut rgr) => {
+                            debug_assert!(rgr.len() == u32::from_le_bytes(self.smol_buf_out) as usize);
+
+                            in_len = rgr.len();
+                            in_ptr = rgr.as_mut_ptr();
+
+                            Some(rgr)
                         }
-                        self.triggered = false;
-                    }
-                }
+                        None => {
+                            debug_assert!(0 == u32::from_le_bytes(self.smol_buf_out));
 
-                match state {
-                    SendingState::Idle => {
-                        return Err(Error::IncorrectState);
+                            in_len = 0;
+                            in_ptr = self.smol_buf_out.as_mut_ptr();
+
+                            None
+                        }
+                    };
+
+                    self.ll.begin_exchange(
+                        out_ptr,
+                        out_len,
+                        in_ptr,
+                        in_len,
+                    )?;
+
+                    SendingState::BodyXfer(rgr, wgr)
+                } else {
+                    SendingState::BodyStart(t_start)
+                }
+            }
+            SendingState::BodyXfer(fgr, fgw) => {
+                if let Some(amt) = completed_exchange {
+                    // Complete body transfer?
+                    // Go to Body Complete
+                    self.ll.clear_csn()?;
+
+                    if let Some(fgr) = fgr {
+                        // This is the outgoing buffer
+                        fgr.release();
                     }
-                    SendingState::DataHeader(gr) => self.complete_data_header(gr)?,
-                    SendingState::DataBody => SendingState::Idle,
-                    SendingState::EmptyHeader => self.complete_empty_header()?,
-                    SendingState::EmptyBody => SendingState::Idle,
+
+                    if let Some(fgw) = fgw {
+                        // This is the incoming buffer
+                        fgw.commit(amt);
+                    }
+
+                    SendingState::BodyComplete(self.timer.get_ticks())
+                } else {
+                    SendingState::BodyXfer(fgr, fgw)
+                }
+            }
+            SendingState::BodyComplete(t_start) => {
+                debug_assert!(!exchange_active);
+
+                if self.timer.micros_since(t_start) > T_MIN_US {
+                    self.ll.notify_csn()?;
+                    SendingState::HeaderStart(self.timer.get_ticks())
+                } else {
+                    SendingState::BodyComplete(t_start)
                 }
             }
         };
@@ -432,10 +351,11 @@ where
     }
 }
 
-impl<LL, CT> ClientIo for EncLogicHLComponent<LL, CT>
+impl<LL, CT, RT> ClientIo for EncLogicHLComponent<LL, CT, RT>
 where
     CT: ArrayLength<u8>,
     LL: EncLogicLLComponent,
+    RT: RollingTimer<Tick=u32>,
 {
     /// Attempt to receive one message FROM the Arbitrator/Broker, TO the Client
     fn recv(&mut self) -> core::result::Result<Option<Arbitrator>, ClientIoError> {
