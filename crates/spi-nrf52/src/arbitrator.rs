@@ -1,9 +1,9 @@
 use nrf52840_hal::{
-    gpio::{Floating, Input, Output, Pin, PushPull},
+    gpio::{Output, Pin, PushPull},
     spis::{Instance, Mode, Spis, TransferSplit},
 };
 
-use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin};
+use embedded_hal::digital::v2::{OutputPin, StatefulOutputPin};
 
 use anachro_spi::{arbitrator::EncLogicLLArbitrator, Error, Result};
 
@@ -26,7 +26,6 @@ where
     S: Instance + Send,
 {
     periph: Periph<S>,
-    ready_pin: Pin<Input<Floating>>,
     go_pin: Pin<Output<PushPull>>,
 }
 
@@ -34,11 +33,7 @@ impl<S> NrfSpiArbLL<S>
 where
     S: Instance + Send,
 {
-    pub fn new(
-        spis: Spis<S>,
-        ready_pin: Pin<Input<Floating>>,
-        mut go_pin: Pin<Output<PushPull>>,
-    ) -> Self {
+    pub fn new(spis: Spis<S>, mut go_pin: Pin<Output<PushPull>>) -> Self {
         defmt::trace!("New Arbitrator LL Created");
         go_pin.set_high().ok();
         spis.set_default_char(0x00)
@@ -52,7 +47,6 @@ where
         Self {
             periph: Periph::Idle(spis),
             go_pin,
-            ready_pin,
         }
     }
 }
@@ -95,8 +89,8 @@ where
         Ok(())
     }
 
-    fn is_ready_active(&mut self) -> Result<bool> {
-        self.ready_pin.is_low().map_err(|_| Error::GpioError)
+    fn has_exchange_begun(&self) -> Result<bool> {
+        Ok(true)
     }
 
     fn notify_go(&mut self) -> Result<()> {
@@ -119,13 +113,6 @@ where
         data_in_max: usize,
     ) -> Result<()> {
         defmt::trace!("Preparing exchange");
-        match self.is_ready_active() {
-            Ok(true) => {}
-            _ => {
-                defmt::warn!("Component not ready for exchange");
-                return Err(Error::ComponentNotReady);
-            }
-        }
 
         let mut old_periph = Periph::Unstable;
         core::mem::swap(&mut self.periph, &mut old_periph);
@@ -185,7 +172,7 @@ where
         }
     }
 
-    fn complete_exchange(&mut self, clear_go: bool) -> Result<usize> {
+    fn complete_exchange(&mut self) -> Result<usize> {
         let mut current = Periph::Unstable;
         core::mem::swap(&mut self.periph, &mut current);
 
@@ -218,10 +205,6 @@ where
                 }
             }
         };
-
-        if clear_go {
-            self.clear_go()?;
-        }
 
         Ok(amt)
     }

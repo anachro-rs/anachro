@@ -18,9 +18,6 @@ pub trait EncLogicLLComponent {
     /// Process low level messages
     fn process(&mut self) -> Result<()>;
 
-    /// Is the Component requesting a transaction?
-    fn is_ready_active(&mut self) -> Result<bool>;
-
     /// Set the CSn line low (active)
     fn notify_csn(&mut self) -> Result<()>;
 

@@ -424,8 +424,7 @@ where
                             Ok(None)
                         } else {
                             defmt::error!("Bad message on arbitrator deser");
-                            Ok(None)
-                            // Err(ServerIoError::DeserializeFailure)
+                            Err(ServerIoError::DeserializeFailure)
                         }
                     }
                 }

@@ -3,7 +3,7 @@ use nrf52840_hal::{
     spim::{Instance, Spim, TransferSplit},
 };
 
-use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin};
+use embedded_hal::digital::v2::{InputPin, OutputPin};
 
 use embedded_dma::WriteBuffer;
 
@@ -15,7 +15,7 @@ where
     S: Instance + Send,
 {
     periph: Periph<S>,
-    ready_pin: Pin<Output<PushPull>>,
+    csn_pin: Pin<Output<PushPull>>,
     go_pin: Pin<Input<Floating>>,
 }
 
@@ -26,7 +26,6 @@ where
     S: Instance + Send,
 {
     Idle(Spim<S>),
-    Awaiting((Spim<S>, ConstRawSlice, MutRawSlice)),
     Pending(TransferSplit<S, ConstRawSlice, MutRawSlice>),
     Unstable,
 }
@@ -37,13 +36,13 @@ where
 {
     pub fn new(
         spim: Spim<S>,
-        mut ready_pin: Pin<Output<PushPull>>,
+        mut csn_pin: Pin<Output<PushPull>>,
         go_pin: Pin<Input<Floating>>,
     ) -> Self {
-        ready_pin.set_high().ok();
+        csn_pin.set_high().ok();
         Self {
             periph: Periph::Idle(spim),
-            ready_pin,
+            csn_pin,
             go_pin,
         }
     }
@@ -58,19 +57,14 @@ where
         Ok(())
     }
 
-    /// Is the Component requesting a transaction?
-    fn is_ready_active(&mut self) -> Result<bool> {
-        self.ready_pin.is_set_low().map_err(|_| Error::GpioError)
-    }
-
     /// Set the READY line low (active)
-    fn notify_ready(&mut self) -> Result<()> {
-        self.ready_pin.set_low().map_err(|_| Error::GpioError)
+    fn notify_csn(&mut self) -> Result<()> {
+        self.csn_pin.set_low().map_err(|_| Error::GpioError)
     }
 
     /// Set the READY line high (inactive)
-    fn clear_ready(&mut self) -> Result<()> {
-        self.ready_pin.set_high().map_err(|_| Error::GpioError)
+    fn clear_csn(&mut self) -> Result<()> {
+        self.csn_pin.set_high().map_err(|_| Error::GpioError)
     }
 
     /// Query whether the GO line is low (active)
@@ -88,7 +82,7 @@ where
     ///
     /// An error will be returned if an exchange is already in progress
     // TODO: `embedded-dma`?
-    fn prepare_exchange(
+    fn begin_exchange(
         &mut self,
         data_out: *const u8,
         data_out_len: usize,
@@ -100,42 +94,20 @@ where
 
         let spim = match old_periph {
             Periph::Idle(spim) => spim,
-            Periph::Pending(_) | Periph::Awaiting(_) | Periph::Unstable => {
+            Periph::Pending(_) | Periph::Unstable => {
                 self.periph = old_periph;
                 return Err(Error::IncorrectState);
             }
         };
 
-        defmt::trace!("preparing exchange, {:?} bytes out", data_out_len);
+        let crs = ConstRawSlice {
+            ptr: data_out,
+            len: data_out_len,
+        };
 
-        self.periph = Periph::Awaiting((
-            spim,
-            ConstRawSlice {
-                ptr: data_out,
-                len: data_out_len,
-            },
-            MutRawSlice {
-                ptr: data_in,
-                len: data_in_max,
-            },
-        ));
-        self.notify_ready()?;
-
-        Ok(())
-    }
-
-    /// Actually begin exchanging data
-    ///
-    /// Will return an error if READY and GO are not active
-    fn trigger_exchange(&mut self) -> Result<()> {
-        let mut old_periph = Periph::Unstable;
-        core::mem::swap(&mut self.periph, &mut old_periph);
-
-        let (spim, crs, mrs) = if let Periph::Awaiting((p, crs, mrs)) = old_periph {
-            (p, crs, mrs)
-        } else {
-            core::mem::swap(&mut self.periph, &mut old_periph);
-            return Err(Error::IncorrectState);
+        let mrs = MutRawSlice {
+            ptr: data_in,
+            len: data_in_max,
         };
 
         defmt::info!("Triggering exchange");
@@ -160,7 +132,6 @@ where
     fn is_exchange_active(&self) -> Result<bool> {
         match self.periph {
             Periph::Idle(_) => Ok(false),
-            Periph::Awaiting(_) => Ok(true),
             Periph::Pending(_) => Ok(true),
             Periph::Unstable => Err(Error::UnstableFailure),
         }
@@ -170,15 +141,11 @@ where
     ///
     /// Returns `Ok(())` if the `exchange` completed successfully.
     ///
-    /// If the exchange is successful and `clear_ready` is `true`,
-    /// then the READY line will be cleared.
-    ///
     /// Will return an error if the exchange is still in progress.
-    /// If the exchange is still in progress, `clear_ready` is ignored.
     ///
     /// Use `abort_exchange` to force the exchange to completion even
     /// if it is still in progress.
-    fn complete_exchange(&mut self, clear_ready: bool) -> Result<usize> {
+    fn complete_exchange(&mut self) -> Result<usize> {
         let mut current = Periph::Unstable;
         core::mem::swap(&mut self.periph, &mut current);
 
@@ -186,10 +153,6 @@ where
             Periph::Idle(p) => {
                 self.periph = Periph::Idle(p);
                 return Err(Error::IncorrectState);
-            }
-            Periph::Awaiting((p, crs, mrs)) => {
-                self.periph = Periph::Awaiting((p, crs, mrs));
-                return Err(Error::TransactionBusy);
             }
             Periph::Unstable => {
                 return Err(Error::UnstableFailure);
@@ -207,10 +170,6 @@ where
             }
         };
 
-        if clear_ready {
-            self.clear_ready()?;
-        }
-
         Ok(amt)
     }
 
@@ -218,20 +177,15 @@ where
     ///
     /// Returns `Ok(())` if the exchange had already been completed.
     ///
-    /// In all cases, the READY line will be cleared.
-    ///
     /// If the exchange had not yet completed, an Error containing the
     /// number of successfully sent bytes will be returned.
     fn abort_exchange(&mut self) -> Result<usize> {
-        self.clear_ready().ok();
-
         let mut current = Periph::Unstable;
         core::mem::swap(&mut current, &mut self.periph);
 
         let mut amt = 0;
         self.periph = match current {
             Periph::Idle(p) => Periph::Idle(p),
-            Periph::Awaiting((p, _r, _t)) => Periph::Idle(p),
             Periph::Pending(mut p) => {
                 if p.is_done() {
                     let (_tx, mut rx, p) = p.wait();
