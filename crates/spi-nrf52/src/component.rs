@@ -7,9 +7,8 @@ use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin};
 
 use embedded_dma::WriteBuffer;
 
-use anachro_spi::{component::EncLogicLLComponent, Error, Result};
 use crate::{ConstRawSlice, MutRawSlice};
-
+use anachro_spi::{component::EncLogicLLComponent, Error, Result};
 
 pub struct NrfSpiComLL<S>
 where
@@ -48,7 +47,6 @@ where
             go_pin,
         }
     }
-
 }
 
 impl<S> EncLogicLLComponent for NrfSpiComLL<S>
@@ -143,10 +141,7 @@ where
         defmt::info!("Triggering exchange");
         defmt::trace!("tx_len: {:?}, rx_len: {:?}", crs.len, mrs.len);
 
-        let txfr = match spim.dma_transfer_split(
-            crs,
-            mrs,
-        ) {
+        let txfr = match spim.dma_transfer_split(crs, mrs) {
             Ok(t) => t,
             Err((p, _e)) => {
                 self.periph = Periph::Idle(p);
@@ -159,7 +154,6 @@ where
         self.periph = Periph::Pending(txfr);
 
         Ok(())
-
     }
 
     /// Is a `exchange` action still in progress?

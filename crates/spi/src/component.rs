@@ -77,7 +77,10 @@ where
     HeaderXfer,
     HeaderComplete(RT::Tick),
     BodyStart(RT::Tick),
-    BodyXfer(Option<FrameGrantR<'static, CT>>, Option<FrameGrantW<'static, CT>>),
+    BodyXfer(
+        Option<FrameGrantR<'static, CT>>,
+        Option<FrameGrantW<'static, CT>>,
+    ),
     BodyComplete(RT::Tick),
 }
 
@@ -85,7 +88,7 @@ pub struct EncLogicHLComponent<LL, CT, RT>
 where
     CT: ArrayLength<u8>,
     LL: EncLogicLLComponent,
-    RT: RollingTimer<Tick=u32>,
+    RT: RollingTimer<Tick = u32>,
 {
     ll: LL,
     outgoing_msgs: BBFullDuplex<CT>,
@@ -114,7 +117,7 @@ impl<LL, CT, RT> EncLogicHLComponent<LL, CT, RT>
 where
     CT: ArrayLength<u8>,
     LL: EncLogicLLComponent,
-    RT: RollingTimer<Tick=u32>,
+    RT: RollingTimer<Tick = u32>,
 {
     pub fn new(
         ll: LL,
@@ -212,14 +215,21 @@ where
                 debug_assert!(!exchange_active);
 
                 if self.timer.micros_since(t_start) > T_MIN_US {
-                    let next_amt = self.outgoing_msgs.cons.read().map(|gr| gr.len()).unwrap_or(0);
+                    let next_amt = self
+                        .outgoing_msgs
+                        .cons
+                        .read()
+                        .map(|gr| gr.len())
+                        .unwrap_or(0);
 
                     self.smol_buf_in = (0u32).to_le_bytes();
                     self.smol_buf_out = (next_amt as u32).to_le_bytes();
 
                     self.ll.begin_exchange(
-                        self.smol_buf_out.as_ptr(), 4,
-                        self.smol_buf_in.as_mut_ptr(), 4
+                        self.smol_buf_out.as_ptr(),
+                        4,
+                        self.smol_buf_in.as_mut_ptr(),
+                        4,
                     )?;
 
                     SendingState::HeaderXfer
@@ -273,41 +283,38 @@ where
                     let amt_in = u32::from_le_bytes(self.smol_buf_in);
 
                     let wgr = if amt_in == 0 {
-                        out_ptr = self.smol_buf_in.as_ptr();
-                        out_len = 0;
+                        in_ptr = self.smol_buf_in.as_mut_ptr();
+                        in_len = 0;
                         None
                     } else {
-                        let wgr = self.incoming_msgs.prod.grant(amt_in as usize)?;
-                        out_len = amt_in as usize;
-                        out_ptr = wgr.as_ptr();
+                        let mut wgr = self.incoming_msgs.prod.grant(amt_in as usize)?;
+                        in_len = amt_in as usize;
+                        in_ptr = wgr.as_mut_ptr();
                         Some(wgr)
                     };
 
                     let rgr = match self.outgoing_msgs.cons.read() {
-                        Some(mut rgr) => {
-                            debug_assert!(rgr.len() == u32::from_le_bytes(self.smol_buf_out) as usize);
+                        Some(rgr) => {
+                            debug_assert!(
+                                rgr.len() == u32::from_le_bytes(self.smol_buf_out) as usize
+                            );
 
-                            in_len = rgr.len();
-                            in_ptr = rgr.as_mut_ptr();
+                            out_len = rgr.len();
+                            out_ptr = rgr.as_ptr();
 
                             Some(rgr)
                         }
                         None => {
                             debug_assert!(0 == u32::from_le_bytes(self.smol_buf_out));
 
-                            in_len = 0;
-                            in_ptr = self.smol_buf_out.as_mut_ptr();
+                            out_len = 0;
+                            out_ptr = self.smol_buf_out.as_ptr();
 
                             None
                         }
                     };
 
-                    self.ll.begin_exchange(
-                        out_ptr,
-                        out_len,
-                        in_ptr,
-                        in_len,
-                    )?;
+                    self.ll.begin_exchange(out_ptr, out_len, in_ptr, in_len)?;
 
                     SendingState::BodyXfer(rgr, wgr)
                 } else {
@@ -355,7 +362,7 @@ impl<LL, CT, RT> ClientIo for EncLogicHLComponent<LL, CT, RT>
 where
     CT: ArrayLength<u8>,
     LL: EncLogicLLComponent,
-    RT: RollingTimer<Tick=u32>,
+    RT: RollingTimer<Tick = u32>,
 {
     /// Attempt to receive one message FROM the Arbitrator/Broker, TO the Client
     fn recv(&mut self) -> core::result::Result<Option<Arbitrator>, ClientIoError> {

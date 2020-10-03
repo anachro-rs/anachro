@@ -88,7 +88,7 @@ where
             }
             Periph::Unstable => {
                 defmt::error!("Unstable!");
-                return Err(Error::UnstableFailure)
+                return Err(Error::UnstableFailure);
             }
         };
 
@@ -110,7 +110,6 @@ where
     fn is_go_active(&mut self) -> Result<bool> {
         self.go_pin.is_set_low().map_err(|_| Error::GpioError)
     }
-
 
     fn prepare_exchange(
         &mut self,
@@ -259,4 +258,3 @@ where
         Ok(amt)
     }
 }
-
