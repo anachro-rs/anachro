@@ -55,7 +55,7 @@ Application:  [ Application Data                                   ]
 ????????:     [ Anachro ICD Data Types - Anachro Protocol          ]
 ????????:     [ Serde/Postcard Encoded Data                        ]
 Enc/Logic:    [ COBS Encoded Data     ][    State Logic            ] **** first
-Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
+Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - CSn ][  GPIO - GO  ] **** second
 ```
 
 ## 2020-09-19 Stream
@@ -78,8 +78,8 @@ Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
 4. Client:       [ Anachro Session State                              ]
 3. ClientIo:     [ Anachro ICD Data Types - Anachro Protocol          ]
 2. Enc/Logic:    [ Serde/Postcard Encoded Data                        ]
-1. Enc     :     [ ?COBS Encoded Data?   ][    State Logic            ] **** first
-0. Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - READY ][ GPIO - GO ] **** second
+1. Enc     :     [ COBS Encoded Data     ][    State Logic            ] **** first
+0. Physical:     [ SPI - COPI, CIPO, SCK ][ GPIO - CSn   ][ GPIO - GO ] **** second
 
 TODO: Do these match?
 
@@ -103,6 +103,13 @@ TODO: Do these match?
        ^
        v
 0: [ struct ]           (TCPSpiClient, concrete protocol layer)
+```
+
+```
+* nrf52832 - Broker
+  * USB-UART -> PC (client)
+  * ESB      -> Lighting controller (client)
+  * ESB      -> E-Paper Clock (client)
 ```
 
 # 2020-09-26 notes

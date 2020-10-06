@@ -2,13 +2,13 @@
 #![no_std]
 
 use embedded_hal::digital::v2::OutputPin;
-use embedded_hal::blocking::delay::DelayMs;
+use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use nrf52840_hal::{
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
-    pac::{Peripherals, SPIS1, SPIM0,},
+    pac::{Peripherals, SPIS1, SPIM0, TIMER2},
     spim::{Frequency, Pins as SpimPins, Spim, MODE_0, TransferSplit},
-    spis::{Pins as SpisPins, Spis, Transfer},
-    timer::Timer,
+    spis::{Pins as SpisPins, Spis, Transfer, Mode},
+    timer::{Timer, Periodic, Instance as TimerInstance},
 };
 use anachro_loopback as _; // global logger + panicking-behavior + memory layout
 use bbqueue::{
@@ -35,12 +35,14 @@ use postcard::to_slice_cobs;
 
 use serde::{Deserialize, Serialize};
 
+use groundhog::RollingTimer;
+
 // COMPONENT     ARBITRATOR
 // P0.03   <=>   P1.05              SCK
 // P0.04   <=>   P1.04              CIPO
 // P0.28   <=>   P1.03              COPI
-// P0.29   <=>   P1.02      P1.15   GO
-// P0.30   <=>   P1.01              READY
+// P0.29   <=>   P1.02              GO
+// P0.30   <=>   P1.01              CSn
 
 // P0.31   <=>   P1.06          SCK
 // ~P1.15~   <=>   P1.07          CIPO
@@ -73,6 +75,19 @@ pubsub_table! {
     },
 }
 
+struct TimeHog<T: TimerInstance> {
+    timer: Timer<T, Periodic>,
+}
+
+impl<T: TimerInstance> RollingTimer for TimeHog<T> {
+    type Tick = u32;
+    const TICKS_PER_SECOND: Self::Tick = 1_000_000;
+
+    fn get_ticks(&self) -> Self::Tick {
+        self.timer.read()
+    }
+}
+
 #[cortex_m_rt::entry]
 fn main() -> ! {
     defmt::info!("Hello, world!");
@@ -93,34 +108,44 @@ fn main() -> ! {
         sck: p1.p1_05.into_floating_input().degrade(),
         cipo: Some(p1.p1_04.into_floating_input().degrade()),
         copi: Some(p1.p1_03.into_floating_input().degrade()),
-
-        // This is problematic. Should I just common together
-        // the GO pin and the real CSn? Then we can control when
-        // things start/stop.
-        //
-        // NOTE: Common'd to p1.p1_02/p0.29
-        cs: p1.p1_15.into_floating_input().degrade(),
+        cs: p1.p1_01.into_floating_input().degrade(),
     };
 
-    // Wrong polarity
     let mut con_go = p0.p0_29.into_floating_input().degrade();
     let mut arb_go = p1.p1_02.into_push_pull_output(Level::High).degrade();
 
-    let mut con_ready = p0.p0_30.into_push_pull_output(Level::High).degrade();
-    let mut arb_ready = p1.p1_01.into_floating_input().degrade();
+    let mut con_csn = p0.p0_30.into_push_pull_output(Level::High).degrade();
 
     let mut arb_spis = Spis::new(board.SPIS1, arb_pins);
-    let mut con_spim = Spim::new(board.SPIM0, con_pins, Frequency::K125, MODE_0, 0x00);
+    let mut con_spim = Spim::new(board.SPIM0, con_pins, Frequency::M8, MODE_0, 0x00);
+
+    arb_spis.set_mode(Mode::Mode0);
 
     let mut timer = Timer::new(board.TIMER0);
 
     use embedded_hal::timer::CountDown;
+
     let mut ts_timer = Timer::new(board.TIMER2);
     ts_timer.start(0xFFFF_FFFFu32);
 
+    let mut rolling_timer_1 = Timer::new(board.TIMER4).into_periodic();
+    rolling_timer_1.start(0xFFFF_FFFFu32);
+
+    let mut rolling_timer_2 = Timer::new(board.TIMER3).into_periodic();
+    rolling_timer_2.start(0xFFFF_FFFFu32);
+
+    let hog_1 = TimeHog {
+        timer: rolling_timer_1,
+    };
+
+    let hog_2 = TimeHog {
+        timer: rolling_timer_2,
+    };
+
     let mut arb_port = EncLogicHLArbitrator::new(
         Uuid::from_bytes([0x01; 16]),
-        NrfSpiArbLL::new(arb_spis, arb_ready, arb_go),
+        NrfSpiArbLL::new(arb_spis, arb_go),
+        hog_1,
         &BB_ARB_OUT,
         &BB_ARB_INC,
     ).unwrap();
@@ -128,10 +153,11 @@ fn main() -> ! {
     let mut broker = Broker::default();
     broker.register_client(&Uuid::from_bytes([0x01; 16])).unwrap();
 
-    let nrf_cli = NrfSpiComLL::new(con_spim, con_ready, con_go);
+    let nrf_cli = NrfSpiComLL::new(con_spim, con_csn, con_go);
 
     let mut cio = EncLogicHLComponent::new(
         nrf_cli,
+        hog_2,
         &BB_CON_OUT,
         &BB_CON_INC,
     ).unwrap();
@@ -152,11 +178,11 @@ fn main() -> ! {
 
     defmt::info!("Starting loop");
 
-    while !client.is_connected() {
-        defmt::info!("loop.");
-        timer.delay_ms(250u32);
+    let mut countdown = 0;
 
-        // AJM: We shouldn't have to manually poll the IO like this
+    while !client.is_connected() {
+        timer.delay_us(10u32);
+
         if let Err(e) = cio.poll() {
             // println!("{:?}", e);
             defmt::error!("oops");
@@ -164,35 +190,54 @@ fn main() -> ! {
             continue;
         }
 
+        if let Err(e) = arb_port.poll() {
+            defmt::error!("poll err");
+        }
+
+        countdown += 1;
+
+        if countdown >= 10 {
+            countdown = 0;
+        } else {
+            continue;
+        }
+
+
+        arb_port.query_component().ok();
+
+        defmt::info!("loop.");
+        // timer.delay_ms(1u32);
+
+        // AJM: We shouldn't have to manually poll the IO like this
+
+
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => {
-                defmt::info!("Got one");
+                defmt::info!("ClientApp: Got one");
                 // defmt::info!("Got: {:?}", msg);
             }
             Ok(None) => {}
             Err(Error::ClientIoError(ClientIoError::NoData)) => {}
             Err(e) => {
                 match e {
-                    Error::Busy => defmt::info!("busy"),
-                    Error::NotActive => defmt::info!("not active"),
-                    Error::UnexpectedMessage => defmt::info!("Un Ex Me"),
+                    Error::Busy => defmt::info!("ClientApp: busy"),
+                    Error::NotActive => defmt::info!("ClientApp: not active"),
+                    Error::UnexpectedMessage => defmt::info!("ClientApp: Un Ex Me"),
                     Error::ClientIoError(cie) => {
                         match cie {
-                            ClientIoError::ParsingError => defmt::info!("parseerr"),
-                            ClientIoError::NoData => defmt::info!("nodata"),
-                            ClientIoError::OutputFull => defmt::info!("out full"),
+                            ClientIoError::ParsingError => defmt::info!("ClientApp: parseerr"),
+                            ClientIoError::NoData => defmt::info!("ClientApp: nodata"),
+                            ClientIoError::OutputFull => defmt::info!("ClientApp: out full"),
                         }
-                        defmt::info!("Cl Io Er");
+                        defmt::info!("ClientApp: Cl Io Er");
                     }
                 }
-                defmt::error!("error!");
+                defmt::error!("ClientApp: error!");
                 // defmt::info!("error: {:?}", e);
             }
         }
 
-        if let Err(e) = arb_port.poll() {
-            defmt::error!("poll err");
-        }
+
 
         let mut out_msgs: HVec<_, consts::U16> = HVec::new();
         defmt::info!("broker sending {:?} msgs", out_msgs.len());
@@ -203,22 +248,38 @@ fn main() -> ! {
                 anachro_loopback::exit();
             }
         }
+
+        let mut serout: HVec<HVec<u8, consts::U128>, consts::U16> = HVec::new();
+
         for msg in out_msgs {
             // TODO: Routing
             defmt::info!("Out message!");
-            if let Ok(resp) = to_slice_cobs(&msg.msg, &mut buf) {
-                match cio.enqueue(resp) {
-                    Ok(_) => defmt::info!("cio enqueued."),
-                    Err(e) => {
-                        defmt::error!("enqueue failed: {:?}", e);
-                        anachro_loopback::exit();
-                    }
+            use postcard::to_vec_cobs;
+            if let Ok(resp) = to_vec_cobs(&msg.msg) {
+                defmt::info!("resp out: {:?}", &resp[..]);
+                // match cio.enqueue(resp) {
+                //     Ok(_) => defmt::info!("cio enqueued."),
+                //     Err(e) => {
+                //         defmt::error!("enqueue failed: {:?}", e);
+                //         anachro_loopback::exit();
+                //     }
+                // }
+                serout.push(resp).unwrap();
+            }
+        }
+
+        for msg in serout {
+            match arb_port.enqueue(&msg) {
+                Ok(_) => defmt::info!("arb_port enqueued."),
+                Err(e) => {
+                    defmt::error!("enqueue failed: {:?}", e);
+                    anachro_loopback::exit();
                 }
             }
         }
     }
 
-    defmt::info!("Connected!");
+    defmt::error!("Connected!");
 
     anachro_loopback::exit()
 

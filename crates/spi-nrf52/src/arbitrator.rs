@@ -42,7 +42,7 @@ where
             .auto_acquire(true)
             .reset_events();
         spis.try_acquire().ok();
-        spis.disable();
+        // spis.disable();
 
         Self {
             periph: Periph::Idle(spis),
@@ -71,7 +71,7 @@ where
                 Periph::Pending(p)
             }
             Periph::Aborted(mut p) => {
-                if p.is_done() {
+                if p.is_acquired() {
                     defmt::trace!("Aborted and Done");
                     let (_tx, _rx, p) = p.wait();
                     Periph::Idle(p)
@@ -191,7 +191,7 @@ where
                 return Err(Error::UnstableFailure);
             }
             Periph::Pending(mut p) => {
-                if p.is_done() {
+                if p.is_acquired() {
                     let (_tx, _rx, p) = p.wait();
                     let amt = p.amount() as usize;
                     defmt::info!("Transaction done - {:?} bytes", amt);
@@ -222,7 +222,7 @@ where
             Periph::Idle(p) => Periph::Idle(p),
             Periph::Pending(mut p) => {
                 defmt::info!("Aborting pending exchange");
-                if p.is_done() {
+                if p.is_acquired() {
                     let (_tx, _rx, p) = p.wait();
                     amt = p.amount() as usize;
                     p.disable();

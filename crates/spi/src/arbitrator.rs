@@ -16,8 +16,8 @@ use bbqueue::{
 
 use groundhog::RollingTimer;
 
-const T_WINDOW_US: u32 = 50_000;
-const T_STEP_US: u32 = 5_000;
+const T_WINDOW_US: u32 = 100_000;
+const T_STEP_US: u32 = 1_000;
 
 pub trait EncLogicLLArbitrator: Send {
     /// Process low level messages
@@ -201,6 +201,7 @@ where
                 t_window: now,
                 t_step: now,
             };
+            defmt::info!("Arbitrator: Idle -> HeaderStart");
             Ok(())
         } else {
             Err(Error::IncorrectState)
@@ -243,8 +244,15 @@ where
             None
         } else {
             match self.ll.complete_exchange() {
-                Ok(amt) => Some(amt),
+                Ok(amt) => {
+                    defmt::info!("Arbitrator Completed!");
+                    Some(amt)
+                },
                 Err(Error::TransactionBusy) => None,
+                Err(Error::TransactionAborted) => {
+                    self.ll.clear_go()?;
+                    return Ok(());
+                }
                 Err(_e) => {
                     defmt::error!("Exchange error! Aborting exchange");
                     self.ll.abort_exchange().ok();
@@ -286,6 +294,8 @@ where
 
                 self.ll.notify_go()?;
 
+                defmt::info!("Arbitrator: HeaderStart -> HeaderPrepped");
+
                 ArbState::HeaderPrepped {
                     t_window,
                     t_step: self.timer.get_ticks(),
@@ -293,6 +303,7 @@ where
             }
             ArbState::HeaderPrepped { t_window, t_step } => {
                 if self.ll.has_exchange_begun()? {
+                    defmt::info!("Arbitrator: HeaderPrepped -> HeaderXfer");
                     ArbState::HeaderXfer { t_window }
                 } else {
                     ArbState::HeaderPrepped { t_window, t_step }
@@ -301,6 +312,8 @@ where
             ArbState::HeaderXfer { t_window } => {
                 if let Some(amt) = completed_exchange {
                     if amt != 4 {
+                        defmt::info!("Arbitrator: HeaderXfer -> Idle");
+
                         self.ll.clear_go()?;
                         return Ok(());
                     }
@@ -310,6 +323,7 @@ where
 
                     if (amt_in == 0) && (amt_out == 0) {
                         self.ll.clear_go()?;
+                        defmt::info!("Arbitrator: HeaderXfer -> Idle");
                         return Ok(());
                     }
 
@@ -341,6 +355,7 @@ where
 
                     self.ll.prepare_exchange(out_ptr, out_len, in_ptr, in_len)?;
 
+                    defmt::info!("Arbitrator: HeaderXfer -> BodyPrepped");
                     ArbState::BodyPrepped {
                         t_window,
                         t_step: self.timer.get_ticks(),
@@ -358,6 +373,7 @@ where
                 fgw,
             } => {
                 if self.ll.has_exchange_begun()? {
+                    defmt::info!("Arbitrator: BodyPrepped -> BodyXfer");
                     ArbState::BodyXfer { t_window, fgr, fgw }
                 } else {
                     ArbState::BodyPrepped {
@@ -375,10 +391,12 @@ where
                     }
 
                     if let Some(gr) = fgw {
+                        defmt::info!("Committing {:?} bytes", amt);
                         gr.commit(amt);
                     }
 
                     let now = self.timer.get_ticks();
+                    defmt::info!("Arbitrator: BodyXfer -> HeaderStart");
                     ArbState::HeaderStart {
                         t_window: now,
                         t_step: now,
@@ -415,12 +433,18 @@ where
                 // future, it might be possible to pack multiple datagrams together into
                 // a single frame. But for now, we only handle one.
                 match from_bytes_cobs(sbr) {
-                    Ok(deser) => Ok(Some(Request {
-                        source: self.uuid,
-                        msg: deser,
-                    })),
+
+                    Ok(deser) => {
+                        defmt::info!("Giving Req!");
+                        Ok(Some(Request {
+                            source: self.uuid,
+                            msg: deser,
+                        }))
+                    }
                     Err(_) => {
+                        defmt::info!("Bad Req!");
                         if len == 0 {
+                            defmt::info!("Bad Empty Req!");
                             Ok(None)
                         } else {
                             defmt::error!("Bad message on arbitrator deser");

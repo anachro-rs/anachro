@@ -132,17 +132,22 @@ impl Broker {
         sio_out: &'sio mut SO,
     ) -> Result<(), ServerError> {
         let Request { source, msg } = match sio_in.recv() {
-            Ok(Some(req)) => req,
+            Ok(Some(req)) => {
+                defmt::info!("Broker: Got Request");
+                req
+            },
             Ok(None) => return Ok(()),
             Err(e) => {
                 // TODO: Actual error handling
                 match e {
                     ServerIoError::ResponsePushFailed => {
+                        defmt::error!("Broker: Got Disconnected");
                         // TODO: This is probably not always right. For now, report client
                         // disconnection to reset connection
                         return Err(ServerError::ClientDisconnected);
                     }
                     ServerIoError::DeserializeFailure => {
+                        defmt::error!("Broker: Got Bad Deserialize");
                         return Err(ServerError::DeserializeFailure);
                     }
                 }
@@ -151,9 +156,11 @@ impl Broker {
 
         match msg {
             Component::Control(ctrl) => {
+                defmt::info!("Broker: Got Control");
                 let client = self.client_by_id_mut(&source)?;
 
                 if let Some(msg) = client.process_control(&ctrl)? {
+                    defmt::info!("Broker: Reply Control");
                     sio_out
                         .push_response(msg)
                         .map_err(|_| ServerError::ResourcesExhausted)?;
@@ -295,6 +302,8 @@ impl Client {
         let next = match &ctrl.ty {
             ControlType::RegisterComponent(ComponentInfo { name, version }) => match &self.state {
                 ClientState::SessionEstablished | ClientState::Connected(_) => {
+                    defmt::info!("Broker: Got Register");
+
                     let resp = Arbitrator::Control(arbitrator::Control {
                         seq: ctrl.seq,
                         response: Ok(arbitrator::ControlResponse::ComponentRegistration(self.id)),
@@ -304,6 +313,9 @@ impl Client {
                         dest: self.id,
                         msg: resp,
                     });
+
+                    defmt::info!("Broker: Reply Connected");
+
 
                     Some(ClientState::Connected(ConnectedState {
                         name: name

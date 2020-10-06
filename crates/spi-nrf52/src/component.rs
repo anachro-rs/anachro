@@ -59,11 +59,13 @@ where
 
     /// Set the READY line low (active)
     fn notify_csn(&mut self) -> Result<()> {
+        defmt::info!("Component: Active CSN");
         self.csn_pin.set_low().map_err(|_| Error::GpioError)
     }
 
     /// Set the READY line high (inactive)
     fn clear_csn(&mut self) -> Result<()> {
+        defmt::info!("Component: Inactive CSN");
         self.csn_pin.set_high().map_err(|_| Error::GpioError)
     }
 

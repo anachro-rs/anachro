@@ -12,7 +12,7 @@ use anachro_client::{
 
 use groundhog::RollingTimer;
 
-const T_MIN_US: u32 = 50;
+const T_MIN_US: u32 = 5;
 
 pub trait EncLogicLLComponent {
     /// Process low level messages
@@ -118,9 +118,9 @@ where
 {
     pub fn new(
         ll: LL,
+        timer: RT,
         outgoing: &'static BBBuffer<CT>,
         incoming: &'static BBBuffer<CT>,
-        timer: RT,
     ) -> Result<Self> {
         Ok(EncLogicHLComponent {
             ll,
@@ -188,7 +188,10 @@ where
             None
         } else {
             match self.ll.complete_exchange() {
-                Ok(amt) => Some(amt),
+                Ok(amt) => {
+                    defmt::info!("Exchange completed: {:?} bytes", amt);
+                    Some(amt)
+                },
                 Err(Error::TransactionBusy) => None,
                 Err(_e) => {
                     defmt::error!("Exchange error! Aborting exchange");
@@ -204,6 +207,8 @@ where
         self.send_state = match old_state {
             SendingState::Idle => {
                 debug_assert!(!exchange_active);
+
+                defmt::info!("Component: Idle -> HeaderStart");
 
                 self.ll.notify_csn()?;
                 SendingState::HeaderStart(self.timer.get_ticks())
@@ -229,6 +234,8 @@ where
                         4,
                     )?;
 
+                    defmt::info!("Component: HeaderStart -> HeaderXfer");
+
                     SendingState::HeaderXfer
                 } else {
                     SendingState::HeaderStart(t_start)
@@ -240,7 +247,6 @@ where
 
                     if amt != 4 {
                         defmt::error!("Header size mismatch?");
-                        self.ll.clear_csn()?;
                         return Ok(());
                     }
 
@@ -248,10 +254,12 @@ where
                     let amt_out = u32::from_le_bytes(self.smol_buf_out);
 
                     if (amt_in == 0) && (amt_out == 0) {
+                        defmt::info!("Component: HeaderXfer -> Idle");
                         // Nothing to do here!
-                        self.ll.clear_csn()?;
                         return Ok(());
                     }
+
+                    defmt::info!("Component: HeaderXfer -> HeaderComplete");
 
                     SendingState::HeaderComplete(self.timer.get_ticks())
                 } else {
@@ -263,6 +271,9 @@ where
 
                 if self.timer.micros_since(t_start) > T_MIN_US {
                     self.ll.notify_csn()?;
+
+                    defmt::info!("Component: HeaderComplete -> BodyStart");
+
                     SendingState::BodyStart(self.timer.get_ticks())
                 } else {
                     SendingState::HeaderComplete(t_start)
@@ -313,6 +324,8 @@ where
 
                     self.ll.begin_exchange(out_ptr, out_len, in_ptr, in_len)?;
 
+                    defmt::info!("Component: BodyStart -> BodyXfer");
+
                     SendingState::BodyXfer(rgr, wgr)
                 } else {
                     SendingState::BodyStart(t_start)
@@ -334,6 +347,8 @@ where
                         fgw.commit(amt);
                     }
 
+                    defmt::info!("Component: BodyXfer -> BodyComplete");
+
                     SendingState::BodyComplete(self.timer.get_ticks())
                 } else {
                     SendingState::BodyXfer(fgr, fgw)
@@ -344,6 +359,9 @@ where
 
                 if self.timer.micros_since(t_start) > T_MIN_US {
                     self.ll.notify_csn()?;
+
+                    defmt::info!("Component: BodyComplete -> HeaderStart");
+
                     SendingState::HeaderStart(self.timer.get_ticks())
                 } else {
                     SendingState::BodyComplete(t_start)

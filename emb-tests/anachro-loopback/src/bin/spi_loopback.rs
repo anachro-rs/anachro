@@ -7,7 +7,7 @@ use nrf52840_hal::{
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
     pac::{Peripherals, SPIS1, SPIM0,},
     spim::{Frequency, Pins as SpimPins, Spim, MODE_0, TransferSplit},
-    spis::{Pins as SpisPins, Spis, Transfer},
+    spis::{Pins as SpisPins, Spis, Transfer, Mode},
     timer::Timer,
 };
 use anachro_loopback as _; // global logger + panicking-behavior + memory layout
@@ -48,17 +48,21 @@ fn main() -> ! {
         miso: Some(p0.p0_04.into_floating_input().degrade()),
         mosi: Some(p0.p0_28.into_push_pull_output(Level::Low).degrade()),
     };
-    let mut spim0_sck = p0.p0_29.into_push_pull_output(Level::High).degrade();
+    let mut spim0_csn = p0.p0_30.into_push_pull_output(Level::High).degrade();
 
     let spis1_pins = SpisPins {
         sck: p1.p1_05.into_floating_input().degrade(),
         cipo: Some(p1.p1_04.into_floating_input().degrade()),
         copi: Some(p1.p1_03.into_floating_input().degrade()),
-        cs: p1.p1_02.into_floating_input().degrade(),
+        cs: p1.p1_01.into_floating_input().degrade(),
     };
 
-    let mut spim = SpimState::Periph(Spim::new(board.SPIM0, spim0_pins, Frequency::M1, MODE_0, 0x00));
-    let mut spis = SpisState::Periph(Spis::new(board.SPIS1, spis1_pins));
+    let mut spim = SpimState::Periph(Spim::new(board.SPIM0, spim0_pins, Frequency::K125, MODE_0, 0x00));
+    let mut spis = SpisState::Periph({
+        let mut s = Spis::new(board.SPIS1, spis1_pins);
+        s.set_mode(Mode::Mode0);
+        s
+    });
 
     let (mut out_prod, mut out_cons) = BB_OUT.try_split_framed().unwrap();
     let (mut inc_prod, mut inc_cons) = BB_INC.try_split_framed().unwrap();
@@ -82,13 +86,17 @@ fn main() -> ! {
         let mut igr = inc_prod.grant(32).unwrap();
         let mut tgr = tre_prod.grant(32).unwrap();
 
+        for t in tgr.iter_mut() {
+            *t = 42;
+        }
+
         for o in ogr.iter_mut() {
-            *o = spim_ctr;
+            *o = 23;
             spim_ctr = spim_ctr.wrapping_add(1);
         }
 
         for i in igr.iter_mut() {
-            *i = spis_ctr;
+            *i = 69;
             spis_ctr = spis_ctr.wrapping_add(1);
         }
 
@@ -99,19 +107,21 @@ fn main() -> ! {
         }
 
         if let SpimState::Periph(spim_m) = spim_inner {
-            spim0_sck.set_low().ok();
+            spim0_csn.set_low().ok();
             spim_inner = SpimState::Transfer(spim_m.dma_transfer_split(tgr, ogr).map_err(drop).unwrap());
         }
 
         defmt::info!("Waiting for Spim to finish...");
+
+        timer.delay_ms(100u32);
 
         loop {
             if let SpimState::Transfer(mut xfrm) = spim_inner {
                 if xfrm.is_done() {
                     let (tx, rx, p) = xfrm.wait();
                     spim = SpimState::Periph(p);
-                    spim0_sck.set_high().ok();
-                    defmt::info!("got {:?}", &rx[..]);
+                    spim0_csn.set_high().ok();
+                    defmt::info!("spim got {:?}", &rx[..]);
                     break;
                 } else {
                     spim_inner = SpimState::Transfer(xfrm);
@@ -124,7 +134,8 @@ fn main() -> ! {
         loop {
             if let SpisState::Transfer(mut xfrs) = spis_inner {
                 if xfrs.is_done() {
-                    let (_buf, p) = xfrs.wait();
+                    let (buf, p) = xfrs.wait();
+                    defmt::info!("spis got {:?}", &buf[..]);
                     spis = SpisState::Periph(p);
                     break;
                 } else {
