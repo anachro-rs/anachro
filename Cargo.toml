@@ -8,6 +8,7 @@ members = [
     "crates/spi-tcp",
     "crates/spi-nrf52",
     "crates/groundhog",
+    "crates/groundhog-nrf52",
     "crates/fleet-uarte",
 
     "pc-examples/client-tcp",

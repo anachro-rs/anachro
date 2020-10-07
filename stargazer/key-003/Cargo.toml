@@ -30,6 +30,8 @@ nrf-smartled = { version = "0.2.0", features = ["52840"] }
 smart-leds = "0.3.0"
 smart-leds-trait = "0.2.1"
 libm = "0.2.1"
+cortex-m-rtic = "0.5.5"
+groundhog-nrf52 = { path = "../../crates/groundhog-nrf52" }
 
 [dependencies.defmt]
 git = "https://github.com/knurling-rs/defmt"
