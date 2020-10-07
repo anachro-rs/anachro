@@ -42,7 +42,7 @@ where
             .auto_acquire(true)
             .reset_events();
         spis.try_acquire().ok();
-        // spis.disable();
+        spis.disable();
 
         Self {
             periph: Periph::Idle(spis),
@@ -77,7 +77,8 @@ where
                     Periph::Idle(p)
                 } else {
                     defmt::trace!("Aborted");
-                    Periph::Aborted(p)
+                    let (_tx, _rx, p) = p.bail();
+                    Periph::Idle(p)
                 }
             }
             Periph::Unstable => {
@@ -192,12 +193,25 @@ where
             }
             Periph::Pending(mut p) => {
                 if p.is_acquired() {
-                    let (_tx, _rx, p) = p.wait();
-                    let amt = p.amount() as usize;
-                    defmt::info!("Transaction done - {:?} bytes", amt);
-                    p.disable();
-                    self.periph = Periph::Idle(p);
-                    amt
+                    let (tx, rx, p) = p.wait();
+                    let (amt_rx, amt_tx) = p.amounts();
+
+                    if (amt_rx == 0) && (amt_tx == 0) {
+                        defmt::error!("Trying again!");
+                        self.periph = Periph::Pending(p.transfer_split(tx, rx).map_err(drop).unwrap());
+                        return Err(Error::TransactionBusy);
+                    } else {
+                        defmt::info!("Transaction done - tx: {:?} rx: {:?} (expected to send {:?} and rx {:?})", amt_tx, amt_rx, tx.len, rx.len);
+                        if (amt_tx as usize != tx.len) || (amt_rx as usize != rx.len) {
+                            defmt::error!("Size mismatch!");
+                            self.periph = Periph::Idle(p);
+                            self.clear_go().ok();
+                            return Err(Error::TransactionAborted);
+                        }
+                        p.disable();
+                        self.periph = Periph::Idle(p);
+                        amt_rx as usize
+                    }
                 } else {
                     defmt::trace!("Stil pending...");
                     self.periph = Periph::Pending(p);

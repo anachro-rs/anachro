@@ -137,6 +137,7 @@ impl Client {
     /// it will begin attemption to re-establish a connection to
     /// the broker.
     pub fn reset_connection(&mut self) {
+        defmt::error!("Resetting Connection.");
         self.state = ClientState::Disconnected;
         self.current_tick = 0;
         self.current_idx = 0;
@@ -185,6 +186,7 @@ impl Client {
         path: &'a str,
         payload: &'a [u8],
     ) -> Result<(), Error> {
+        defmt::info!("Publishing message.");
         self.state.as_active()?;
 
         let path = match self.pub_short_paths.iter().position(|pth| &path == pth) {
@@ -237,6 +239,7 @@ impl Client {
 
                 if self.timeout_violated() {
                     // println!("violated!");
+                    defmt::warn!("Registration Timeout violated! Going to disconnected state");
                     self.state = ClientState::Disconnected;
                     self.current_tick = 0;
                 }
@@ -256,6 +259,7 @@ impl Client {
                 self.subscribing(cio)?;
 
                 if self.timeout_violated() {
+                    defmt::info!("Sub timeout. Resending");
                     let msg = Component::PubSub(PubSub {
                         path: PubSubPath::Long(Path::borrow_from_str(
                             self.sub_paths[self.current_idx],
@@ -283,6 +287,7 @@ impl Client {
                 self.shortcoding_sub(cio)?;
 
                 if self.timeout_violated() {
+                    defmt::info!("SCS timeout. Resending");
                     self.ctr = self.ctr.wrapping_add(1);
 
                     let msg = Component::Control(CControl {
@@ -303,6 +308,7 @@ impl Client {
                 self.shortcoding_pub(cio)?;
 
                 if self.timeout_violated() {
+                    defmt::info!("SCP timeout. Resending");
                     self.ctr = self.ctr.wrapping_add(1);
 
                     let msg = Component::Control(CControl {
@@ -347,6 +353,8 @@ impl Client {
     fn disconnected<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
         self.ctr += 1;
 
+        defmt::info!("Disconnected -> Pending Registration");
+
         let resp = Component::Control(CControl {
             seq: self.ctr,
             ty: ControlType::RegisterComponent(ComponentInfo {
@@ -356,6 +364,8 @@ impl Client {
         });
 
         cio.send(&resp)?;
+
+        defmt::info!("PR sent.");
 
         self.state = ClientState::PendingRegistration;
         self.current_tick = 0;
@@ -374,27 +384,30 @@ impl Client {
             }
         };
 
+        defmt::info!("Got PR response");
         // println!("got pr mesg!");
 
         if let Arbitrator::Control(AControl { seq, response }) = msg {
             if seq != self.ctr {
-                // println!("ctr mismatch! {} {}", seq, self.ctr);
+                defmt::warn!("ctr mismatch! {:?} {:?}", seq, self.ctr);
                 self.current_tick = self.current_tick.saturating_add(1);
                 // TODO, restart connection process? Just disregard?
                 Err(Error::UnexpectedMessage)
             } else if let Ok(ControlResponse::ComponentRegistration(uuid)) = response {
+                defmt::info!("Registered!");
                 self.uuid = uuid;
                 self.state = ClientState::Registered;
                 self.current_tick = 0;
                 Ok(())
             } else {
                 self.current_tick = self.current_tick.saturating_add(1);
-                // println!("Other Error");
+                defmt::warn!("Other Error");
                 // TODO, restart connection process? Just disregard?
                 Err(Error::UnexpectedMessage)
             }
         } else {
             // println!("??? {:?}?", msg);
+            defmt::info!("Not a control message while waiting for PR");
             self.current_tick = self.current_tick.saturating_add(1);
             Ok(())
         }
@@ -403,9 +416,11 @@ impl Client {
     /// Process messages while in a `ClientState::Registered` state
     fn registered<C: ClientIo>(&mut self, cio: &mut C) -> Result<(), Error> {
         if self.sub_paths.is_empty() {
+            defmt::info!("No subscriptions");
             self.state = ClientState::Subscribed;
             self.current_tick = 0;
         } else {
+            defmt::info!("Start subscribing");
             let msg = Component::PubSub(PubSub {
                 path: PubSubPath::Long(Path::borrow_from_str(self.sub_paths[0])),
                 ty: PubSubType::Sub,

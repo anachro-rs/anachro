@@ -14,6 +14,8 @@ members = [
     "pc-examples/component-spi-tcp",
     "pc-examples/arbitrator-spi-tcp",
 
+    "stargazer/arb-001",
+    "stargazer/cpu-002",
 ]
 
 exclude = [

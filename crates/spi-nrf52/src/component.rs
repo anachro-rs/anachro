@@ -5,7 +5,7 @@ use nrf52840_hal::{
 
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
-use embedded_dma::WriteBuffer;
+use embedded_dma::{WriteBuffer, ReadBuffer};
 
 use crate::{ConstRawSlice, MutRawSlice};
 use anachro_spi::{component::EncLogicLLComponent, Error, Result};
@@ -65,7 +65,7 @@ where
 
     /// Set the READY line high (inactive)
     fn clear_csn(&mut self) -> Result<()> {
-        defmt::info!("Component: Inactive CSN");
+        // defmt::info!("Component: Inactive CSN");
         self.csn_pin.set_high().map_err(|_| Error::GpioError)
     }
 
@@ -98,6 +98,7 @@ where
             Periph::Idle(spim) => spim,
             Periph::Pending(_) | Periph::Unstable => {
                 self.periph = old_periph;
+                panic!("Incorrect state");
                 return Err(Error::IncorrectState);
             }
         };
@@ -118,7 +119,9 @@ where
         let txfr = match spim.dma_transfer_split(crs, mrs) {
             Ok(t) => t,
             Err((p, _e)) => {
+                defmt::error!("Error in triggering exchange!");
                 self.periph = Periph::Idle(p);
+                panic!("Spi Error");
                 return Err(Error::SpiError);
             }
         };
@@ -154,17 +157,21 @@ where
         let amt = match current {
             Periph::Idle(p) => {
                 self.periph = Periph::Idle(p);
+                panic!("Incorrect State");
                 return Err(Error::IncorrectState);
             }
             Periph::Unstable => {
+                panic!("Unstable");
                 return Err(Error::UnstableFailure);
             }
             Periph::Pending(mut p) => {
                 if p.is_done() {
-                    let (_tx, mut rx, p) = p.wait();
-                    let amt = unsafe { rx.write_buffer().1 };
+                    let (tx, mut rx, p) = p.wait();
+                    let amt_rx = unsafe { rx.write_buffer().1 };
+                    let amt_tx = unsafe { tx.read_buffer().1 };
+                    defmt::info!("Completed exchange: rx: {:?}, tx: {:?}", amt_rx, amt_tx);
                     self.periph = Periph::Idle(p);
-                    amt
+                    amt_rx
                 } else {
                     self.periph = Periph::Pending(p);
                     return Err(Error::TransactionBusy);

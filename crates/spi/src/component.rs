@@ -12,7 +12,7 @@ use anachro_client::{
 
 use groundhog::RollingTimer;
 
-const T_MIN_US: u32 = 5;
+const T_MIN_US: u32 = 1000;
 
 pub trait EncLogicLLComponent {
     /// Process low level messages
@@ -289,13 +289,25 @@ where
                     let in_len;
 
                     let amt_in = u32::from_le_bytes(self.smol_buf_in);
+                    let amt_out = u32::from_le_bytes(self.smol_buf_out);
+
+                    defmt::error!("Header in: {:?}, header out: {:?}", amt_in, amt_out);
+
+                    if amt_in > 4096 {
+                        defmt::error!("Illogical size!");
+                        self.ll.clear_csn()?;
+                        return Ok(());
+                    }
 
                     let wgr = if amt_in == 0 {
                         in_ptr = self.smol_buf_in.as_mut_ptr();
                         in_len = 0;
                         None
                     } else {
-                        let mut wgr = self.incoming_msgs.prod.grant(amt_in as usize)?;
+                        defmt::error!("How about {:?}", amt_in);
+                        let aiau = amt_in as usize;
+                        defmt::error!("Reqesting {:?}", aiau);
+                        let mut wgr = self.incoming_msgs.prod.grant(aiau).unwrap(); //?;
                         in_len = amt_in as usize;
                         in_ptr = wgr.as_mut_ptr();
                         Some(wgr)
@@ -306,6 +318,8 @@ where
                             debug_assert!(
                                 rgr.len() == u32::from_le_bytes(self.smol_buf_out) as usize
                             );
+
+                            defmt::error!("Sending: {:?}", &rgr[..]);
 
                             out_len = rgr.len();
                             out_ptr = rgr.as_ptr();
@@ -321,6 +335,8 @@ where
                             None
                         }
                     };
+
+                    defmt::info!("Starting Body transfer. Expecting rx: {:?} tx: {:?}", in_len, out_len);
 
                     self.ll.begin_exchange(out_ptr, out_len, in_ptr, in_len)?;
 
@@ -344,6 +360,7 @@ where
 
                     if let Some(fgw) = fgw {
                         // This is the incoming buffer
+                        defmt::error!("Got message: {:?}", &fgw[..amt]);
                         fgw.commit(amt);
                     }
 

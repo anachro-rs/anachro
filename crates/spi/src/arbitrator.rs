@@ -16,8 +16,8 @@ use bbqueue::{
 
 use groundhog::RollingTimer;
 
-const T_WINDOW_US: u32 = 100_000;
-const T_STEP_US: u32 = 1_000;
+const T_WINDOW_US: u32 = 1_000_000;
+const T_STEP_US: u32 = 500_000;
 
 pub trait EncLogicLLArbitrator: Send {
     /// Process low level messages
@@ -216,11 +216,22 @@ where
             | ArbState::BodyPrepped {
                 t_window, t_step, ..
             } => {
-                (self.timer.micros_since(*t_window) > T_WINDOW_US)
-                    || (self.timer.micros_since(*t_step) > T_STEP_US)
+                let window_bad = self.timer.micros_since(*t_window) > T_WINDOW_US;
+                let step_bad = self.timer.micros_since(*t_step) > T_STEP_US;
+                if window_bad {
+                    defmt::warn!("Window timeout!");
+                }
+                if step_bad {
+                    defmt::warn!("Step timeout!");
+                }
+                window_bad || step_bad
             }
             ArbState::HeaderXfer { t_window } | ArbState::BodyXfer { t_window, .. } => {
-                self.timer.micros_since(*t_window) > T_STEP_US
+                let window_bad = self.timer.micros_since(*t_window) > T_WINDOW_US;
+                if window_bad {
+                    defmt::warn!("Window timeout!");
+                }
+                window_bad
             }
         }
     }
@@ -245,7 +256,7 @@ where
         } else {
             match self.ll.complete_exchange() {
                 Ok(amt) => {
-                    defmt::info!("Arbitrator Completed!");
+                    defmt::info!("Arbitrator Completed! - {:?} bytes", amt);
                     Some(amt)
                 },
                 Err(Error::TransactionBusy) => None,
@@ -312,7 +323,7 @@ where
             ArbState::HeaderXfer { t_window } => {
                 if let Some(amt) = completed_exchange {
                     if amt != 4 {
-                        defmt::info!("Arbitrator: HeaderXfer -> Idle");
+                        defmt::info!("Arbitrator: HeaderXfer -> Idle (BAD AMOUNT!)");
 
                         self.ll.clear_go()?;
                         return Ok(());
@@ -321,9 +332,17 @@ where
                     let amt_in = u32::from_le_bytes(self.smol_buf_in) as usize;
                     let amt_out = u32::from_le_bytes(self.smol_buf_out) as usize;
 
+                    defmt::error!("Header in: {:?}, header out: {:?}", amt_in, amt_out);
+
                     if (amt_in == 0) && (amt_out == 0) {
                         self.ll.clear_go()?;
-                        defmt::info!("Arbitrator: HeaderXfer -> Idle");
+                        defmt::info!("Arbitrator: HeaderXfer -> Idle (Empty!)");
+                        return Ok(());
+                    }
+
+                    if amt_in > 4096 {
+                        defmt::error!("Illogical size!");
+                        self.ll.clear_go()?;
                         return Ok(());
                     }
 
@@ -344,6 +363,7 @@ where
                     };
 
                     let rgr = if let Some(rgr) = self.outgoing_msgs.cons.read() {
+                        defmt::error!("Sending {:?}", &rgr[..]);
                         out_len = rgr.len();
                         out_ptr = rgr.as_ptr();
                         Some(rgr)
@@ -387,10 +407,12 @@ where
             ArbState::BodyXfer { t_window, fgr, fgw } => {
                 if let Some(amt) = completed_exchange {
                     if let Some(gr) = fgr {
+                        defmt::info!("Releasing message");
                         gr.release();
                     }
 
                     if let Some(gr) = fgw {
+                        defmt::error!("Got {:?}", &gr[..amt]);
                         defmt::info!("Committing {:?} bytes", amt);
                         gr.commit(amt);
                     }
