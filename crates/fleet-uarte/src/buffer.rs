@@ -6,7 +6,7 @@ use crate::hal::timer::Instance as TimerInstance;
 use crate::hal::uarte::{Baudrate, Parity, Pins};
 use crate::{
     app::UarteApp,
-    irq::{UarteIrq, UarteTimer, FleetUarteInstance},
+    irq::{FleetUarteInstance, UarteIrq, UarteTimer},
 };
 use core::sync::atomic::AtomicBool;
 
@@ -42,7 +42,11 @@ where
     OutgoingLen: ArrayLength<u8>,
     IncomingLen: ArrayLength<u8>,
 {
-    pub fn try_split<Timer: TimerInstance, Channel: Ppi + ConfigurablePpi, Uarte: FleetUarteInstance>(
+    pub fn try_split<
+        Timer: TimerInstance,
+        Channel: Ppi + ConfigurablePpi,
+        Uarte: FleetUarteInstance,
+    >(
         &'static self,
         pins: Pins,
         parity: Parity,

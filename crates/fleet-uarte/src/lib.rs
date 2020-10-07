@@ -7,11 +7,11 @@ use nrf52832_hal as hal;
 #[cfg(feature = "52840")]
 use nrf52840_hal as hal;
 
+pub mod anachro_io;
 pub mod app;
 pub mod buffer;
-pub mod irq;
 pub mod cobs_buf;
-pub mod anachro_io;
+pub mod irq;
 
 #[derive(Debug)]
 pub enum Error {

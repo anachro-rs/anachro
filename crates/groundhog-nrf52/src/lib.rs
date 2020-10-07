@@ -1,11 +1,8 @@
 #![no_std]
 
-use nrf52840_hal::{
-    pac::timer0::RegisterBlock as RegBlock0,
-    timer::Instance,
-};
-use rtic::{Fraction, Monotonic};
 use groundhog::RollingTimer;
+use nrf52840_hal::{pac::timer0::RegisterBlock as RegBlock0, timer::Instance};
+use rtic::{Fraction, Monotonic};
 
 use core::sync::atomic::{AtomicPtr, Ordering};
 
@@ -19,7 +16,6 @@ impl GlobalRollingTimer {
     }
 
     pub fn init<T: Instance>(timer: T) {
-
         timer.set_periodic();
         timer.timer_start(0xFFFF_FFFFu32);
         let t0 = timer.as_timer0();
@@ -28,7 +24,6 @@ impl GlobalRollingTimer {
 
         debug_assert!(old_ptr == core::ptr::null_mut());
     }
-
 }
 
 impl Monotonic for GlobalRollingTimer {
@@ -51,7 +46,7 @@ impl Monotonic for GlobalRollingTimer {
 
     unsafe fn reset() {
         if let Some(t0) = TIMER_PTR.load(Ordering::SeqCst).as_ref() {
-            t0.tasks_clear.write(|w| w.bits(1) );
+            t0.tasks_clear.write(|w| w.bits(1));
         }
     }
 }

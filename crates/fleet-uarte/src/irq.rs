@@ -232,7 +232,12 @@ fn uarte_cancel_read<T: FleetUarteInstance>(uarte: &T) {
     // The event flag itself is later reset by `finalize_read`.
 }
 
-fn uarte_setup<T: FleetUarteInstance>(uarte: &T, mut pins: Pins, parity: Parity, baudrate: Baudrate) {
+fn uarte_setup<T: FleetUarteInstance>(
+    uarte: &T,
+    mut pins: Pins,
+    parity: Parity,
+    baudrate: Baudrate,
+) {
     // Select pins
     uarte.psel.rxd.write(|w| {
         let w = unsafe { w.pin().bits(pins.rxd.pin()) };

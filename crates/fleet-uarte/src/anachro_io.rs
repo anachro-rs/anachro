@@ -2,10 +2,9 @@ use crate::app::UarteApp;
 use crate::cobs_buf::{Buffer, SimpleResult};
 use bbqueue::ArrayLength;
 
-use anachro_server::{ServerIoIn, ServerIoError, Request, from_bytes_cobs};
+use anachro_client::{to_slice_cobs, ClientIo, ClientIoError};
 use anachro_icd::{arbitrator::Arbitrator, component::Component, Uuid};
-use anachro_client::{ClientIo, ClientIoError, to_slice_cobs};
-
+use anachro_server::{from_bytes_cobs, Request, ServerIoError, ServerIoIn};
 
 pub struct AnachroUarte<OutgoingLen, IncomingLen, BufferLen>
 where
@@ -24,12 +23,12 @@ where
     IncomingLen: ArrayLength<u8>,
     BufferLen: ArrayLength<u8>,
 {
-    pub fn new(app: UarteApp<OutgoingLen, IncomingLen>, buf: Buffer<BufferLen>, uuid: Uuid) -> Self {
-        Self {
-            app,
-            buf,
-            uuid,
-        }
+    pub fn new(
+        app: UarteApp<OutgoingLen, IncomingLen>,
+        buf: Buffer<BufferLen>,
+        uuid: Uuid,
+    ) -> Self {
+        Self { app, buf, uuid }
     }
 
     pub fn enqueue(&mut self, out: &[u8]) -> Result<(), ()> {
@@ -61,13 +60,14 @@ where
                     }
                 }
             } else {
-                return Ok(None)
+                return Ok(None);
             }
         }
     }
 }
 
-impl<OutgoingLen, IncomingLen, BufferLen> ClientIo for AnachroUarte<OutgoingLen, IncomingLen, BufferLen>
+impl<OutgoingLen, IncomingLen, BufferLen> ClientIo
+    for AnachroUarte<OutgoingLen, IncomingLen, BufferLen>
 where
     OutgoingLen: ArrayLength<u8>,
     IncomingLen: ArrayLength<u8>,
@@ -76,12 +76,10 @@ where
     /// Attempt to receive one message FROM the Arbitrator/Broker, TO the Client
     fn recv(&mut self) -> Result<Option<Arbitrator>, ClientIoError> {
         match self.dequeue() {
-            Ok(Some(payload)) => {
-                match postcard::from_bytes_cobs::<Arbitrator>(payload) {
-                    Ok(t) => Ok(Some(t)),
-                    Err(_) => Err(ClientIoError::ParsingError),
-                }
-            }
+            Ok(Some(payload)) => match postcard::from_bytes_cobs::<Arbitrator>(payload) {
+                Ok(t) => Ok(Some(t)),
+                Err(_) => Err(ClientIoError::ParsingError),
+            },
             Ok(None) => Ok(None),
             Err(()) => {
                 // TODO: ehh.
@@ -93,7 +91,7 @@ where
     /// Attempt to send one message TO the Arbitrator/Broker, FROM the Client
     fn send(&mut self, msg: &Component) -> Result<(), ClientIoError> {
         // HACK: Actual sizing. /4 is based on nothing actually
-        match  self.app.write_grant(BufferLen::to_usize() / 4) {
+        match self.app.write_grant(BufferLen::to_usize() / 4) {
             Ok(mut wgr) => {
                 match to_slice_cobs(msg, &mut wgr) {
                     Ok(amt) => {
@@ -112,7 +110,8 @@ where
     }
 }
 
-impl<OutgoingLen, IncomingLen, BufferLen> ServerIoIn for AnachroUarte<OutgoingLen, IncomingLen, BufferLen>
+impl<OutgoingLen, IncomingLen, BufferLen> ServerIoIn
+    for AnachroUarte<OutgoingLen, IncomingLen, BufferLen>
 where
     OutgoingLen: ArrayLength<u8>,
     IncomingLen: ArrayLength<u8>,
@@ -121,17 +120,13 @@ where
     fn recv<'a, 'b: 'a>(&'b mut self) -> Result<Option<Request<'b>>, ServerIoError> {
         let uuid = self.uuid.clone();
         match self.dequeue() {
-            Ok(Some(payload)) => {
-                match from_bytes_cobs::<Component>(payload) {
-                    Ok(t) => {
-                        Ok(Some(Request {
-                            source: uuid,
-                            msg: t,
-                        }))
-                    },
-                    Err(_) => Err(ServerIoError::DeserializeFailure),
-                }
-            }
+            Ok(Some(payload)) => match from_bytes_cobs::<Component>(payload) {
+                Ok(t) => Ok(Some(Request {
+                    source: uuid,
+                    msg: t,
+                })),
+                Err(_) => Err(ServerIoError::DeserializeFailure),
+            },
             Ok(None) => Ok(None),
             Err(()) => {
                 // TODO: ehh.

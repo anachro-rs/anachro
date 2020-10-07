@@ -17,8 +17,8 @@ use {
 };
 
 pub use anachro_icd::{self, Name, Path, PubSubPath, Uuid, Version};
-pub use postcard::from_bytes_cobs;
 use defmt::Format;
+pub use postcard::from_bytes_cobs;
 
 type ClientStore = Vec<Client, consts::U8>;
 
@@ -135,7 +135,7 @@ impl Broker {
             Ok(Some(req)) => {
                 defmt::info!("Broker: Got Request");
                 req
-            },
+            }
             Ok(None) => return Ok(()),
             Err(e) => {
                 // TODO: Actual error handling
@@ -315,7 +315,6 @@ impl Client {
                     });
 
                     defmt::info!("Broker: Reply Connected");
-
 
                     Some(ClientState::Connected(ConnectedState {
                         name: name
@@ -508,6 +507,7 @@ where
     CT: ArrayLength<Response<'resp>>,
 {
     fn push_response(&mut self, resp: Response<'resp>) -> core::result::Result<(), ServerIoError> {
-        self.push(resp).map_err(|_| ServerIoError::ResponsePushFailed)
+        self.push(resp)
+            .map_err(|_| ServerIoError::ResponsePushFailed)
     }
 }

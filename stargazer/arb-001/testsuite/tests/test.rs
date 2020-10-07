@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 
-use cortex_m_rt::entry;
-use arb_001 as _; // memory layout + panic handler
+use arb_001 as _;
+use cortex_m_rt::entry; // memory layout + panic handler
 
 #[entry]
 fn main() -> ! {

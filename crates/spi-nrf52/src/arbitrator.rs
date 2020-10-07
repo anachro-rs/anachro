@@ -198,7 +198,8 @@ where
 
                     if (amt_rx == 0) && (amt_tx == 0) {
                         defmt::error!("Trying again!");
-                        self.periph = Periph::Pending(p.transfer_split(tx, rx).map_err(drop).unwrap());
+                        self.periph =
+                            Periph::Pending(p.transfer_split(tx, rx).map_err(drop).unwrap());
                         return Err(Error::TransactionBusy);
                     } else {
                         defmt::info!("Transaction done - tx: {:?} rx: {:?} (expected to send {:?} and rx {:?})", amt_tx, amt_rx, tx.len, rx.len);

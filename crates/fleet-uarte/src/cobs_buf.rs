@@ -35,7 +35,10 @@ pub enum SimpleResult<'input, 'buffer> {
 
     /// Deframing complete. Contains deserialized data and
     /// remaining section of input, if any
-    Success { data: &'buffer mut [u8], remaining: &'input [u8] },
+    Success {
+        data: &'buffer mut [u8],
+        remaining: &'input [u8],
+    },
 }
 
 pub enum WithResult<'a, R> {
@@ -166,7 +169,10 @@ where
         }
     }
 
-    pub fn feed_simple<'input, 'buffer>(&'buffer mut self, input: &'input [u8]) -> SimpleResult<'input, 'buffer> {
+    pub fn feed_simple<'input, 'buffer>(
+        &'buffer mut self,
+        input: &'input [u8],
+    ) -> SimpleResult<'input, 'buffer> {
         if input.is_empty() {
             return SimpleResult::Consumed;
         }
@@ -183,7 +189,6 @@ where
             if (self.idx + n) <= N::to_usize() {
                 // Aw yiss - add to array
                 self.extend_unchecked(take);
-
 
                 let retval = SimpleResult::Success {
                     data: &mut self.buf[..self.idx],

@@ -191,7 +191,7 @@ where
                 Ok(amt) => {
                     defmt::info!("Exchange completed: {:?} bytes", amt);
                     Some(amt)
-                },
+                }
                 Err(Error::TransactionBusy) => None,
                 Err(_e) => {
                     defmt::error!("Exchange error! Aborting exchange");
@@ -336,7 +336,11 @@ where
                         }
                     };
 
-                    defmt::info!("Starting Body transfer. Expecting rx: {:?} tx: {:?}", in_len, out_len);
+                    defmt::info!(
+                        "Starting Body transfer. Expecting rx: {:?} tx: {:?}",
+                        in_len,
+                        out_len
+                    );
 
                     self.ll.begin_exchange(out_ptr, out_len, in_ptr, in_len)?;
 

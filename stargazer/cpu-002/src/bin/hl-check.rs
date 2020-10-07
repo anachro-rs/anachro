@@ -1,37 +1,25 @@
 #![no_main]
 #![no_std]
 
-
-use embedded_hal::digital::v2::OutputPin;
+use bbqueue::{consts::*, framed::FrameGrantW, BBBuffer, ConstBBBuffer};
+use cpu_002 as _; // global logger + panicking-behavior + memory layout
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::digital::v2::OutputPin;
 use nrf52840_hal::{
     self as hal,
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
-    pac::{Peripherals, SPIS1, SPIM0, TIMER2},
-    spim::{Frequency, Pins as SpimPins, Spim, MODE_0, TransferSplit},
-    spis::{Pins as SpisPins, Spis, Transfer, Mode},
-    timer::{Timer, Periodic, Instance as TimerInstance},
-};
-use cpu_002 as _; // global logger + panicking-behavior + memory layout
-use bbqueue::{
-    consts::*,
-    BBBuffer,
-    ConstBBBuffer,
-    framed::FrameGrantW,
+    pac::{Peripherals, SPIM0, SPIS1, TIMER2},
+    spim::{Frequency, Pins as SpimPins, Spim, TransferSplit, MODE_0},
+    spis::{Mode, Pins as SpisPins, Spis, Transfer},
+    timer::{Instance as TimerInstance, Periodic, Timer},
 };
 
-use anachro_server::{Broker, Uuid};
 use anachro_client::{pubsub_table, Client, ClientIoError, Error};
+use anachro_server::{Broker, Uuid};
 
-use anachro_spi::{
-    arbitrator::EncLogicHLArbitrator,
-    component::EncLogicHLComponent,
-};
-use anachro_spi_nrf52::{
-    arbitrator::NrfSpiArbLL,
-    component::NrfSpiComLL,
-};
 use anachro_icd::Version;
+use anachro_spi::{arbitrator::EncLogicHLArbitrator, component::EncLogicHLComponent};
+use anachro_spi_nrf52::{arbitrator::NrfSpiArbLL, component::NrfSpiComLL};
 use heapless::{consts, Vec as HVec};
 use postcard::to_slice_cobs;
 
@@ -47,7 +35,6 @@ fn main() -> ! {
 
     let gpios = P0Parts::new(board.P0);
 
-
     // CIPO         P0.15
     let cipo = gpios.p0_15;
     // COPI         P0.13
@@ -59,8 +46,6 @@ fn main() -> ! {
     // A4  GO       P0.02
     let go = gpios.p0_02;
 
-
-
     let con_pins = SpimPins {
         sck: sck.into_push_pull_output(Level::Low).degrade(),
         miso: Some(cipo.into_floating_input().degrade()),
@@ -71,7 +56,6 @@ fn main() -> ! {
     let con_csn = a5.into_push_pull_output(Level::High).degrade();
 
     let con_spim = Spim::new(board.SPIM0, con_pins, Frequency::M2, MODE_0, 0x00);
-
 
     let mut timer = Timer::new(board.TIMER0);
 
@@ -95,12 +79,7 @@ fn main() -> ! {
     };
 
     let mut nrf_cli = NrfSpiComLL::new(con_spim, con_csn, con_go);
-    let mut cio = EncLogicHLComponent::new(
-        nrf_cli,
-        hog_2,
-        &BB_CON_OUT,
-        &BB_CON_INC,
-    ).unwrap();
+    let mut cio = EncLogicHLComponent::new(nrf_cli, hog_2, &BB_CON_OUT, &BB_CON_INC).unwrap();
 
     for _ in 0..20 {
         cio.enqueue(&[42u8; 32]).unwrap();
@@ -127,12 +106,11 @@ fn main() -> ! {
         }
     }
 
-
     cpu_002::exit();
 }
 
-static BB_CON_OUT: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
-static BB_CON_INC: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
+static BB_CON_OUT: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
+static BB_CON_INC: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {

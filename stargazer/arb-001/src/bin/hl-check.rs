@@ -1,36 +1,25 @@
 #![no_main]
 #![no_std]
 
-use embedded_hal::digital::v2::OutputPin;
+use arb_001 as _; // global logger + panicking-behavior + memory layout
+use bbqueue::{consts::*, framed::FrameGrantW, BBBuffer, ConstBBBuffer};
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::digital::v2::OutputPin;
 use nrf52840_hal::{
     self as hal,
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
-    pac::{Peripherals, SPIS1, SPIM0, TIMER2},
-    spim::{Frequency, Pins as SpimPins, Spim, MODE_0, TransferSplit},
-    spis::{Pins as SpisPins, Spis, Transfer, Mode},
-    timer::{Timer, Periodic, Instance as TimerInstance},
-};
-use arb_001 as _; // global logger + panicking-behavior + memory layout
-use bbqueue::{
-    consts::*,
-    BBBuffer,
-    ConstBBBuffer,
-    framed::FrameGrantW,
+    pac::{Peripherals, SPIM0, SPIS1, TIMER2},
+    spim::{Frequency, Pins as SpimPins, Spim, TransferSplit, MODE_0},
+    spis::{Mode, Pins as SpisPins, Spis, Transfer},
+    timer::{Instance as TimerInstance, Periodic, Timer},
 };
 
-use anachro_server::{Broker, Uuid};
 use anachro_client::{pubsub_table, Client, ClientIoError, Error};
+use anachro_server::{Broker, Uuid};
 
-use anachro_spi::{
-    arbitrator::EncLogicHLArbitrator,
-    component::EncLogicHLComponent,
-};
-use anachro_spi_nrf52::{
-    arbitrator::NrfSpiArbLL,
-    component::NrfSpiComLL,
-};
 use anachro_icd::Version;
+use anachro_spi::{arbitrator::EncLogicHLArbitrator, component::EncLogicHLComponent};
+use anachro_spi_nrf52::{arbitrator::NrfSpiArbLL, component::NrfSpiComLL};
 use heapless::{consts, Vec as HVec};
 use postcard::to_slice_cobs;
 
@@ -51,11 +40,11 @@ use groundhog::RollingTimer;
 // P1.13   <=>   P1.10          GO      // CSn
 // P1.12   <=>   P1.11          READY
 
-static BB_ARB_OUT: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
-static BB_ARB_INC: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
+static BB_ARB_OUT: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
+static BB_ARB_INC: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
 
-static BB_CON_OUT: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
-static BB_CON_INC: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
+static BB_CON_OUT: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
+static BB_CON_INC: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
@@ -135,7 +124,6 @@ fn main() -> ! {
     // SDA          SERIAL1-RX  P0.12
     let serial1_rx = p0_gpios.p0_12;
 
-
     let arb_pins = SpisPins {
         sck: cardx_sck.into_floating_input().degrade(),
         cipo: Some(cardx_cipo.into_floating_input().degrade()),
@@ -144,7 +132,6 @@ fn main() -> ! {
     };
 
     let mut arb_go = card2_go.into_push_pull_output(Level::High).degrade();
-
 
     let mut arb_spis = Spis::new(board.SPIS1, arb_pins);
 
@@ -177,7 +164,8 @@ fn main() -> ! {
         hog_1,
         &BB_ARB_OUT,
         &BB_ARB_INC,
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut ct = 0;
 
@@ -211,7 +199,6 @@ fn main() -> ! {
     }
 
     arb_001::exit();
-
 }
 
 // enum SpisState {

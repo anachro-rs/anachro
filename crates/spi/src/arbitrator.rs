@@ -258,7 +258,7 @@ where
                 Ok(amt) => {
                     defmt::info!("Arbitrator Completed! - {:?} bytes", amt);
                     Some(amt)
-                },
+                }
                 Err(Error::TransactionBusy) => None,
                 Err(Error::TransactionAborted) => {
                     self.ll.clear_go()?;
@@ -455,7 +455,6 @@ where
                 // future, it might be possible to pack multiple datagrams together into
                 // a single frame. But for now, we only handle one.
                 match from_bytes_cobs(sbr) {
-
                     Ok(deser) => {
                         defmt::info!("Giving Req!");
                         Ok(Some(Request {

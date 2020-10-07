@@ -5,7 +5,7 @@ use nrf52840_hal::{
 
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
-use embedded_dma::{WriteBuffer, ReadBuffer};
+use embedded_dma::{ReadBuffer, WriteBuffer};
 
 use crate::{ConstRawSlice, MutRawSlice};
 use anachro_spi::{component::EncLogicLLComponent, Error, Result};

@@ -18,18 +18,20 @@ where
     IncomingLen: ArrayLength<u8>,
 {
     pub fn read(&mut self) -> Result<UarteGrantR<'static, IncomingLen>, Error> {
-        self.incoming_cons
-            .read()
-            .map(|gr| UarteGrantR { grant_r: gr, interrupt: self.interrupt })
+        self.incoming_cons.read().map(|gr| UarteGrantR {
+            grant_r: gr,
+            interrupt: self.interrupt,
+        })
     }
 
     pub fn write_grant(
         &mut self,
         bytes: usize,
     ) -> Result<UarteGrantW<'static, OutgoingLen>, Error> {
-        self.outgoing_prod
-            .grant_exact(bytes)
-            .map(|gr| UarteGrantW { grant_w: gr, interrupt: self.interrupt })
+        self.outgoing_prod.grant_exact(bytes).map(|gr| UarteGrantW {
+            grant_w: gr,
+            interrupt: self.interrupt,
+        })
     }
 }
 

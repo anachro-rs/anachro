@@ -3,10 +3,10 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use defmt_rtt as _; // global logger
+use groundhog::RollingTimer;
+use groundhog_nrf52::GlobalRollingTimer;
 use nrf52840_hal::pac::TIMER2;
 use panic_probe as _; // memory layout
-use groundhog_nrf52::GlobalRollingTimer;
-use groundhog::RollingTimer;
 
 #[defmt::timestamp]
 fn timestamp() -> u64 {

@@ -2,13 +2,13 @@
 #![no_std]
 
 use {
+    arb_001 as _, // global logger + panicking-behavior + memory layout
     embedded_hal::blocking::delay::DelayMs,
     nrf52840_hal::{
         self as hal,
         gpio::{p0::Parts as P0Parts, Level},
         Rng, Timer,
     },
-    arb_001 as _, // global logger + panicking-behavior + memory layout
     nrf_smartled::pwm::Pwm,
     smart_leds::{colors, gamma, RGB8},
     smart_leds_trait::SmartLedsWrite,

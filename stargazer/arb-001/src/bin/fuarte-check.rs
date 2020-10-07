@@ -1,64 +1,52 @@
 #![no_main]
 #![no_std]
 
-use embedded_hal::digital::v2::OutputPin;
+use arb_001 as _; // global logger + panicking-behavior + memory layout
+use bbqueue::{consts::*, framed::FrameGrantW, BBBuffer, ConstBBBuffer};
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::digital::v2::OutputPin;
 use nrf52840_hal::{
     self as hal,
     clocks::LfOscConfiguration,
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
-    pac::{Peripherals, SPIS1, SPIM0, TIMER2, UARTE0},
+    pac::{Peripherals, SPIM0, SPIS1, TIMER2, UARTE0},
     ppi::{Parts as PpiParts, Ppi0},
-    spim::{Frequency, Pins as SpimPins, Spim, MODE_0, TransferSplit},
-    spis::{Pins as SpisPins, Spis, Transfer, Mode},
-    timer::{Timer, Periodic, Instance as TimerInstance},
-    uarte::{Pins, Baudrate, Parity},
-};
-use arb_001 as _; // global logger + panicking-behavior + memory layout
-use bbqueue::{
-    consts::*,
-    BBBuffer,
-    ConstBBBuffer,
-    framed::FrameGrantW,
+    spim::{Frequency, Pins as SpimPins, Spim, TransferSplit, MODE_0},
+    spis::{Mode, Pins as SpisPins, Spis, Transfer},
+    timer::{Instance as TimerInstance, Periodic, Timer},
+    uarte::{Baudrate, Parity, Pins},
 };
 
-use anachro_server::{Broker, Uuid};
 use anachro_client::{pubsub_table, Client, ClientIoError, Error};
+use anachro_server::{Broker, Uuid};
 
-use anachro_spi::{
-    arbitrator::EncLogicHLArbitrator,
-    component::EncLogicHLComponent,
-};
-use anachro_spi_nrf52::{
-    arbitrator::NrfSpiArbLL,
-    component::NrfSpiComLL,
-};
 use anachro_icd::Version;
+use anachro_spi::{arbitrator::EncLogicHLArbitrator, component::EncLogicHLComponent};
+use anachro_spi_nrf52::{arbitrator::NrfSpiArbLL, component::NrfSpiComLL};
 use heapless::{consts, Vec as HVec};
 use postcard::to_slice_cobs;
 
 use serde::{Deserialize, Serialize};
 
 use fleet_uarte::{
+    anachro_io::AnachroUarte,
+    app::UarteApp,
     buffer::UarteBuffer,
     buffer::UarteParts,
-    anachro_io::AnachroUarte,
     cobs_buf::Buffer,
     irq::{UarteIrq, UarteTimer},
-    app::UarteApp,
 };
 
-use groundhog_nrf52::GlobalRollingTimer;
 use core::sync::atomic::AtomicBool;
+use groundhog_nrf52::GlobalRollingTimer;
 
 use groundhog::RollingTimer;
 
 static FLEET_BUFFER: UarteBuffer<U2048, U2048> = UarteBuffer {
-    txd_buf: BBBuffer( ConstBBBuffer::new() ),
-    rxd_buf: BBBuffer( ConstBBBuffer::new() ),
+    txd_buf: BBBuffer(ConstBBBuffer::new()),
+    rxd_buf: BBBuffer(ConstBBBuffer::new()),
     timeout_flag: AtomicBool::new(false),
 };
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
@@ -102,7 +90,6 @@ const APP: () = {
         // Setup global timer
         GlobalRollingTimer::init(board.TIMER0);
 
-
         let p0_gpios = P0Parts::new(board.P0);
         let p1_gpios = P1Parts::new(board.P1);
         let ppis = PpiParts::new(board.PPI);
@@ -143,30 +130,31 @@ const APP: () = {
         // // SDA          SERIAL1-RX  P0.12
         // let serial1_rx = p0_gpios.p0_12;
 
-        let UarteParts { app, timer, irq } = FLEET_BUFFER.try_split(
-            Pins {
-                rxd: serial2_rx.into_floating_input().degrade(),
-                txd: serial2_tx.into_push_pull_output(Level::Low).degrade(),
-                cts: None,
-                rts: None,
-            },
-            Parity::EXCLUDED,
-            Baudrate::BAUD1M,
-            board.TIMER2,
-            ppis.ppi0,
-            board.UARTE0,
-            255,
-            10_000,
-        ).map_err(drop).unwrap();
+        let UarteParts { app, timer, irq } = FLEET_BUFFER
+            .try_split(
+                Pins {
+                    rxd: serial2_rx.into_floating_input().degrade(),
+                    txd: serial2_tx.into_push_pull_output(Level::Low).degrade(),
+                    cts: None,
+                    rts: None,
+                },
+                Parity::EXCLUDED,
+                Baudrate::BAUD1M,
+                board.TIMER2,
+                ppis.ppi0,
+                board.UARTE0,
+                255,
+                10_000,
+            )
+            .map_err(drop)
+            .unwrap();
 
-        let an_uarte = AnachroUarte::new(
-            app,
-            Buffer::new(),
-            Uuid::from_bytes([42u8; 16]),
-        );
+        let an_uarte = AnachroUarte::new(app, Buffer::new(), Uuid::from_bytes([42u8; 16]));
 
         let mut broker = Broker::default();
-        broker.register_client(&Uuid::from_bytes([42u8; 16])).unwrap();
+        broker
+            .register_client(&Uuid::from_bytes([42u8; 16]))
+            .unwrap();
 
         // Spawn periodic tasks
         ctx.spawn.anachro_periodic().ok();
@@ -177,7 +165,6 @@ const APP: () = {
             uarte_timer: timer,
             uarte_irq: irq,
         }
-
 
         // defmt::info!("Starting loop");
 
@@ -199,7 +186,7 @@ const APP: () = {
         let mut out_msgs: HVec<_, consts::U16> = HVec::new();
 
         match broker.process_msg(uarte, &mut out_msgs) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => {
                 defmt::error!("broker proc msg: {:?}", e);
                 // arb_001::exit();
@@ -271,7 +258,6 @@ const APP: () = {
 // #[cortex_m_rt::entry]
 // fn main() -> ! {
 //     defmt::info!("Hello, world!");
-
 
 //     // defmt::error!("Connected!");
 

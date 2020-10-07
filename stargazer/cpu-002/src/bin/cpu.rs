@@ -1,39 +1,28 @@
 #![no_main]
 #![no_std]
 
-use embedded_hal::digital::v2::OutputPin;
+use bbqueue::{consts::*, framed::FrameGrantW, BBBuffer, ConstBBBuffer};
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::digital::v2::OutputPin;
+use key_003 as _; // global logger + panicking-behavior + memory layout
 use nrf52840_hal::{
     self as hal,
     clocks::LfOscConfiguration,
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
-    pac::{Peripherals, SPIS1, SPIM0, TIMER2, UARTE0},
+    pac::{Peripherals, SPIM0, SPIS1, TIMER2, UARTE0},
     ppi::{Parts as PpiParts, Ppi0},
-    spim::{Frequency, Pins as SpimPins, Spim, MODE_0, TransferSplit},
-    spis::{Pins as SpisPins, Spis, Transfer, Mode},
-    timer::{Timer, Periodic, Instance as TimerInstance},
-    uarte::{Pins, Baudrate, Parity},
-};
-use key_003 as _; // global logger + panicking-behavior + memory layout
-use bbqueue::{
-    consts::*,
-    BBBuffer,
-    ConstBBBuffer,
-    framed::FrameGrantW,
+    spim::{Frequency, Pins as SpimPins, Spim, TransferSplit, MODE_0},
+    spis::{Mode, Pins as SpisPins, Spis, Transfer},
+    timer::{Instance as TimerInstance, Periodic, Timer},
+    uarte::{Baudrate, Parity, Pins},
 };
 
-use anachro_server::{Broker, Uuid};
 use anachro_client::{pubsub_table, Client, ClientIoError, Error};
+use anachro_server::{Broker, Uuid};
 
-use anachro_spi::{
-    arbitrator::EncLogicHLArbitrator,
-    component::EncLogicHLComponent,
-};
-use anachro_spi_nrf52::{
-    arbitrator::NrfSpiArbLL,
-    component::NrfSpiComLL,
-};
 use anachro_icd::Version;
+use anachro_spi::{arbitrator::EncLogicHLArbitrator, component::EncLogicHLComponent};
+use anachro_spi_nrf52::{arbitrator::NrfSpiArbLL, component::NrfSpiComLL};
 use heapless::{consts, Vec as HVec};
 
 use serde::{Deserialize, Serialize};
@@ -41,19 +30,19 @@ use serde::{Deserialize, Serialize};
 use groundhog_nrf52::GlobalRollingTimer;
 
 use fleet_uarte::{
+    anachro_io::AnachroUarte,
+    app::UarteApp,
     buffer::UarteBuffer,
     buffer::UarteParts,
-    anachro_io::AnachroUarte,
     cobs_buf::Buffer,
     irq::{UarteIrq, UarteTimer},
-    app::UarteApp,
 };
 
 use core::sync::atomic::AtomicBool;
 
 static FLEET_BUFFER: UarteBuffer<U2048, U2048> = UarteBuffer {
-    txd_buf: BBBuffer( ConstBBBuffer::new() ),
-    rxd_buf: BBBuffer( ConstBBBuffer::new() ),
+    txd_buf: BBBuffer(ConstBBBuffer::new()),
+    rxd_buf: BBBuffer(ConstBBBuffer::new()),
     timeout_flag: AtomicBool::new(false),
 };
 
@@ -106,28 +95,26 @@ const APP: () = {
         let pin_rx = gpios.p0_15.into_floating_input().degrade();
         let pin_tx = gpios.p0_16.into_push_pull_output(Level::Low).degrade();
 
-        let UarteParts { app, timer, irq } = FLEET_BUFFER.try_split(
-            Pins {
-                rxd: pin_rx,
-                txd: pin_tx,
-                cts: None,
-                rts: None,
-            },
-            Parity::EXCLUDED,
-            Baudrate::BAUD1M,
-            board.TIMER2,
-            ppis.ppi0,
-            board.UARTE0,
-            255,
-            10_000,
-        ).map_err(drop).unwrap();
+        let UarteParts { app, timer, irq } = FLEET_BUFFER
+            .try_split(
+                Pins {
+                    rxd: pin_rx,
+                    txd: pin_tx,
+                    cts: None,
+                    rts: None,
+                },
+                Parity::EXCLUDED,
+                Baudrate::BAUD1M,
+                board.TIMER2,
+                ppis.ppi0,
+                board.UARTE0,
+                255,
+                10_000,
+            )
+            .map_err(drop)
+            .unwrap();
 
-        let an_uarte = AnachroUarte::new(
-            app,
-            Buffer::new(),
-            Uuid::from_bytes([42u8; 16]),
-        );
-
+        let an_uarte = AnachroUarte::new(app, Buffer::new(), Uuid::from_bytes([42u8; 16]));
 
         let client = Client::new(
             "key-003",
@@ -158,7 +145,8 @@ const APP: () = {
     fn anachro_periodic(ctx: anachro_periodic::Context) {
         static mut HAS_CONNECTED: bool = false;
 
-        let res = ctx.resources
+        let res = ctx
+            .resources
             .client
             .process_one::<_, AnachroTable>(ctx.resources.anachro_uarte);
 
@@ -169,7 +157,7 @@ const APP: () = {
 
         match res {
             Ok(Some(_msg)) => defmt::info!("Got a message!"),
-            Ok(None) => {},
+            Ok(None) => {}
             Err(e) => defmt::error!("ERR: {:?}", e),
         }
 
@@ -209,9 +197,7 @@ const APP: () = {
 // #[cortex_m_rt::entry]
 // fn main() -> ! {
 
-
 //     client.process_one::<_, AnachroTable>(&mut an_uarte).ok();
-
 
 //     key_003::exit()
 // }

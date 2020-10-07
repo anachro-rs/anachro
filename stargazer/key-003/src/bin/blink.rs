@@ -3,12 +3,12 @@
 
 use {
     embedded_hal::blocking::delay::DelayMs,
+    key_003 as _, // global logger + panicking-behavior + memory layout
     nrf52840_hal::{
         self as hal,
         gpio::{p0::Parts as P0Parts, Level},
         Rng, Timer,
     },
-    key_003 as _, // global logger + panicking-behavior + memory layout
     nrf_smartled::pwm::Pwm,
     smart_leds::{colors, gamma, RGB8},
     smart_leds_trait::SmartLedsWrite,

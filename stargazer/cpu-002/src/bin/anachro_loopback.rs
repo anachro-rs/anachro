@@ -1,35 +1,24 @@
 #![no_main]
 #![no_std]
 
-use embedded_hal::digital::v2::OutputPin;
+use bbqueue::{consts::*, framed::FrameGrantW, BBBuffer, ConstBBBuffer};
+use cpu_002 as _; // global logger + panicking-behavior + memory layout
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::digital::v2::OutputPin;
 use nrf52840_hal::{
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
-    pac::{Peripherals, SPIS1, SPIM0, TIMER2},
-    spim::{Frequency, Pins as SpimPins, Spim, MODE_0, TransferSplit},
-    spis::{Pins as SpisPins, Spis, Transfer, Mode},
-    timer::{Timer, Periodic, Instance as TimerInstance},
-};
-use cpu_002 as _; // global logger + panicking-behavior + memory layout
-use bbqueue::{
-    consts::*,
-    BBBuffer,
-    ConstBBBuffer,
-    framed::FrameGrantW,
+    pac::{Peripherals, SPIM0, SPIS1, TIMER2},
+    spim::{Frequency, Pins as SpimPins, Spim, TransferSplit, MODE_0},
+    spis::{Mode, Pins as SpisPins, Spis, Transfer},
+    timer::{Instance as TimerInstance, Periodic, Timer},
 };
 
-use anachro_server::{Broker, Uuid};
 use anachro_client::{pubsub_table, Client, ClientIoError, Error};
+use anachro_server::{Broker, Uuid};
 
-use anachro_spi::{
-    arbitrator::EncLogicHLArbitrator,
-    component::EncLogicHLComponent,
-};
-use anachro_spi_nrf52::{
-    arbitrator::NrfSpiArbLL,
-    component::NrfSpiComLL,
-};
 use anachro_icd::Version;
+use anachro_spi::{arbitrator::EncLogicHLArbitrator, component::EncLogicHLComponent};
+use anachro_spi_nrf52::{arbitrator::NrfSpiArbLL, component::NrfSpiComLL};
 use heapless::{consts, Vec as HVec};
 use postcard::to_slice_cobs;
 
@@ -50,11 +39,11 @@ use groundhog::RollingTimer;
 // P1.13   <=>   P1.10          GO      // CSn
 // P1.12   <=>   P1.11          READY
 
-static BB_ARB_OUT: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
-static BB_ARB_INC: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
+static BB_ARB_OUT: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
+static BB_ARB_INC: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
 
-static BB_CON_OUT: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
-static BB_CON_INC: BBBuffer<U1024> = BBBuffer( ConstBBBuffer::new() );
+static BB_CON_OUT: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
+static BB_CON_INC: BBBuffer<U1024> = BBBuffer(ConstBBBuffer::new());
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
@@ -148,19 +137,17 @@ fn main() -> ! {
         hog_1,
         &BB_ARB_OUT,
         &BB_ARB_INC,
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut broker = Broker::default();
-    broker.register_client(&Uuid::from_bytes([0x01; 16])).unwrap();
+    broker
+        .register_client(&Uuid::from_bytes([0x01; 16]))
+        .unwrap();
 
     let nrf_cli = NrfSpiComLL::new(con_spim, con_csn, con_go);
 
-    let mut cio = EncLogicHLComponent::new(
-        nrf_cli,
-        hog_2,
-        &BB_CON_OUT,
-        &BB_CON_INC,
-    ).unwrap();
+    let mut cio = EncLogicHLComponent::new(nrf_cli, hog_2, &BB_CON_OUT, &BB_CON_INC).unwrap();
 
     let mut client = Client::new(
         "loopy",
@@ -202,14 +189,12 @@ fn main() -> ! {
             continue;
         }
 
-
         arb_port.query_component().ok();
 
         defmt::info!("loop.");
         // timer.delay_ms(1u32);
 
         // AJM: We shouldn't have to manually poll the IO like this
-
 
         match client.process_one::<_, AnachroTable>(&mut cio) {
             Ok(Some(msg)) => {
@@ -237,12 +222,10 @@ fn main() -> ! {
             }
         }
 
-
-
         let mut out_msgs: HVec<_, consts::U16> = HVec::new();
         defmt::info!("broker sending {:?} msgs", out_msgs.len());
         match broker.process_msg(&mut arb_port, &mut out_msgs) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => {
                 defmt::error!("broker proc msg: {:?}", e);
                 cpu_002::exit();
@@ -282,7 +265,6 @@ fn main() -> ! {
     defmt::error!("Connected!");
 
     cpu_002::exit()
-
 }
 
 // enum SpisState {
