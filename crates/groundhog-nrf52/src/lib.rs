@@ -50,7 +50,7 @@ impl Monotonic for GlobalRollingTimer {
     }
 
     unsafe fn reset() {
-        if let Some(t0) = TIMER_PTR.load(Ordering::Acquire).as_ref() {
+        if let Some(t0) = TIMER_PTR.load(Ordering::SeqCst).as_ref() {
             t0.tasks_clear.write(|w| w.bits(1) );
         }
     }
@@ -61,7 +61,7 @@ impl RollingTimer for GlobalRollingTimer {
     const TICKS_PER_SECOND: u32 = 1_000_000;
 
     fn get_ticks(&self) -> u32 {
-        if let Some(t0) = unsafe { TIMER_PTR.load(Ordering::Acquire).as_ref() } {
+        if let Some(t0) = unsafe { TIMER_PTR.load(Ordering::SeqCst).as_ref() } {
             t0.tasks_capture[1].write(|w| unsafe { w.bits(1) });
             t0.cc[1].read().bits()
         } else {
