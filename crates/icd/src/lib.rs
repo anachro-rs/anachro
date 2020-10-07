@@ -187,7 +187,7 @@ pub struct Uuid([u8; 16]);
 
 impl Uuid {
     /// Create a new UUID from an array of bytes
-    pub fn from_bytes(by: [u8; 16]) -> Self {
+    pub const fn from_bytes(by: [u8; 16]) -> Self {
         Uuid(by)
     }
 

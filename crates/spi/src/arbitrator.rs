@@ -118,8 +118,8 @@ where
 
 pub struct EncLogicHLArbitrator<LL, CT, RT>
 where
-    CT: ArrayLength<u8>,
     LL: EncLogicLLArbitrator,
+    CT: ArrayLength<u8>,
     RT: RollingTimer<Tick = u32>,
 {
     ll: LL,
