@@ -118,7 +118,7 @@ const APP: () = {
             board.TIMER2,
             ppis.ppi0,
             board.UARTE0,
-            256,
+            255,
             10_000,
         ).map_err(drop).unwrap();
 
@@ -174,7 +174,7 @@ const APP: () = {
         }
 
         ctx.schedule
-            .anachro_periodic(ctx.scheduled + 1_000) // 1ms
+            .anachro_periodic(ctx.scheduled + 10_000) // 10ms
             .ok();
     }
 

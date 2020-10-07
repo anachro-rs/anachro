@@ -90,26 +90,17 @@ const APP: () = {
 
     #[init(spawn = [anachro_periodic])]
     fn init(ctx: init::Context) -> init::LateResources {
-        // defmt::info!("Hello, world!");
+        defmt::info!("Hello, world!");
         let board = ctx.device;
-        // defmt::info!("Hello, world2!");
-
 
         // Setup clocks
         let clocks = hal::clocks::Clocks::new(board.CLOCK);
         let clocks = clocks.enable_ext_hfosc();
-
-        // defmt::info!("Hello, world3!");
-
         let clocks = clocks.set_lfclk_src_external(LfOscConfiguration::NoExternalNoBypass);
         clocks.start_lfclk();
 
-        // defmt::info!("pre timer");
-
         // Setup global timer
         GlobalRollingTimer::init(board.TIMER0);
-
-        // defmt::info!("post timer");
 
 
         let p0_gpios = P0Parts::new(board.P0);
@@ -152,8 +143,6 @@ const APP: () = {
         // // SDA          SERIAL1-RX  P0.12
         // let serial1_rx = p0_gpios.p0_12;
 
-        // defmt::info!("pre split");
-
         let UarteParts { app, timer, irq } = FLEET_BUFFER.try_split(
             Pins {
                 rxd: serial2_rx.into_floating_input().degrade(),
@@ -166,12 +155,9 @@ const APP: () = {
             board.TIMER2,
             ppis.ppi0,
             board.UARTE0,
-            256,
+            255,
             10_000,
         ).map_err(drop).unwrap();
-
-        // defmt::info!("post split");
-
 
         let an_uarte = AnachroUarte::new(
             app,
@@ -180,7 +166,7 @@ const APP: () = {
         );
 
         let mut broker = Broker::default();
-        broker.register_client(&Uuid::from_bytes([0x01; 16])).unwrap();
+        broker.register_client(&Uuid::from_bytes([42u8; 16])).unwrap();
 
         // Spawn periodic tasks
         ctx.spawn.anachro_periodic().ok();

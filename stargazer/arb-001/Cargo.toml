@@ -48,11 +48,11 @@ branch = "main"
 [features]
 # set logging levels here
 default = [
-  "defmt-warn",
-  "anachro-spi/defmt-warn",
-  "anachro-server/defmt-warn",
-  "anachro-client/defmt-warn",
-  "anachro-spi-nrf52/defmt-warn",
+  "defmt-trace",
+  "anachro-spi/defmt-trace",
+  "anachro-server/defmt-trace",
+  "anachro-client/defmt-trace",
+  "anachro-spi-nrf52/defmt-trace",
 ]
 
 # do NOT modify these features
