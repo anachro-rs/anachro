@@ -197,10 +197,10 @@ where
                     let (amt_rx, amt_tx) = p.amounts();
 
                     if (amt_rx == 0) && (amt_tx == 0) {
-                        defmt::error!("Trying again!");
-                        self.periph =
-                            Periph::Pending(p.transfer_split(tx, rx).map_err(drop).unwrap());
-                        return Err(Error::TransactionBusy);
+                        defmt::error!("Empty message?");
+                        self.periph = Periph::Idle(p);
+                        self.clear_go().ok();
+                        return Err(Error::TransactionAborted);
                     } else {
                         defmt::info!("Transaction done - tx: {:?} rx: {:?} (expected to send {:?} and rx {:?})", amt_tx, amt_rx, tx.len, rx.len);
                         if (amt_tx as usize != tx.len) || (amt_rx as usize != rx.len) {

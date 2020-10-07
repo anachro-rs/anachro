@@ -16,8 +16,8 @@ use bbqueue::{
 
 use groundhog::RollingTimer;
 
-const T_WINDOW_US: u32 = 1_000_000;
-const T_STEP_US: u32 = 500_000;
+const T_WINDOW_US: u32 = 250_000;
+const T_STEP_US: u32 = 100_000;
 
 pub trait EncLogicLLArbitrator: Send {
     /// Process low level messages

@@ -83,8 +83,8 @@ where
 
 pub struct EncLogicHLComponent<LL, CT, RT>
 where
-    CT: ArrayLength<u8>,
     LL: EncLogicLLComponent,
+    CT: ArrayLength<u8>,
     RT: RollingTimer<Tick = u32>,
 {
     ll: LL,

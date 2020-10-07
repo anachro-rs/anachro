@@ -4,7 +4,7 @@
 use bbqueue::{consts::*, framed::FrameGrantW, BBBuffer, ConstBBBuffer};
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::digital::v2::OutputPin;
-use key_003 as _; // global logger + panicking-behavior + memory layout
+use cpu_002 as _; // global logger + panicking-behavior + memory layout
 use nrf52840_hal::{
     self as hal,
     clocks::LfOscConfiguration,
@@ -28,23 +28,11 @@ use heapless::{consts, Vec as HVec};
 use serde::{Deserialize, Serialize};
 
 use groundhog_nrf52::GlobalRollingTimer;
-
-use fleet_uarte::{
-    anachro_io::AnachroUarte,
-    app::UarteApp,
-    buffer::UarteBuffer,
-    buffer::UarteParts,
-    cobs_buf::Buffer,
-    irq::{UarteIrq, UarteTimer},
-};
-
 use core::sync::atomic::AtomicBool;
 
-static FLEET_BUFFER: UarteBuffer<U2048, U2048> = UarteBuffer {
-    txd_buf: BBBuffer(ConstBBBuffer::new()),
-    rxd_buf: BBBuffer(ConstBBBuffer::new()),
-    timeout_flag: AtomicBool::new(false),
-};
+static BB_CON_OUT: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
+static BB_CON_INC: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
@@ -69,9 +57,7 @@ pubsub_table! {
 const APP: () = {
     struct Resources {
         client: Client,
-        anachro_uarte: AnachroUarte<U2048, U2048, U512>,
-        uarte_timer: UarteTimer<TIMER2>,
-        uarte_irq: UarteIrq<U2048, U2048, Ppi0, UARTE0>,
+        anachro_spim: EncLogicHLComponent<NrfSpiComLL<SPIM0>, U2048, GlobalRollingTimer>,
     }
 
     #[init(spawn = [anachro_periodic])]
@@ -92,32 +78,37 @@ const APP: () = {
         let gpios = P0Parts::new(board.P0);
         let ppis = PpiParts::new(board.PPI);
 
-        let pin_rx = gpios.p0_15.into_floating_input().degrade();
-        let pin_tx = gpios.p0_16.into_push_pull_output(Level::Low).degrade();
 
-        let UarteParts { app, timer, irq } = FLEET_BUFFER
-            .try_split(
-                Pins {
-                    rxd: pin_rx,
-                    txd: pin_tx,
-                    cts: None,
-                    rts: None,
-                },
-                Parity::EXCLUDED,
-                Baudrate::BAUD1M,
-                board.TIMER2,
-                ppis.ppi0,
-                board.UARTE0,
-                255,
-                10_000,
-            )
-            .map_err(drop)
-            .unwrap();
+        // CIPO         P0.15
+        let cipo = gpios.p0_15;
+        // COPI         P0.13
+        let copi = gpios.p0_13;
+        // SCK          P0.14
+        let sck = gpios.p0_14;
+        // A5  CSn      P0.03
+        let a5 = gpios.p0_03;
+        // A4  GO       P0.02
+        let go = gpios.p0_02;
 
-        let an_uarte = AnachroUarte::new(app, Buffer::new(), Uuid::from_bytes([42u8; 16]));
+        let con_pins = SpimPins {
+            sck: sck.into_push_pull_output(Level::Low).degrade(),
+            miso: Some(cipo.into_floating_input().degrade()),
+            mosi: Some(copi.into_push_pull_output(Level::Low).degrade()),
+        };
+
+        let con_go = go.into_floating_input().degrade();
+        let con_csn = a5.into_push_pull_output(Level::High).degrade();
+
+        let con_spim = Spim::new(board.SPIM0, con_pins, Frequency::M8, MODE_0, 0x00);
+
+
+        let nrf_cli = NrfSpiComLL::new(con_spim, con_csn, con_go);
+
+        let mut cio = EncLogicHLComponent::new(nrf_cli, GlobalRollingTimer::new(), &BB_CON_OUT, &BB_CON_INC).unwrap();
+
 
         let client = Client::new(
-            "key-003",
+            "cpu-002",
             Version {
                 major: 0,
                 minor: 4,
@@ -135,47 +126,74 @@ const APP: () = {
 
         init::LateResources {
             client,
-            anachro_uarte: an_uarte,
-            uarte_timer: timer,
-            uarte_irq: irq,
+            anachro_spim: cio,
         }
     }
 
-    #[task(resources = [client, anachro_uarte], schedule = [anachro_periodic])]
+    #[task(resources = [client, anachro_spim], schedule = [anachro_periodic])]
     fn anachro_periodic(ctx: anachro_periodic::Context) {
         static mut HAS_CONNECTED: bool = false;
+        static mut STEPDOWN: u32 = 0;
 
-        let res = ctx
-            .resources
-            .client
-            .process_one::<_, AnachroTable>(ctx.resources.anachro_uarte);
-
-        if !*HAS_CONNECTED && ctx.resources.client.is_connected() {
-            defmt::info!("Connected!");
-            *HAS_CONNECTED = true;
+        if let Err(e) = ctx.resources.anachro_spim.poll() {
+            defmt::error!("{:?}", e);
+            defmt::error!("oops");
+            // client.reset_connection();
         }
 
-        match res {
-            Ok(Some(_msg)) => defmt::info!("Got a message!"),
-            Ok(None) => {}
-            Err(e) => defmt::error!("ERR: {:?}", e),
-        }
+        // *STEPDOWN += 1;
+
+        // if *STEPDOWN >= 10 {
+            // *STEPDOWN = 0;
+
+            let res = ctx
+                .resources
+                .client
+                .process_one::<_, AnachroTable>(ctx.resources.anachro_spim);
+
+            match res {
+                Ok(Some(_msg)) => {
+                    defmt::info!("ClientApp: Got one");
+                    // defmt::info!("Got: {:?}", msg);
+                }
+                Ok(None) => {}
+                Err(Error::ClientIoError(ClientIoError::NoData)) => {}
+                Err(e) => {
+                    match e {
+                        Error::Busy => defmt::info!("ClientApp: busy"),
+                        Error::NotActive => defmt::info!("ClientApp: not active"),
+                        Error::UnexpectedMessage => defmt::info!("ClientApp: Un Ex Me"),
+                        Error::ClientIoError(cie) => {
+                            match cie {
+                                ClientIoError::ParsingError => defmt::info!("ClientApp: parseerr"),
+                                ClientIoError::NoData => defmt::info!("ClientApp: nodata"),
+                                ClientIoError::OutputFull => defmt::info!("ClientApp: out full"),
+                            }
+                            defmt::info!("ClientApp: Cl Io Er");
+                        }
+                    }
+                    // defmt::error!("ClientApp: error!");
+                    // defmt::info!("error: {:?}", e);
+                }
+            }
+
+            if !*HAS_CONNECTED && ctx.resources.client.is_connected() {
+                defmt::info!("Connected!");
+                *HAS_CONNECTED = true;
+                cpu_002::exit();
+            }
+        // }
+
+
+        // match res {
+        //     Ok(Some(_msg)) => defmt::info!("Got a message!"),
+        //     Ok(None) => {}
+        //     Err(e) => defmt::error!("ERR: {:?}", e),
+        // }
 
         ctx.schedule
-            .anachro_periodic(ctx.scheduled + 10_000) // 10ms
+            .anachro_periodic(ctx.scheduled + 10_000) // 1ms
             .ok();
-    }
-
-    #[task(binds = TIMER2, resources = [uarte_timer])]
-    fn timer2(ctx: timer2::Context) {
-        // fleet uarte timer
-        ctx.resources.uarte_timer.interrupt();
-    }
-
-    #[task(binds = UARTE0_UART0, resources = [uarte_irq])]
-    fn uarte0(ctx: uarte0::Context) {
-        // fleet uarte interrupt
-        ctx.resources.uarte_irq.interrupt();
     }
 
     #[idle]

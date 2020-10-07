@@ -219,11 +219,12 @@ const APP: () = {
 
     #[task(resources = [broker, anachro_uarte, anachro_spis], schedule = [anachro_periodic])]
     fn anachro_periodic(ctx: anachro_periodic::Context) {
-        static mut STEPDOWN: u32 = 0;
+        static mut LAST_QUERY: u32 = 0;
 
         let broker = ctx.resources.broker;
         let uarte = ctx.resources.anachro_uarte;
         let spis = ctx.resources.anachro_spis;
+        let timer = GlobalRollingTimer::new();
 
         if let Err(e) = spis.poll() {
             defmt::error!("spis poll err: {:?}", e);
@@ -319,10 +320,8 @@ const APP: () = {
             }
         }
 
-        *STEPDOWN += 1;
-
-        if *STEPDOWN >= 10 {
-            *STEPDOWN = 0;
+        if timer.millis_since(*LAST_QUERY) > 50 {
+            *LAST_QUERY = timer.get_ticks();
             spis.query_component().ok();
         }
 
