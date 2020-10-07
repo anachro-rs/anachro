@@ -16,6 +16,8 @@ members = [
     "pc-examples/component-spi-tcp",
     "pc-examples/arbitrator-spi-tcp",
 
+    "stargazer/stargazer-icd",
+
 
 ]
 

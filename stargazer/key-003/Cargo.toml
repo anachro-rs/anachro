@@ -32,6 +32,7 @@ smart-leds-trait = "0.2.1"
 libm = "0.2.1"
 cortex-m-rtic = "0.5.5"
 groundhog-nrf52 = { path = "../../crates/groundhog-nrf52" }
+stargazer-icd = { path = "../stargazer-icd" }
 
 [dependencies.defmt]
 git = "https://github.com/knurling-rs/defmt"
@@ -98,3 +99,4 @@ overflow-checks = false
 [patch.crates-io]
 nrf-hal-common = { path = "../../vendor/nrf-hal/nrf-hal-common" }
 bbqueue = { path = "../../vendor/bbqueue/core" }
+postcard = { git = "https://github.com/jamesmunns/postcard.git", rev = "1cd7288df6a680152009c945783d124c47329a75" }

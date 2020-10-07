@@ -4,3 +4,6 @@
 [submodule "vendor/bbqueue"]
 	path = vendor/bbqueue
 	url = git@github.com:jamesmunns/bbqueue.git
+[submodule "vendor/postcard"]
+	path = vendor/postcard
+	url = git@github.com:jamesmunns/postcard.git

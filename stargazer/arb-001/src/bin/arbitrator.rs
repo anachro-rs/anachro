@@ -320,6 +320,7 @@ const APP: () = {
             }
         }
 
+        // TODO: Round-robin each different device
         if timer.millis_since(*LAST_QUERY) > 50 {
             *LAST_QUERY = timer.get_ticks();
             spis.query_component().ok();

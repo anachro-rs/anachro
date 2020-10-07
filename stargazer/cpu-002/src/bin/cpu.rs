@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
 
 use groundhog_nrf52::GlobalRollingTimer;
 use core::sync::atomic::AtomicBool;
+use stargazer_icd::{CpuTable, Keypress};
 
 static BB_CON_OUT: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
 static BB_CON_INC: BBBuffer<U2048> = BBBuffer(ConstBBBuffer::new());
@@ -39,18 +40,6 @@ pub struct Demo {
     foo: u32,
     bar: i16,
     baz: (u8, u8),
-}
-
-pubsub_table! {
-    AnachroTable,
-    Subs => {
-        Something: "foo/bar/baz" => Demo,
-        Else: "bib/bim/bap" => (),
-    },
-    Pubs => {
-        Etwas: "short/send" => (),
-        Anders: "send/short" => (),
-    },
 }
 
 #[rtic::app(device = crate::hal::pac, peripherals = true, monotonic = groundhog_nrf52::GlobalRollingTimer)]
@@ -116,8 +105,8 @@ const APP: () = {
                 misc: 123,
             },
             987,
-            AnachroTable::sub_paths(),
-            AnachroTable::pub_paths(),
+            CpuTable::sub_paths(),
+            CpuTable::pub_paths(),
             Some(250),
         );
 
@@ -133,7 +122,6 @@ const APP: () = {
     #[task(resources = [client, anachro_spim], schedule = [anachro_periodic])]
     fn anachro_periodic(ctx: anachro_periodic::Context) {
         static mut HAS_CONNECTED: bool = false;
-        static mut STEPDOWN: u32 = 0;
 
         if let Err(e) = ctx.resources.anachro_spim.poll() {
             defmt::error!("{:?}", e);
@@ -141,55 +129,38 @@ const APP: () = {
             // client.reset_connection();
         }
 
-        // *STEPDOWN += 1;
+        let res = ctx
+            .resources
+            .client
+            .process_one::<_, CpuTable>(ctx.resources.anachro_spim);
 
-        // if *STEPDOWN >= 10 {
-            // *STEPDOWN = 0;
-
-            let res = ctx
-                .resources
-                .client
-                .process_one::<_, AnachroTable>(ctx.resources.anachro_spim);
-
-            match res {
-                Ok(Some(_msg)) => {
-                    defmt::info!("ClientApp: Got one");
-                    // defmt::info!("Got: {:?}", msg);
-                }
-                Ok(None) => {}
-                Err(Error::ClientIoError(ClientIoError::NoData)) => {}
-                Err(e) => {
-                    match e {
-                        Error::Busy => defmt::info!("ClientApp: busy"),
-                        Error::NotActive => defmt::info!("ClientApp: not active"),
-                        Error::UnexpectedMessage => defmt::info!("ClientApp: Un Ex Me"),
-                        Error::ClientIoError(cie) => {
-                            match cie {
-                                ClientIoError::ParsingError => defmt::info!("ClientApp: parseerr"),
-                                ClientIoError::NoData => defmt::info!("ClientApp: nodata"),
-                                ClientIoError::OutputFull => defmt::info!("ClientApp: out full"),
-                            }
-                            defmt::info!("ClientApp: Cl Io Er");
+        match res {
+            Ok(Some(_msg)) => {
+                defmt::info!("ClientApp: Got one");
+            }
+            Ok(None) => {}
+            Err(Error::ClientIoError(ClientIoError::NoData)) => {}
+            Err(e) => {
+                match e {
+                    Error::Busy => defmt::info!("ClientApp: busy"),
+                    Error::NotActive => defmt::info!("ClientApp: not active"),
+                    Error::UnexpectedMessage => defmt::info!("ClientApp: Un Ex Me"),
+                    Error::ClientIoError(cie) => {
+                        match cie {
+                            ClientIoError::ParsingError => defmt::info!("ClientApp: parseerr"),
+                            ClientIoError::NoData => defmt::info!("ClientApp: nodata"),
+                            ClientIoError::OutputFull => defmt::info!("ClientApp: out full"),
                         }
+                        defmt::info!("ClientApp: Cl Io Er");
                     }
-                    // defmt::error!("ClientApp: error!");
-                    // defmt::info!("error: {:?}", e);
                 }
             }
+        }
 
-            if !*HAS_CONNECTED && ctx.resources.client.is_connected() {
-                defmt::info!("Connected!");
-                *HAS_CONNECTED = true;
-                cpu_002::exit();
-            }
-        // }
-
-
-        // match res {
-        //     Ok(Some(_msg)) => defmt::info!("Got a message!"),
-        //     Ok(None) => {}
-        //     Err(e) => defmt::error!("ERR: {:?}", e),
-        // }
+        if !*HAS_CONNECTED && ctx.resources.client.is_connected() {
+            defmt::info!("Connected!");
+            *HAS_CONNECTED = true;
+        }
 
         ctx.schedule
             .anachro_periodic(ctx.scheduled + 10_000) // 1ms
@@ -215,7 +186,7 @@ const APP: () = {
 // #[cortex_m_rt::entry]
 // fn main() -> ! {
 
-//     client.process_one::<_, AnachroTable>(&mut an_uarte).ok();
+//     client.process_one::<_, CpuTable>(&mut an_uarte).ok();
 
 //     key_003::exit()
 // }
