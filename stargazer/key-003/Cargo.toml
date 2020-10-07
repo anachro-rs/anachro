@@ -1,0 +1,98 @@
+[package]
+authors = ["James Munns <james.munns@ferrous-systems.com>"]
+name = "key-003"
+edition = "2018"
+version = "0.1.0"
+
+[workspace]
+members = ["testsuite"]
+
+[dependencies]
+cortex-m = "0.6.3"
+cortex-m-rt = "0.6.12"
+nrf52840-hal = { version = "0.11", features = ["rt"] }
+bbqueue = "0.4.10"
+embedded-hal = "0.2.4"
+embedded-dma = "0.1.1"
+
+anachro-spi = { path = "../../crates/spi" }
+anachro-icd = { path = "../../crates/icd" }
+anachro-server = { path = "../../crates/server" }
+anachro-client = { path = "../../crates/client" }
+anachro-spi-nrf52 = { path = "../../crates/spi-nrf52" }
+fleet-uarte = { path = "../../crates/fleet-uarte", features = ["52840"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+postcard = { version = "0.5.1" }
+heapless = "0.5.6"
+groundhog = "0.1.0"
+
+nrf-smartled = { version = "0.2.0", features = ["52840"] }
+smart-leds = "0.3.0"
+smart-leds-trait = "0.2.1"
+libm = "0.2.1"
+
+[dependencies.defmt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"
+
+[dependencies.defmt-rtt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"
+
+[dependencies.panic-probe]
+git = "https://github.com/knurling-rs/probe-run"
+branch = "main"
+
+[features]
+# set logging levels here
+default = [
+  "defmt-trace",
+  "anachro-spi/defmt-trace",
+  "anachro-server/defmt-trace",
+  "anachro-client/defmt-trace",
+  "anachro-spi-nrf52/defmt-trace",
+]
+
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
+
+[profile.dev]
+codegen-units = 1
+debug = 2
+debug-assertions = true # <-
+incremental = false
+opt-level = 3 # <-
+overflow-checks = true # <-
+
+# do not optimize proc-macro crates = faster builds from scratch
+[profile.dev.build-override]
+codegen-units = 8
+debug = false
+debug-assertions = false
+opt-level = 0
+overflow-checks = false
+
+[profile.release]
+codegen-units = 1
+debug = 2
+debug-assertions = false # <-
+incremental = false
+lto = 'fat'
+opt-level = 3 # <-
+overflow-checks = false # <-
+
+[profile.release.build-override]
+codegen-units = 8
+debug = false
+debug-assertions = false
+opt-level = 0
+overflow-checks = false
+
+[patch.crates-io]
+nrf-hal-common = { path = "../../vendor/nrf-hal/nrf-hal-common" }
+bbqueue = { path = "../../vendor/bbqueue/core" }

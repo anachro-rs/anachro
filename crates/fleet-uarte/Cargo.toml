@@ -1,0 +1,50 @@
+[package]
+name = "fleet-uarte"
+version = "0.1.0"
+authors = ["James Munns <james.munns@ferrous-systems.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nrf52810-hal = { version = "0.11.0", features = ["rt"], optional = true }
+nrf52832-hal = { version = "0.11.0", features = ["rt"], optional = true }
+nrf52840-hal = { version = "0.11.0", features = ["rt"], optional = true }
+embedded-hal = "0.2.4"
+rtt-target = {version = "0.2.0", features = ["cortex-m"] }
+generic-array = "0.13.2" # match bbqueue
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+postcard = "0.5.1"
+anachro-icd = { version = "0.1.2", path = "../icd" }
+
+[dependencies.bbqueue]
+version = "0.4.10"
+features = ["enable-defmt"]
+
+[dependencies.anachro-client]
+version = "0.1"
+path = "../client"
+
+[dependencies.anachro-server]
+version = "0.1"
+path = "../server"
+
+
+
+[dependencies.defmt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"
+
+[features]
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
+
+52810 = ["nrf52810-hal"]
+52832 = ["nrf52832-hal"]
+52840 = ["nrf52840-hal"]
+default = ["52840"]

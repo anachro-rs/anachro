@@ -245,9 +245,9 @@ source = "git+https://github.com/knurling-rs/defmt?branch=main#3aa4e70ee73067aaa
 
 [[package]]
 name = "embedded-dma"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce25093adf4f2a76d429644c1f6f0abc10b79d00784a13e5d0cfabcd52b55b76"
+checksum = "46c8c02e4347a0267ca60813c952017f4c5948c232474c6010a381a337f1bda4"
 dependencies = [
  "stable_deref_trait",
 ]
@@ -269,6 +269,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0505cbb1cbb48e72d0adfcd784f65f5d350ac5c26e6644754877aff5a4241b5c"
 dependencies = [
  "typenum",
+]
+
+[[package]]
+name = "fleet-uarte"
+version = "0.1.0"
+dependencies = [
+ "anachro-client",
+ "anachro-icd",
+ "anachro-server",
+ "bbqueue",
+ "defmt",
+ "embedded-hal",
+ "generic-array 0.13.2",
+ "nrf52810-hal",
+ "nrf52832-hal",
+ "nrf52840-hal",
+ "postcard",
+ "rtt-target",
+ "serde",
 ]
 
 [[package]]
@@ -344,9 +363,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.77"
+version = "0.2.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2f96b10ec2560088a8e76961b00d47107b3a625fecb76dedb29ee7ccbf98235"
+checksum = "2448f6066e80e3bfc792e9c98bf705b4b0fc6e8ef5b43e5889aff0eaa9c58743"
 
 [[package]]
 name = "nb"
@@ -374,16 +393,62 @@ dependencies = [
  "embedded-hal",
  "fixed",
  "nb 1.0.0",
+ "nrf52810-pac",
+ "nrf52832-pac",
  "nrf52840-pac",
  "rand_core",
  "void",
 ]
 
 [[package]]
-name = "nrf52840-hal"
+name = "nrf52810-hal"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f7e01810b986e03c6cbe24dbcdd479a930e23e6b738540fe71c8b6389f475c"
+checksum = "9146d4843c58de8c43089b646194bb9b6871f80b129e038108e11ceb692d39ac"
+dependencies = [
+ "embedded-hal",
+ "nrf-hal-common",
+ "nrf52810-pac",
+]
+
+[[package]]
+name = "nrf52810-pac"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "136a10e0a338c3b46370a37c7986d78880714abae701d6a9a5fbdfde9a6397ea"
+dependencies = [
+ "bare-metal",
+ "cortex-m",
+ "cortex-m-rt",
+ "vcell",
+]
+
+[[package]]
+name = "nrf52832-hal"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fd1764acdf1f9da9803b00867586de13a2c23ab2b1231a3cf1ae4fc2cfbb403"
+dependencies = [
+ "embedded-hal",
+ "nrf-hal-common",
+ "nrf52832-pac",
+]
+
+[[package]]
+name = "nrf52832-pac"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72920484274fae0792a40345049da2723612465c7202561b6a17ad3c127259db"
+dependencies = [
+ "bare-metal",
+ "cortex-m",
+ "cortex-m-rt",
+ "vcell",
+]
+
+[[package]]
+name = "nrf52840-hal"
+version = "0.11.1"
 dependencies = [
  "embedded-hal",
  "nrf-hal-common",
@@ -427,9 +492,9 @@ checksum = "c36fa947111f5c62a733b652544dd0016a43ce89619538a8ef92724a6f501a20"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51ef7cd2518ead700af67bf9d1a658d90b6037d77110fd9c0445429d0ba1c6c9"
+checksum = "1e0704ee1a7e00d7bb417d0770ea303c1bccbabf0ef1667dae92b5967f5f8a71"
 dependencies = [
  "unicode-xid",
 ]
@@ -488,6 +553,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
  "rand_core",
+]
+
+[[package]]
+name = "rtt-target"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0869b4c5b6a6d8c5583fc473f9eb3423a170f77626b8c8a7fb18eddcda5770e2"
+dependencies = [
+ "cortex-m",
+ "ufmt-write",
 ]
 
 [[package]]
@@ -558,6 +633,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "373c8a200f9e67a0c95e62a4f52fbf80c23b4381c05a17845531982fa99e6b33"
 
 [[package]]
+name = "ufmt-write"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e87a2ed6b42ec5e28cc3b94c09982969e9227600b2e3dcbc1db927a84c06bd69"
+
+[[package]]
 name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -595,7 +676,3 @@ name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
-
-[[patch.unused]]
-name = "nrf52840-hal"
-version = "0.11.1"
