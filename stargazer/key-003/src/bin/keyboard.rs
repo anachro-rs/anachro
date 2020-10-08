@@ -511,6 +511,7 @@ fn char_key(row: usize, col: usize) -> Option<char> {
         (6, 2) => Some('X'),
         (6, 3) => Some('Z'),
         (7, 0) => Some(' '),
+        (5, 0) => Some('\n'),
         _ => None,
     }
 }

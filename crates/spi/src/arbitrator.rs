@@ -332,7 +332,7 @@ where
                     let amt_in = u32::from_le_bytes(self.smol_buf_in) as usize;
                     let amt_out = u32::from_le_bytes(self.smol_buf_out) as usize;
 
-                    defmt::error!("Header in: {:?}, header out: {:?}", amt_in, amt_out);
+                    // defmt::error!("Header in: {:?}, header out: {:?}", amt_in, amt_out);
 
                     if (amt_in == 0) && (amt_out == 0) {
                         self.ll.clear_go()?;

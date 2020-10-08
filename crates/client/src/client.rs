@@ -651,12 +651,9 @@ impl Client {
             }
         };
 
-        defmt::error!("Got pubsub");
-
         // Determine the path
         let path = match &pubsub.path {
             PubSubPath::Short(sid) => {
-                defmt::error!("It's short! {:?}", sid);
                 Path::Borrow(
                 *self
                     .sub_paths
@@ -665,12 +662,9 @@ impl Client {
                 )
             },
             PubSubPath::Long(ms) => {
-                defmt::error!("It's long!");
                 ms.try_to_owned().map_err(|_| Error::UnexpectedMessage)?
             },
         };
-
-        defmt::error!("We care about this path!");
 
         let payload = match T::from_pub_sub(pubsub) {
             Ok(msg) => msg,
