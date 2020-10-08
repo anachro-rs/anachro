@@ -1,0 +1,17 @@
+[package]
+name = "rpi-004"
+version = "0.1.0"
+authors = ["James Munns <james.munns@ferrous-systems.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serialport = "3.3.0"
+postcard = "0.5.1"
+
+anachro-icd = { path = "../../crates/icd" }
+anachro-server = { path = "../../crates/server" }
+anachro-client = { path = "../../crates/client" }
+stargazer-icd = { path = "../stargazer-icd" }
+termion = "1.5.5"
