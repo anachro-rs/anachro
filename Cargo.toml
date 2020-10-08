@@ -32,3 +32,4 @@ exclude = [
 nrf-hal-common = { path = "vendor/nrf-hal/nrf-hal-common" }
 nrf52840-hal   = { path = "vendor/nrf-hal/nrf52840-hal" }
 bbqueue        = { path = "vendor/bbqueue/core" }
+postcard = { git = "https://github.com/jamesmunns/postcard.git", rev = "1cd7288df6a680152009c945783d124c47329a75" }

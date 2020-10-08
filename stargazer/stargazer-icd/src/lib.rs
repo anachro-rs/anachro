@@ -37,3 +37,15 @@ pubsub_table!(
         IdentDisplay: "ident/led/display" => ColorMe,
     },
 );
+
+pubsub_table!(
+    DisplayTable,
+    // ================
+    Subs => {
+        Key: "keyboard/keypress/printable" => Keypress,
+    },
+    Pubs => {
+        IdentKeyboard: "ident/led/keyboard" => ColorMe,
+        IdentDisplay: "ident/led/display" => ColorMe,
+    },
+);

@@ -644,8 +644,7 @@ checksum = "d36492546b6af1463394d46f0c834346f31548646f6ba10849802c9c9a27ac33"
 [[package]]
 name = "postcard"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3e3f5c2e9a91383c6594ec68aa2dfdfe19a3c86f34b088ba7203f2483d2682f"
+source = "git+https://github.com/jamesmunns/postcard.git?rev=1cd7288df6a680152009c945783d124c47329a75#1cd7288df6a680152009c945783d124c47329a75"
 dependencies = [
  "heapless",
  "postcard-cobs",

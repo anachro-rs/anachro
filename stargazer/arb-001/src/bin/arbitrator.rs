@@ -9,8 +9,8 @@ use nrf52840_hal::{
     self as hal,
     clocks::LfOscConfiguration,
     gpio::{p0::Parts as P0Parts, p1::Parts as P1Parts, Level},
-    pac::{Peripherals, SPIM0, SPIS1, TIMER2, UARTE0},
-    ppi::{Parts as PpiParts, Ppi0},
+    pac::{Peripherals, SPIM0, SPIS1, TIMER2, TIMER3, UARTE0, UARTE1},
+    ppi::{Parts as PpiParts, Ppi0, Ppi1},
     spim::{Frequency, Pins as SpimPins, Spim, TransferSplit, MODE_0},
     spis::{Mode, Pins as SpisPins, Spis, Transfer},
     timer::{Instance as TimerInstance, Periodic, Timer},
@@ -42,7 +42,13 @@ use groundhog_nrf52::GlobalRollingTimer;
 
 use groundhog::RollingTimer;
 
-static FLEET_BUFFER: UarteBuffer<U2048, U2048> = UarteBuffer {
+static FLEET_BUFFER_KEY: UarteBuffer<U2048, U2048> = UarteBuffer {
+    txd_buf: BBBuffer(ConstBBBuffer::new()),
+    rxd_buf: BBBuffer(ConstBBBuffer::new()),
+    timeout_flag: AtomicBool::new(false),
+};
+
+static FLEET_BUFFER_RPI: UarteBuffer<U2048, U2048> = UarteBuffer {
     txd_buf: BBBuffer(ConstBBBuffer::new()),
     rxd_buf: BBBuffer(ConstBBBuffer::new()),
     timeout_flag: AtomicBool::new(false),
@@ -72,14 +78,21 @@ pubsub_table! {
 
 const KEYBOARD_UUID: Uuid = Uuid::from_bytes([23u8; 16]);
 const CPU_UUID: Uuid = Uuid::from_bytes([42u8; 16]);
+const RPI_UUID: Uuid = Uuid::from_bytes([12u8; 16]);
 
 #[rtic::app(device = crate::hal::pac, peripherals = true, monotonic = groundhog_nrf52::GlobalRollingTimer)]
 const APP: () = {
     struct Resources {
         broker: Broker,
-        anachro_uarte: AnachroUarte<U2048, U2048, U512>,
-        uarte_timer: UarteTimer<TIMER2>,
-        uarte_irq: UarteIrq<U2048, U2048, Ppi0, UARTE0>,
+
+        anachro_uarte_key: AnachroUarte<U2048, U2048, U512>,
+        uarte_timer_key: UarteTimer<TIMER2>,
+        uarte_irq_key: UarteIrq<U2048, U2048, Ppi0, UARTE0>,
+
+        anachro_uarte_rpi: AnachroUarte<U2048, U2048, U512>,
+        uarte_timer_rpi: UarteTimer<TIMER3>,
+        uarte_irq_rpi: UarteIrq<U2048, U2048, Ppi1, UARTE1>,
+
         anachro_spis: EncLogicHLArbitrator<NrfSpiArbLL<SPIS1>, U2048, GlobalRollingTimer>,
     }
 
@@ -134,15 +147,15 @@ const APP: () = {
         let serial2_tx = p0_gpios.p0_07;
         // D5           SERIAL2-RX  P1.08
         let serial2_rx = p1_gpios.p1_08;
-        // // SCL          SERIAL1-TX  P0.11
-        // let serial1_tx = p0_gpios.p0_11;
-        // // SDA          SERIAL1-RX  P0.12
-        // let serial1_rx = p0_gpios.p0_12;
+        // SCL          SERIAL1-TX  P0.11
+        let serial1_tx = p0_gpios.p0_11;
+        // SDA          SERIAL1-RX  P0.12
+        let serial1_rx = p0_gpios.p0_12;
 
         // -------------------------
         // Setup Uarte
 
-        let UarteParts { app, timer, irq } = FLEET_BUFFER
+        let UarteParts { app, timer, irq } = FLEET_BUFFER_KEY
             .try_split(
                 Pins {
                     rxd: serial2_rx.into_floating_input().degrade(),
@@ -161,7 +174,27 @@ const APP: () = {
             .map_err(drop)
             .unwrap();
 
+        let UarteParts { app: app_rpi, timer: timer_rpi, irq: irq_rpi } = FLEET_BUFFER_RPI
+            .try_split(
+                Pins {
+                    rxd: serial1_rx.into_floating_input().degrade(),
+                    txd: serial1_tx.into_push_pull_output(Level::Low).degrade(),
+                    cts: None,
+                    rts: None,
+                },
+                Parity::EXCLUDED,
+                Baudrate::BAUD1M,
+                board.TIMER3,
+                ppis.ppi1,
+                board.UARTE1,
+                255,
+                10_000,
+            )
+            .map_err(drop)
+            .unwrap();
+
         let an_uarte = AnachroUarte::new(app, Buffer::new(), KEYBOARD_UUID);
+        let pi_uarte = AnachroUarte::new(app_rpi, Buffer::new(), RPI_UUID);
 
         // ------------------------
         // Setup SPIS
@@ -195,16 +228,22 @@ const APP: () = {
         let mut broker = Broker::default();
         broker.register_client(&KEYBOARD_UUID).unwrap();
         broker.register_client(&CPU_UUID).unwrap();
+        broker.register_client(&RPI_UUID).unwrap();
 
         // Spawn periodic tasks
         ctx.spawn.anachro_periodic().ok();
 
         init::LateResources {
             broker,
-            anachro_uarte: an_uarte,
             anachro_spis: arb_port,
-            uarte_timer: timer,
-            uarte_irq: irq,
+
+            anachro_uarte_key: an_uarte,
+            uarte_timer_key: timer,
+            uarte_irq_key: irq,
+
+            anachro_uarte_rpi: pi_uarte,
+            uarte_timer_rpi: timer_rpi,
+            uarte_irq_rpi: irq_rpi,
         }
 
         // defmt::info!("Starting loop");
@@ -217,12 +256,13 @@ const APP: () = {
         // }
     }
 
-    #[task(resources = [broker, anachro_uarte, anachro_spis], schedule = [anachro_periodic])]
+    #[task(resources = [broker, anachro_uarte_key, anachro_uarte_rpi, anachro_spis], schedule = [anachro_periodic])]
     fn anachro_periodic(ctx: anachro_periodic::Context) {
         static mut LAST_QUERY: u32 = 0;
 
         let broker = ctx.resources.broker;
-        let uarte = ctx.resources.anachro_uarte;
+        let uarte = ctx.resources.anachro_uarte_key;
+        let uarte_rpi = ctx.resources.anachro_uarte_rpi;
         let spis = ctx.resources.anachro_spis;
         let timer = GlobalRollingTimer::new();
 
@@ -232,6 +272,7 @@ const APP: () = {
 
         let mut serout_spis: HVec<HVec<u8, consts::U128>, consts::U16> = HVec::new();
         let mut serout_uarte: HVec<HVec<u8, consts::U128>, consts::U16> = HVec::new();
+        let mut serout_uarte_rpi: HVec<HVec<u8, consts::U128>, consts::U16> = HVec::new();
 
         let mut out_msgs_uarte: HVec<_, consts::U32> = HVec::new();
         match broker.process_msg(uarte, &mut out_msgs_uarte) {
@@ -246,6 +287,39 @@ const APP: () = {
             let buf = match msg.dest {
                 CPU_UUID => &mut serout_spis,
                 KEYBOARD_UUID => &mut serout_uarte,
+                RPI_UUID => &mut serout_uarte_rpi,
+                _ => {
+                    defmt::warn!("Unknown dest!");
+                    continue;
+                }
+            };
+
+            defmt::info!("Out message!");
+            use postcard::to_vec_cobs;
+            if let Ok(resp) = to_vec_cobs(&msg.msg) {
+                defmt::info!("resp out: {:?}", &resp[..]);
+                buf.push(resp).unwrap();
+            } else {
+                defmt::error!("Ser failed!");
+                arb_001::exit();
+            }
+        }
+
+
+        let mut out_msgs_rpi: HVec<_, consts::U32> = HVec::new();
+        match broker.process_msg(uarte_rpi, &mut out_msgs_rpi) {
+            Ok(_) => {}
+            Err(e) => {
+                defmt::error!("uarte broker proc msg: {:?}", e);
+                // arb_001::exit();
+            }
+        }
+
+        for msg in out_msgs_rpi {
+            let buf = match msg.dest {
+                CPU_UUID => &mut serout_spis,
+                KEYBOARD_UUID => &mut serout_uarte,
+                RPI_UUID => &mut serout_uarte_rpi,
                 _ => {
                     defmt::warn!("Unknown dest!");
                     continue;
@@ -276,6 +350,7 @@ const APP: () = {
             let buf = match msg.dest {
                 CPU_UUID => &mut serout_spis,
                 KEYBOARD_UUID => &mut serout_uarte,
+                RPI_UUID => &mut serout_uarte_rpi,
                 _ => {
                     defmt::warn!("Unknown dest!");
                     continue;
@@ -293,7 +368,7 @@ const APP: () = {
             }
         }
 
-        if !(serout_spis.is_empty() && serout_uarte.is_empty()) {
+        if !(serout_spis.is_empty() && serout_uarte.is_empty() && serout_uarte_rpi.is_empty()) {
             defmt::info!(
                 "broker sending {:?} msgs",
                 serout_spis.len() + serout_uarte.len()
@@ -302,6 +377,16 @@ const APP: () = {
 
         for msg in serout_uarte {
             match uarte.enqueue(&msg) {
+                Ok(_) => defmt::info!("uarte enqueued."),
+                Err(()) => {
+                    defmt::error!("uarte enqueue failed!");
+                    arb_001::exit();
+                }
+            }
+        }
+
+        for msg in serout_uarte_rpi {
+            match uarte_rpi.enqueue(&msg) {
                 Ok(_) => defmt::info!("uarte enqueued."),
                 Err(()) => {
                     defmt::error!("uarte enqueue failed!");
@@ -331,16 +416,28 @@ const APP: () = {
             .ok();
     }
 
-    #[task(binds = TIMER2, resources = [uarte_timer])]
+    #[task(binds = TIMER2, resources = [uarte_timer_key])]
     fn timer2(ctx: timer2::Context) {
         // fleet uarte timer
-        ctx.resources.uarte_timer.interrupt();
+        ctx.resources.uarte_timer_key.interrupt();
     }
 
-    #[task(binds = UARTE0_UART0, resources = [uarte_irq])]
+    #[task(binds = UARTE0_UART0, resources = [uarte_irq_key])]
     fn uarte0(ctx: uarte0::Context) {
         // fleet uarte interrupt
-        ctx.resources.uarte_irq.interrupt();
+        ctx.resources.uarte_irq_key.interrupt();
+    }
+
+    #[task(binds = TIMER3, resources = [uarte_timer_rpi])]
+    fn timer3(ctx: timer3::Context) {
+        // fleet uarte timer
+        ctx.resources.uarte_timer_rpi.interrupt();
+    }
+
+    #[task(binds = UARTE1, resources = [uarte_irq_rpi])]
+    fn uarte1(ctx: uarte1::Context) {
+        // fleet uarte interrupt
+        ctx.resources.uarte_irq_rpi.interrupt();
     }
 
     #[idle]

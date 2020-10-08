@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 serialport = "3.3.0"
-postcard = "0.5.1"
+postcard = { version = "0.5.1", features = ["use-std"] }
 
 anachro-icd = { path = "../../crates/icd" }
 anachro-server = { path = "../../crates/server" }
