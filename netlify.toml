@@ -1,7 +1,7 @@
 [build]
 # This assumes that the Zola site is in a docs folder. If it isn't, you don't need
 # to have a `base` variable but you do need the `publish` and `command` variables.
-publish = "public"
+publish = "docs/anachro-book/book"
 command = """
 cd docs/anachro-book && \
     curl -L https://github.com/rust-lang/mdBook/releases/download/v0.4.2/mdbook-v0.4.2-x86_64-unknown-linux-gnu.tar.gz | tar xvz && \
