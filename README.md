@@ -1,6 +1,6 @@
 # Anachro Computer
 
-See [this blog post](https://jamesmunns.com/blog/anachro-pc-001/) for more details.
+**See [the documentation](https://anachro.computer) for more details!**
 
 ## Components
 
