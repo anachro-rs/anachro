@@ -39,3 +39,4 @@ The Anachro Protocol is implemented across seven distinct layers, separated to m
     * The physical layer is intended to handle the interactions between the Anachro network stack and specific microcontroller peripherals, such as SPI, UART, etc.
     * The physical layer is typically implemented as a struct that contains the hardware specific peripheral and associated logic
     * This layer is typically either provided as part of the Anachro Protocol (for already implemented physical transports), or to be implemented by end-users when porting to a new physical transport or hardware platform.
+    * This layer typically implements the Data Link Interface trait.
