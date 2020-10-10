@@ -1,9 +1,9 @@
 [submodule "vendor/nrf-hal"]
 	path = vendor/nrf-hal
-	url = git@github.com:nrf-rs/nrf-hal.git
+	url = https://github.com/nrf-rs/nrf-hal.git
 [submodule "vendor/bbqueue"]
 	path = vendor/bbqueue
-	url = git@github.com:jamesmunns/bbqueue.git
+	url = https://github.com/jamesmunns/bbqueue.git
 [submodule "vendor/postcard"]
 	path = vendor/postcard
-	url = git@github.com:jamesmunns/postcard.git
+	url = https://github.com/jamesmunns/postcard.git
