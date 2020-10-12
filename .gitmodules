@@ -9,4 +9,4 @@
 	url = https://github.com/jamesmunns/postcard.git
 [submodule "hardware/stargazer-motherboard/KiCad-Libraries"]
 	path = hardware/stargazer-motherboard/KiCad-Libraries
-	url = git@github.com:imciner2/KiCad-Libraries.git
+	url = https://github.com/imciner2/KiCad-Libraries.git
