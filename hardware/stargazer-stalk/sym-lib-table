@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name stargazer-stalk)(type Legacy)(uri ${KIPRJMOD}/stargazer-stalk.lib)(options "")(descr ""))
+  (lib (name stargazer)(type Legacy)(uri /home/james/anachro/hardware/stargazer-motherboard/stargazer.lib)(options "")(descr ""))
+)

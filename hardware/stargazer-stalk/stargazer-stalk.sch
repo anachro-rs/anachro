@@ -1,0 +1,952 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 9
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text Label 10750 2050 0    50   ~ 0
+GO1
+Text Label 10750 2150 0    50   ~ 0
+GO2
+Text Label 10750 2250 0    50   ~ 0
+GO3
+Text Label 10750 2350 0    50   ~ 0
+GO4
+Text Label 10750 2450 0    50   ~ 0
+GO5
+Text Label 10750 2550 0    50   ~ 0
+GO6
+Text Label 10750 2650 0    50   ~ 0
+GO7
+Text Label 10750 2750 0    50   ~ 0
+GO8
+$Comp
+L Jumper:SolderJumper_2_Bridged JP4
+U 1 1 5F8A82A5
+P 9950 1350
+F 0 "JP4" H 9950 1463 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 1464 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 1350 50  0001 C CNN
+F 3 "~" H 9950 1350 50  0001 C CNN
+	1    9950 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP5
+U 1 1 5F8A87C6
+P 9950 1650
+F 0 "JP5" H 9950 1763 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 1764 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 1650 50  0001 C CNN
+F 3 "~" H 9950 1650 50  0001 C CNN
+	1    9950 1650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP6
+U 1 1 5F8A9821
+P 9950 1950
+F 0 "JP6" H 9950 2063 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 2064 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 1950 50  0001 C CNN
+F 3 "~" H 9950 1950 50  0001 C CNN
+	1    9950 1950
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP7
+U 1 1 5F8AA7BA
+P 9950 2250
+F 0 "JP7" H 9950 2363 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 2364 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 2250 50  0001 C CNN
+F 3 "~" H 9950 2250 50  0001 C CNN
+	1    9950 2250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP8
+U 1 1 5F8AB6B5
+P 9950 2550
+F 0 "JP8" H 9950 2663 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 2664 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 2550 50  0001 C CNN
+F 3 "~" H 9950 2550 50  0001 C CNN
+	1    9950 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP9
+U 1 1 5F8AC79D
+P 9950 2850
+F 0 "JP9" H 9950 2963 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 2964 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 2850 50  0001 C CNN
+F 3 "~" H 9950 2850 50  0001 C CNN
+	1    9950 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP10
+U 1 1 5F8AD928
+P 9950 3150
+F 0 "JP10" H 9950 3263 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 3264 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 3150 50  0001 C CNN
+F 3 "~" H 9950 3150 50  0001 C CNN
+	1    9950 3150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP11
+U 1 1 5F8AE963
+P 9950 3450
+F 0 "JP11" H 9950 3563 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 9950 3564 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 9950 3450 50  0001 C CNN
+F 3 "~" H 9950 3450 50  0001 C CNN
+	1    9950 3450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10750 2050 10650 2050
+Wire Wire Line
+	10650 2050 10650 1350
+Wire Wire Line
+	10650 1350 10100 1350
+Wire Wire Line
+	10750 2150 10550 2150
+Wire Wire Line
+	10550 2150 10550 1650
+Wire Wire Line
+	10550 1650 10100 1650
+Wire Wire Line
+	10750 2250 10450 2250
+Wire Wire Line
+	10450 2250 10450 1950
+Wire Wire Line
+	10450 1950 10100 1950
+Wire Wire Line
+	10750 2350 10350 2350
+Wire Wire Line
+	10350 2350 10350 2250
+Wire Wire Line
+	10350 2250 10100 2250
+Wire Wire Line
+	10750 2450 10350 2450
+Wire Wire Line
+	10350 2450 10350 2550
+Wire Wire Line
+	10350 2550 10100 2550
+Wire Wire Line
+	10750 2550 10450 2550
+Wire Wire Line
+	10450 2550 10450 2850
+Wire Wire Line
+	10450 2850 10100 2850
+Wire Wire Line
+	10750 2650 10550 2650
+Wire Wire Line
+	10550 2650 10550 3150
+Wire Wire Line
+	10550 3150 10100 3150
+Wire Wire Line
+	10750 2750 10650 2750
+Wire Wire Line
+	10650 2750 10650 3450
+Wire Wire Line
+	10650 3450 10100 3450
+$Comp
+L Device:R R21
+U 1 1 5F8D1D3D
+P 8350 1450
+F 0 "R21" H 8420 1496 50  0000 L CNN
+F 1 "10k" H 8420 1405 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 8280 1450 50  0001 C CNN
+F 3 "~" H 8350 1450 50  0001 C CNN
+	1    8350 1450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R22
+U 1 1 5F8D39E0
+P 8550 1550
+F 0 "R22" H 8620 1596 50  0000 L CNN
+F 1 "10k" H 8620 1505 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 8480 1550 50  0001 C CNN
+F 3 "~" H 8550 1550 50  0001 C CNN
+	1    8550 1550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R23
+U 1 1 5F8DA799
+P 8750 1700
+F 0 "R23" H 8820 1746 50  0000 L CNN
+F 1 "10k" H 8820 1655 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 8680 1700 50  0001 C CNN
+F 3 "~" H 8750 1700 50  0001 C CNN
+	1    8750 1700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R24
+U 1 1 5F8DA79F
+P 8950 1800
+F 0 "R24" H 9020 1846 50  0000 L CNN
+F 1 "10k" H 9020 1755 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 8880 1800 50  0001 C CNN
+F 3 "~" H 8950 1800 50  0001 C CNN
+	1    8950 1800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R12
+U 1 1 5F8D01D0
+P 8150 1350
+F 0 "R12" H 8220 1396 50  0000 L CNN
+F 1 "10k" H 8220 1305 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 8080 1350 50  0001 C CNN
+F 3 "~" H 8150 1350 50  0001 C CNN
+	1    8150 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R11
+U 1 1 5F8CC4A6
+P 7950 1250
+F 0 "R11" H 8020 1296 50  0000 L CNN
+F 1 "10k" H 8020 1205 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 7880 1250 50  0001 C CNN
+F 3 "~" H 7950 1250 50  0001 C CNN
+	1    7950 1250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R10
+U 1 1 5F8CA9AA
+P 7750 1150
+F 0 "R10" H 7820 1196 50  0000 L CNN
+F 1 "10k" H 7820 1105 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 7680 1150 50  0001 C CNN
+F 3 "~" H 7750 1150 50  0001 C CNN
+	1    7750 1150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R9
+U 1 1 5F8CA17E
+P 7550 1050
+F 0 "R9" H 7620 1096 50  0000 L CNN
+F 1 "10k" H 7620 1005 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 7480 1050 50  0001 C CNN
+F 3 "~" H 7550 1050 50  0001 C CNN
+	1    7550 1050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Interface_Expansion:PCF8574 U16
+U 1 1 5F86EEA9
+P 6850 2450
+F 0 "U16" H 6500 3100 50  0000 C CNN
+F 1 "PCF8574" H 6650 3000 50  0000 C CNN
+F 2 "stargazer-stalk:SOIC127P1032X265-16N" H 6850 2450 50  0001 C CNN
+F 3 "http://www.nxp.com/documents/data_sheet/PCF8574_PCF8574A.pdf" H 6850 2450 50  0001 C CNN
+	1    6850 2450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7350 2050 7550 2050
+Wire Wire Line
+	9250 2050 9250 1350
+Wire Wire Line
+	9250 1350 9800 1350
+Wire Wire Line
+	7350 2150 7750 2150
+Wire Wire Line
+	9350 2150 9350 1650
+Wire Wire Line
+	9350 1650 9800 1650
+Wire Wire Line
+	7350 2250 7950 2250
+Wire Wire Line
+	9450 2250 9450 1950
+Wire Wire Line
+	9450 1950 9800 1950
+Wire Wire Line
+	7350 2350 8150 2350
+Wire Wire Line
+	9550 2350 9550 2250
+Wire Wire Line
+	9550 2250 9800 2250
+Wire Wire Line
+	7350 2450 8350 2450
+Wire Wire Line
+	9550 2450 9550 2550
+Wire Wire Line
+	9550 2550 9800 2550
+Wire Wire Line
+	7350 2550 8550 2550
+Wire Wire Line
+	9450 2550 9450 2850
+Wire Wire Line
+	9450 2850 9800 2850
+Wire Wire Line
+	7350 2650 8750 2650
+Wire Wire Line
+	9350 2650 9350 3150
+Wire Wire Line
+	9350 3150 9800 3150
+Wire Wire Line
+	7350 2750 8950 2750
+Wire Wire Line
+	9250 2750 9250 3450
+Wire Wire Line
+	9250 3450 9800 3450
+Wire Wire Line
+	8950 1950 8950 2750
+Connection ~ 8950 2750
+Wire Wire Line
+	8950 2750 9250 2750
+Wire Wire Line
+	8750 1850 8750 2650
+Connection ~ 8750 2650
+Wire Wire Line
+	8750 2650 9350 2650
+Wire Wire Line
+	8550 1700 8550 2550
+Connection ~ 8550 2550
+Wire Wire Line
+	8550 2550 9450 2550
+Wire Wire Line
+	8350 1600 8350 2450
+Connection ~ 8350 2450
+Wire Wire Line
+	8350 2450 9550 2450
+Wire Wire Line
+	8150 1500 8150 2350
+Connection ~ 8150 2350
+Wire Wire Line
+	8150 2350 9550 2350
+Wire Wire Line
+	7950 1400 7950 2250
+Connection ~ 7950 2250
+Wire Wire Line
+	7950 2250 9450 2250
+Wire Wire Line
+	7750 1300 7750 2150
+Connection ~ 7750 2150
+Wire Wire Line
+	7750 2150 9350 2150
+Wire Wire Line
+	7550 1200 7550 2050
+Connection ~ 7550 2050
+Wire Wire Line
+	7550 2050 9250 2050
+$Comp
+L Jumper:SolderJumper_3_Bridged12 JP1
+U 1 1 5F9239B1
+P 7500 3200
+F 0 "JP1" H 7500 3313 50  0000 C CNN
+F 1 "SolderJumper_3_Bridged12" H 7500 3314 50  0001 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 7500 3200 50  0001 C CNN
+F 3 "~" H 7500 3200 50  0001 C CNN
+	1    7500 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_3_Bridged12 JP2
+U 1 1 5F935B5D
+P 8150 3200
+F 0 "JP2" H 8150 3313 50  0000 C CNN
+F 1 "SolderJumper_3_Bridged12" H 8150 3314 50  0001 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 8150 3200 50  0001 C CNN
+F 3 "~" H 8150 3200 50  0001 C CNN
+	1    8150 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_3_Bridged12 JP3
+U 1 1 5F93AA6C
+P 8800 3200
+F 0 "JP3" H 8800 3313 50  0000 C CNN
+F 1 "SolderJumper_3_Bridged12" H 8800 3314 50  0001 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 8800 3200 50  0001 C CNN
+F 3 "~" H 8800 3200 50  0001 C CNN
+	1    8800 3200
+	1    0    0    -1  
+$EndComp
+Text Label 7500 3500 0    50   ~ 0
+ADDR0
+Text Label 8150 3500 0    50   ~ 0
+ADDR1
+Text Label 8800 3500 0    50   ~ 0
+ADDR2
+$Comp
+L power:GND #PWR053
+U 1 1 5F93F4FD
+P 7300 3200
+F 0 "#PWR053" H 7300 2950 50  0001 C CNN
+F 1 "GND" H 7305 3027 50  0000 C CNN
+F 2 "" H 7300 3200 50  0001 C CNN
+F 3 "" H 7300 3200 50  0001 C CNN
+	1    7300 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR056
+U 1 1 5F93F92A
+P 7950 3200
+F 0 "#PWR056" H 7950 2950 50  0001 C CNN
+F 1 "GND" H 7955 3027 50  0000 C CNN
+F 2 "" H 7950 3200 50  0001 C CNN
+F 3 "" H 7950 3200 50  0001 C CNN
+	1    7950 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR060
+U 1 1 5F93FD6B
+P 8600 3200
+F 0 "#PWR060" H 8600 2950 50  0001 C CNN
+F 1 "GND" H 8605 3027 50  0000 C CNN
+F 2 "" H 8600 3200 50  0001 C CNN
+F 3 "" H 8600 3200 50  0001 C CNN
+	1    8600 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR055
+U 1 1 5F9401A0
+P 7700 3200
+F 0 "#PWR055" H 7700 3050 50  0001 C CNN
+F 1 "+3V3" H 7715 3373 50  0000 C CNN
+F 2 "" H 7700 3200 50  0001 C CNN
+F 3 "" H 7700 3200 50  0001 C CNN
+	1    7700 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR058
+U 1 1 5F940627
+P 8350 3200
+F 0 "#PWR058" H 8350 3050 50  0001 C CNN
+F 1 "+3V3" H 8365 3373 50  0000 C CNN
+F 2 "" H 8350 3200 50  0001 C CNN
+F 3 "" H 8350 3200 50  0001 C CNN
+	1    8350 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR061
+U 1 1 5F940B19
+P 9000 3200
+F 0 "#PWR061" H 9000 3050 50  0001 C CNN
+F 1 "+3V3" H 9015 3373 50  0000 C CNN
+F 2 "" H 9000 3200 50  0001 C CNN
+F 3 "" H 9000 3200 50  0001 C CNN
+	1    9000 3200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7500 3350 7500 3500
+Wire Wire Line
+	8150 3350 8150 3500
+Wire Wire Line
+	8800 3350 8800 3500
+Text Label 6350 2350 2    50   ~ 0
+ADDR0
+Text Label 6350 2450 2    50   ~ 0
+ADDR1
+Text Label 6350 2550 2    50   ~ 0
+ADDR2
+$Comp
+L Connector:TestPoint TP1
+U 1 1 5F9500B2
+P 6350 2850
+F 0 "TP1" V 6545 2922 50  0000 C CNN
+F 1 "TestPoint" V 6454 2922 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 6550 2850 50  0001 C CNN
+F 3 "~" H 6550 2850 50  0001 C CNN
+	1    6350 2850
+	0    -1   -1   0   
+$EndComp
+Text Notes 6050 3550 0    50   ~ 0
+TODO: Do I need ballast caps?\n
+$Comp
+L power:GND #PWR052
+U 1 1 5F951C7C
+P 6850 3150
+F 0 "#PWR052" H 6850 2900 50  0001 C CNN
+F 1 "GND" H 6855 2977 50  0000 C CNN
+F 2 "" H 6850 3150 50  0001 C CNN
+F 3 "" H 6850 3150 50  0001 C CNN
+	1    6850 3150
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR051
+U 1 1 5F9525E5
+P 6850 1750
+F 0 "#PWR051" H 6850 1600 50  0001 C CNN
+F 1 "+3V3" H 6850 1900 50  0000 C CNN
+F 2 "" H 6850 1750 50  0001 C CNN
+F 3 "" H 6850 1750 50  0001 C CNN
+	1    6850 1750
+	1    0    0    -1  
+$EndComp
+Text Label 6350 2050 2    50   ~ 0
+PORT-SCL
+Text Label 6350 2150 2    50   ~ 0
+PORT-SDA
+$Comp
+L power:+3V3 #PWR057
+U 1 1 5F985D8B
+P 8250 900
+F 0 "#PWR057" H 8250 750 50  0001 C CNN
+F 1 "+3V3" H 8265 1073 50  0000 C CNN
+F 2 "" H 8250 900 50  0001 C CNN
+F 3 "" H 8250 900 50  0001 C CNN
+	1    8250 900 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7550 900  7750 900 
+Wire Wire Line
+	8250 900  8350 900 
+Wire Wire Line
+	8950 900  8950 1650
+Connection ~ 8250 900 
+Wire Wire Line
+	8750 1550 8750 900 
+Connection ~ 8750 900 
+Wire Wire Line
+	8750 900  8950 900 
+Wire Wire Line
+	8550 1400 8550 900 
+Connection ~ 8550 900 
+Wire Wire Line
+	8550 900  8750 900 
+Wire Wire Line
+	8350 1300 8350 900 
+Connection ~ 8350 900 
+Wire Wire Line
+	8350 900  8550 900 
+Wire Wire Line
+	8150 1200 8150 900 
+Connection ~ 8150 900 
+Wire Wire Line
+	8150 900  8250 900 
+Wire Wire Line
+	7950 1100 7950 900 
+Connection ~ 7950 900 
+Wire Wire Line
+	7950 900  8150 900 
+Wire Wire Line
+	7750 1000 7750 900 
+Connection ~ 7750 900 
+Wire Wire Line
+	7750 900  7950 900 
+$Sheet
+S 1450 3500 900  700 
+U 5FC75F7A
+F0 "card-1" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 1450 3900 50 
+F5 "+3V3" I L 1450 4000 50 
+F6 "GND" I L 1450 4100 50 
+F7 "CSnx" O R 2350 3550 50 
+F8 "COPIx" O R 2350 3650 50 
+F9 "CIPOx" I R 2350 3750 50 
+F10 "SCKx" O R 2350 3850 50 
+F12 "GOn" I R 2350 3950 50 
+$EndSheet
+$Comp
+L Device:C C1
+U 1 1 5FD684A9
+P 5400 2450
+F 0 "C1" H 5515 2496 50  0000 L CNN
+F 1 "0.1uF" H 5515 2405 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 5438 2300 50  0001 C CNN
+F 3 "~" H 5400 2450 50  0001 C CNN
+	1    5400 2450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6850 1750 5400 1750
+Wire Wire Line
+	5400 1750 5400 2300
+Connection ~ 6850 1750
+Wire Wire Line
+	6850 3150 5400 3150
+Wire Wire Line
+	5400 3150 5400 2600
+Connection ~ 6850 3150
+$Sheet
+S 1450 4450 900  700 
+U 5F86F8AD
+F0 "card-2" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 1450 4850 50 
+F5 "+3V3" I L 1450 4950 50 
+F6 "GND" I L 1450 5050 50 
+F7 "CSnx" O R 2350 4500 50 
+F8 "COPIx" O R 2350 4600 50 
+F9 "CIPOx" I R 2350 4700 50 
+F10 "SCKx" O R 2350 4800 50 
+F12 "GOn" I R 2350 4900 50 
+$EndSheet
+$Sheet
+S 1450 5400 900  700 
+U 5F8781DA
+F0 "card-3" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 1450 5800 50 
+F5 "+3V3" I L 1450 5900 50 
+F6 "GND" I L 1450 6000 50 
+F7 "CSnx" O R 2350 5450 50 
+F8 "COPIx" O R 2350 5550 50 
+F9 "CIPOx" I R 2350 5650 50 
+F10 "SCKx" O R 2350 5750 50 
+F12 "GOn" I R 2350 5850 50 
+$EndSheet
+$Sheet
+S 1450 6300 900  700 
+U 5F87BBC3
+F0 "card-4" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 1450 6700 50 
+F5 "+3V3" I L 1450 6800 50 
+F6 "GND" I L 1450 6900 50 
+F7 "CSnx" O R 2350 6350 50 
+F8 "COPIx" O R 2350 6450 50 
+F9 "CIPOx" I R 2350 6550 50 
+F10 "SCKx" O R 2350 6650 50 
+F12 "GOn" I R 2350 6750 50 
+$EndSheet
+$Sheet
+S 4400 3500 900  700 
+U 5F88111F
+F0 "card-5" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 4400 3900 50 
+F5 "+3V3" I L 4400 4000 50 
+F6 "GND" I L 4400 4100 50 
+F7 "CSnx" O R 5300 3550 50 
+F8 "COPIx" O R 5300 3650 50 
+F9 "CIPOx" I R 5300 3750 50 
+F10 "SCKx" O R 5300 3850 50 
+F12 "GOn" I R 5300 3950 50 
+$EndSheet
+$Sheet
+S 4400 4450 900  700 
+U 5F88112B
+F0 "card-6" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 4400 4850 50 
+F5 "+3V3" I L 4400 4950 50 
+F6 "GND" I L 4400 5050 50 
+F7 "CSnx" O R 5300 4500 50 
+F8 "COPIx" O R 5300 4600 50 
+F9 "CIPOx" I R 5300 4700 50 
+F10 "SCKx" O R 5300 4800 50 
+F12 "GOn" I R 5300 4900 50 
+$EndSheet
+$Sheet
+S 4400 5400 900  700 
+U 5F881137
+F0 "card-7" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 4400 5800 50 
+F5 "+3V3" I L 4400 5900 50 
+F6 "GND" I L 4400 6000 50 
+F7 "CSnx" O R 5300 5450 50 
+F8 "COPIx" O R 5300 5550 50 
+F9 "CIPOx" I R 5300 5650 50 
+F10 "SCKx" O R 5300 5750 50 
+F12 "GOn" I R 5300 5850 50 
+$EndSheet
+$Sheet
+S 4400 6300 900  700 
+U 5F881143
+F0 "card-8" 50
+F1 "card-connector.sch" 50
+F4 "+5V0" I L 4400 6700 50 
+F5 "+3V3" I L 4400 6800 50 
+F6 "GND" I L 4400 6900 50 
+F7 "CSnx" O R 5300 6350 50 
+F8 "COPIx" O R 5300 6450 50 
+F9 "CIPOx" I R 5300 6550 50 
+F10 "SCKx" O R 5300 6650 50 
+F12 "GOn" I R 5300 6750 50 
+$EndSheet
+$Comp
+L power:+5V #PWR0101
+U 1 1 5F851683
+P 600 3300
+F 0 "#PWR0101" H 600 3150 50  0001 C CNN
+F 1 "+5V" H 615 3473 50  0000 C CNN
+F 2 "" H 600 3300 50  0001 C CNN
+F 3 "" H 600 3300 50  0001 C CNN
+	1    600  3300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR0102
+U 1 1 5F8520D4
+P 750 3200
+F 0 "#PWR0102" H 750 3050 50  0001 C CNN
+F 1 "+3V3" H 765 3373 50  0000 C CNN
+F 2 "" H 750 3200 50  0001 C CNN
+F 3 "" H 750 3200 50  0001 C CNN
+	1    750  3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0103
+U 1 1 5F8533DF
+P 900 7500
+F 0 "#PWR0103" H 900 7250 50  0001 C CNN
+F 1 "GND" H 905 7327 50  0000 C CNN
+F 2 "" H 900 7500 50  0001 C CNN
+F 3 "" H 900 7500 50  0001 C CNN
+	1    900  7500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	750  3200 750  4000
+Wire Wire Line
+	600  6700 600  5800
+Connection ~ 750  5900
+Wire Wire Line
+	750  5900 750  6800
+Connection ~ 750  4950
+Wire Wire Line
+	750  4950 750  5900
+Connection ~ 750  4000
+Wire Wire Line
+	750  4000 750  4950
+Connection ~ 600  3900
+Wire Wire Line
+	600  3900 600  3300
+Connection ~ 600  4850
+Wire Wire Line
+	600  4850 600  3900
+Connection ~ 600  5800
+Wire Wire Line
+	600  5800 600  4850
+Wire Wire Line
+	900  6900 900  7500
+Wire Wire Line
+	900  6900 900  6000
+Connection ~ 900  6900
+Wire Wire Line
+	900  6000 900  5050
+Connection ~ 900  6000
+Wire Wire Line
+	900  5050 900  4100
+Connection ~ 900  5050
+$Comp
+L power:+5V #PWR0104
+U 1 1 5F888B44
+P 3550 3300
+F 0 "#PWR0104" H 3550 3150 50  0001 C CNN
+F 1 "+5V" H 3565 3473 50  0000 C CNN
+F 2 "" H 3550 3300 50  0001 C CNN
+F 3 "" H 3550 3300 50  0001 C CNN
+	1    3550 3300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR0105
+U 1 1 5F888B4A
+P 3700 3200
+F 0 "#PWR0105" H 3700 3050 50  0001 C CNN
+F 1 "+3V3" H 3715 3373 50  0000 C CNN
+F 2 "" H 3700 3200 50  0001 C CNN
+F 3 "" H 3700 3200 50  0001 C CNN
+	1    3700 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0106
+U 1 1 5F888B50
+P 3850 7500
+F 0 "#PWR0106" H 3850 7250 50  0001 C CNN
+F 1 "GND" H 3855 7327 50  0000 C CNN
+F 2 "" H 3850 7500 50  0001 C CNN
+F 3 "" H 3850 7500 50  0001 C CNN
+	1    3850 7500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3700 3200 3700 4000
+Wire Wire Line
+	3550 6700 3550 5800
+Connection ~ 3700 5900
+Wire Wire Line
+	3700 5900 3700 6800
+Connection ~ 3700 4950
+Wire Wire Line
+	3700 4950 3700 5900
+Connection ~ 3700 4000
+Wire Wire Line
+	3700 4000 3700 4950
+Connection ~ 3550 3900
+Wire Wire Line
+	3550 3900 3550 3300
+Connection ~ 3550 4850
+Wire Wire Line
+	3550 4850 3550 3900
+Connection ~ 3550 5800
+Wire Wire Line
+	3550 5800 3550 4850
+Wire Wire Line
+	3850 6900 3850 7500
+Wire Wire Line
+	3850 6900 3850 6000
+Connection ~ 3850 6900
+Wire Wire Line
+	3850 6000 3850 5050
+Connection ~ 3850 6000
+Wire Wire Line
+	3850 5050 3850 4100
+Connection ~ 3850 5050
+Wire Wire Line
+	600  3900 1450 3900
+Wire Wire Line
+	750  4000 1450 4000
+Wire Wire Line
+	900  4100 1450 4100
+Wire Wire Line
+	600  4850 1450 4850
+Wire Wire Line
+	750  4950 1450 4950
+Wire Wire Line
+	900  5050 1450 5050
+Wire Wire Line
+	600  5800 1450 5800
+Wire Wire Line
+	750  5900 1450 5900
+Wire Wire Line
+	900  6000 1450 6000
+Wire Wire Line
+	600  6700 1450 6700
+Wire Wire Line
+	750  6800 1450 6800
+Wire Wire Line
+	900  6900 1450 6900
+Wire Wire Line
+	3550 3900 4400 3900
+Wire Wire Line
+	3700 4000 4400 4000
+Wire Wire Line
+	3850 4100 4400 4100
+Wire Wire Line
+	3550 4850 4400 4850
+Wire Wire Line
+	3700 4950 4400 4950
+Wire Wire Line
+	3850 5050 4400 5050
+Wire Wire Line
+	3550 5800 4400 5800
+Wire Wire Line
+	3700 5900 4400 5900
+Wire Wire Line
+	3850 6000 4400 6000
+Wire Wire Line
+	3550 6700 4400 6700
+Wire Wire Line
+	3700 6800 4400 6800
+Wire Wire Line
+	3850 6900 4400 6900
+Text Label 2350 3550 0    50   ~ 0
+CSnx
+Text Label 2350 3650 0    50   ~ 0
+COPIx
+Text Label 2350 3750 0    50   ~ 0
+CIPOx
+Text Label 2350 3850 0    50   ~ 0
+SCKn
+Text Label 2350 3950 0    50   ~ 0
+GOn
+Text Label 2350 4500 0    50   ~ 0
+CSnx
+Text Label 2350 4600 0    50   ~ 0
+COPIx
+Text Label 2350 4700 0    50   ~ 0
+CIPOx
+Text Label 2350 4800 0    50   ~ 0
+SCKn
+Text Label 2350 4900 0    50   ~ 0
+GOn
+Text Label 2350 5450 0    50   ~ 0
+CSnx
+Text Label 2350 5550 0    50   ~ 0
+COPIx
+Text Label 2350 5650 0    50   ~ 0
+CIPOx
+Text Label 2350 5750 0    50   ~ 0
+SCKn
+Text Label 2350 5850 0    50   ~ 0
+GOn
+Text Label 2350 6350 0    50   ~ 0
+CSnx
+Text Label 2350 6450 0    50   ~ 0
+COPIx
+Text Label 2350 6550 0    50   ~ 0
+CIPOx
+Text Label 2350 6650 0    50   ~ 0
+SCKn
+Text Label 2350 6750 0    50   ~ 0
+GOn
+Text Label 5300 3550 0    50   ~ 0
+CSnx
+Text Label 5300 3650 0    50   ~ 0
+COPIx
+Text Label 5300 3750 0    50   ~ 0
+CIPOx
+Text Label 5300 3850 0    50   ~ 0
+SCKn
+Text Label 5300 3950 0    50   ~ 0
+GOn
+Text Label 5300 4500 0    50   ~ 0
+CSnx
+Text Label 5300 4600 0    50   ~ 0
+COPIx
+Text Label 5300 4700 0    50   ~ 0
+CIPOx
+Text Label 5300 4800 0    50   ~ 0
+SCKn
+Text Label 5300 4900 0    50   ~ 0
+GOn
+Text Label 5300 5450 0    50   ~ 0
+CSnx
+Text Label 5300 5550 0    50   ~ 0
+COPIx
+Text Label 5300 5650 0    50   ~ 0
+CIPOx
+Text Label 5300 5750 0    50   ~ 0
+SCKn
+Text Label 5300 5850 0    50   ~ 0
+GOn
+Text Label 5300 6350 0    50   ~ 0
+CSnx
+Text Label 5300 6450 0    50   ~ 0
+COPIx
+Text Label 5300 6550 0    50   ~ 0
+CIPOx
+Text Label 5300 6650 0    50   ~ 0
+SCKn
+Text Label 5300 6750 0    50   ~ 0
+GOn
+$EndSCHEMATC
