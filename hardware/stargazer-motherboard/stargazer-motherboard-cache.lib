@@ -136,7 +136,7 @@ ENDDEF
 DEF stargazer_SN74LVC125AD U? 0 40 Y Y 1 F N
 F0 "U?" 0 100 50 H V C CNN
 F1 "stargazer_SN74LVC125AD" 0 -800 50 H V C CNN
-F2 "" 0 100 50 H I C CNN
+F2 "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm" 0 100 50 H V C CNN
 F3 "" 0 100 50 H I C CNN
 DRAW
 S -300 50 300 -750 0 1 0 N
@@ -162,7 +162,7 @@ ENDDEF
 DEF stargazer_black-pill-leftovers J? 0 40 Y Y 1 F N
 F0 "J?" 0 150 50 H V C CNN
 F1 "stargazer_black-pill-leftovers" 0 50 50 H V C CNN
-F2 "" 0 150 50 H I C CNN
+F2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical" 0 150 50 H I C CNN
 F3 "" 0 150 50 H I C CNN
 DRAW
 S -450 100 450 -200 0 1 0 N
@@ -182,7 +182,7 @@ ENDDEF
 DEF stargazer_feather-leftovers J? 0 40 Y Y 1 F N
 F0 "J?" 0 150 50 H V C CNN
 F1 "stargazer_feather-leftovers" 0 50 50 H V C CNN
-F2 "" 0 150 50 H I C CNN
+F2 "Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical" 0 150 50 H I C CNN
 F3 "" 0 150 50 H I C CNN
 DRAW
 S -1100 100 1150 -250 0 1 0 N
@@ -214,7 +214,7 @@ ENDDEF
 DEF stargazer_swd-flywire J? 0 40 Y Y 1 F N
 F0 "J?" 0 150 50 H V C CNN
 F1 "stargazer_swd-flywire" 0 50 50 H V C CNN
-F2 "" 0 150 50 H I C CNN
+F2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" 0 150 50 H I C CNN
 F3 "" 0 150 50 H I C CNN
 DRAW
 S -250 -350 250 100 0 1 0 N
@@ -228,7 +228,7 @@ ENDDEF
 DEF stargazer_swd-header J? 0 40 Y Y 1 F N
 F0 "J?" 0 100 50 H V C CNN
 F1 "stargazer_swd-header" 0 0 50 H V C CNN
-F2 "" 0 100 50 H I C CNN
+F2 "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical" 0 100 50 H I C CNN
 F3 "" 0 100 50 H I C CNN
 DRAW
 S -250 -250 250 50 0 1 0 N
@@ -244,7 +244,7 @@ ENDDEF
 DEF stargazer_weact-black-pill U? 0 40 Y Y 1 F N
 F0 "U?" 0 150 50 H V C CNN
 F1 "stargazer_weact-black-pill" 0 50 50 H V C CNN
-F2 "" 0 150 50 H I C CNN
+F2 "stargazer-motherboard:weact-blackpill" 0 150 50 H I C CNN
 F3 "" 0 150 50 H I C CNN
 DRAW
 S -450 100 450 -2050 0 1 0 N
