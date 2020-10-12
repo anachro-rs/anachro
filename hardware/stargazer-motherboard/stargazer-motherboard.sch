@@ -795,11 +795,11 @@ Wire Wire Line
 	8850 3150 9300 3150
 Wire Wire Line
 	8850 3250 9300 3250
-Text Label 9300 3650 0    50   ~ 0
+Text Label 9300 3450 0    50   ~ 0
 D9_n
 Text Label 9300 3550 0    50   ~ 0
 D10_n
-Text Label 9300 3450 0    50   ~ 0
+Text Label 9300 3650 0    50   ~ 0
 D11_n
 Text Label 7150 3050 2    50   ~ 0
 D12_n
@@ -813,12 +813,6 @@ Wire Wire Line
 	7150 3150 7750 3150
 Wire Wire Line
 	7150 3250 7750 3250
-Wire Wire Line
-	8850 3650 9300 3650
-Wire Wire Line
-	9300 3550 8850 3550
-Wire Wire Line
-	8850 3450 9300 3450
 Text Label 9300 4550 0    50   ~ 0
 RSTn
 Wire Wire Line
@@ -839,4 +833,10 @@ Wire Wire Line
 NoConn ~ 3200 3100
 Text Notes 5000 1900 0    50   ~ 0
 TODO: I PROBABLY NEED TO REORGANIZE\nOR SPLIT UP THIS HEADER. ITS A PAIN TO ROUTE
+Wire Wire Line
+	8850 3650 9300 3650
+Wire Wire Line
+	9300 3550 8850 3550
+Wire Wire Line
+	8850 3450 9300 3450
 $EndSCHEMATC
