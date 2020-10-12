@@ -1,0 +1,516 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L MiscellaneousDevices:ADAFRUIT_FEATHER U1_n
+U 2 1 5F83756C
+P 2800 3850
+F 0 "U1_n" H 2650 3000 60  0000 L CNN
+F 1 "ADAFRUIT_FEATHER" H 2550 2900 60  0000 L CNN
+F 2 "" H 2950 3650 60  0000 C CNN
+F 3 "" H 2950 3650 60  0000 C CNN
+	2    2800 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L MiscellaneousDevices:ADAFRUIT_FEATHER U1_n
+U 1 1 5F836E05
+P 3100 4000
+F 0 "U1_n" H 2950 3300 60  0000 L CNN
+F 1 "ADAFRUIT_FEATHER" H 2450 3200 60  0001 L CNN
+F 2 "" H 3250 3800 60  0000 C CNN
+F 3 "" H 3250 3800 60  0000 C CNN
+	1    3100 4000
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP4_n
+U 1 1 5F8537B3
+P 3650 3650
+F 0 "JP4_n" H 3950 3700 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 3650 3764 50  0001 C CNN
+F 2 "" H 3650 3650 50  0001 C CNN
+F 3 "~" H 3650 3650 50  0001 C CNN
+	1    3650 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Open JP3_n
+U 1 1 5F8570AA
+P 3650 3550
+F 0 "JP3_n" H 3950 3600 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 3650 3664 50  0001 C CNN
+F 2 "" H 3650 3550 50  0001 C CNN
+F 3 "~" H 3650 3550 50  0001 C CNN
+	1    3650 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Open JP2_n
+U 1 1 5F85799A
+P 3650 3450
+F 0 "JP2_n" H 3950 3500 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 3650 3564 50  0001 C CNN
+F 2 "" H 3650 3450 50  0001 C CNN
+F 3 "~" H 3650 3450 50  0001 C CNN
+	1    3650 3450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3350 3650 3500 3650
+Wire Wire Line
+	3350 3550 3500 3550
+Wire Wire Line
+	3350 3450 3500 3450
+$Comp
+L power:+5V #PWR?
+U 1 1 5F864074
+P 4500 3650
+F 0 "#PWR?" H 4500 3500 50  0001 C CNN
+F 1 "+5V" H 4515 3823 50  0000 C CNN
+F 2 "" H 4500 3650 50  0001 C CNN
+F 3 "" H 4500 3650 50  0001 C CNN
+	1    4500 3650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3800 3650 4500 3650
+$Comp
+L power:+BATT #PWR?
+U 1 1 5F867C2F
+P 4300 3450
+F 0 "#PWR?" H 4300 3300 50  0001 C CNN
+F 1 "+BATT" H 4315 3623 50  0000 C CNN
+F 2 "" H 4300 3450 50  0001 C CNN
+F 3 "" H 4300 3450 50  0001 C CNN
+	1    4300 3450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3800 3450 4300 3450
+Text Label 4250 3550 0    50   ~ 0
+EN
+Wire Wire Line
+	3800 3550 4250 3550
+Text Label 2150 4100 2    50   ~ 0
+CARDn-SCK
+Text Label 2150 4200 2    50   ~ 0
+CARDn-COPI
+Text Label 2150 4300 2    50   ~ 0
+CARDn-CIPO
+Text Label 2150 4000 2    50   ~ 0
+CARDn-CSn
+Text Label 2150 3900 2    50   ~ 0
+CARDx-GO
+Wire Wire Line
+	2150 3900 2550 3900
+Wire Wire Line
+	2150 4000 2550 4000
+Wire Wire Line
+	2150 4100 2550 4100
+Wire Wire Line
+	2150 4200 2550 4200
+Wire Wire Line
+	2150 4300 2550 4300
+$Comp
+L stargazer:feather-leftovers J3_n
+U 1 1 5F93EF32
+P 5800 950
+F 0 "J3_n" H 5800 1100 50  0000 C CNN
+F 1 "feather-leftovers" H 5800 1000 50  0000 C CNN
+F 2 "" H 5800 950 50  0001 C CNN
+F 3 "" H 5800 950 50  0001 C CNN
+	1    5800 950 
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 5F871FB1
+P 5650 6150
+F 0 "#PWR?" H 5650 6000 50  0001 C CNN
+F 1 "+3V3" H 5665 6323 50  0000 C CNN
+F 2 "" H 5650 6150 50  0001 C CNN
+F 3 "" H 5650 6150 50  0001 C CNN
+	1    5650 6150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5300 6150 5650 6150
+Text Label 5550 5800 0    50   ~ 0
+CARDx-GO
+Text Label 4150 6350 2    50   ~ 0
+CARDx-COPI
+Text Label 4150 6650 2    50   ~ 0
+CARDx-SCK
+Text Label 5700 6450 0    50   ~ 0
+CARDx-CSn
+Text Label 5700 6650 0    50   ~ 0
+CARDx-CIPO
+Text Label 5700 6350 0    50   ~ 0
+CARDn-CSn
+Text Label 4150 6550 2    50   ~ 0
+CARDn-SCK
+Text Label 4150 6250 2    50   ~ 0
+CARDn-COPI
+Text Label 5700 6750 0    50   ~ 0
+CARDn-CIPO
+$Comp
+L power:GND #PWR?
+U 1 1 5F897D85
+P 4500 7150
+F 0 "#PWR?" H 4500 6900 50  0001 C CNN
+F 1 "GND" H 4505 6977 50  0000 C CNN
+F 2 "" H 4500 7150 50  0001 C CNN
+F 3 "" H 4500 7150 50  0001 C CNN
+	1    4500 7150
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 5F8A0135
+P 1400 6250
+F 0 "#PWR?" H 1400 6000 50  0001 C CNN
+F 1 "GND" H 1405 6077 50  0000 C CNN
+F 2 "" H 1400 6250 50  0001 C CNN
+F 3 "" H 1400 6250 50  0001 C CNN
+	1    1400 6250
+	1    0    0    -1  
+$EndComp
+Text Label 1600 6200 0    50   ~ 0
+RSTn
+Wire Wire Line
+	1500 6100 1500 6200
+Wire Wire Line
+	1500 6200 1600 6200
+Wire Wire Line
+	1400 6100 1400 6250
+$Comp
+L stargazer:swd-flywire J2_n
+U 1 1 5F8B27A0
+P 1200 7050
+F 0 "J2_n" H 922 6821 50  0000 R CNN
+F 1 "swd-flywire" H 922 6912 50  0000 R CNN
+F 2 "" H 1200 7200 50  0001 C CNN
+F 3 "" H 1200 7200 50  0001 C CNN
+	1    1200 7050
+	-1   0    0    1   
+$EndComp
+$Comp
+L stargazer:swd-header J1_n
+U 1 1 5F89F414
+P 1350 5750
+F 0 "J1_n" H 1628 5638 50  0000 L CNN
+F 1 "swd-header" H 1628 5547 50  0000 L CNN
+F 2 "" H 1350 5850 50  0001 C CNN
+F 3 "" H 1350 5850 50  0001 C CNN
+	1    1350 5750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1300 6600 1300 6100
+Wire Wire Line
+	1200 6100 1200 6450
+Wire Wire Line
+	1200 6450 1100 6450
+Wire Wire Line
+	1100 6450 1100 6600
+Wire Wire Line
+	4500 6750 4500 7150
+$Comp
+L stargazer:SN74LVC125AD U??
+U 1 1 5F8CA4F1
+P 4900 6100
+F 0 "U??" H 4900 6315 50  0000 C CNN
+F 1 "SN74LVC125AD" H 4900 6224 50  0000 C CNN
+F 2 "" H 4900 6200 50  0001 C CNN
+F 3 "" H 4900 6200 50  0001 C CNN
+	1    4900 6100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4500 6150 4400 6150
+Wire Wire Line
+	4250 6150 4250 6450
+Wire Wire Line
+	4250 6450 4500 6450
+Wire Wire Line
+	5300 6250 5400 6250
+Wire Wire Line
+	5500 6250 5500 6550
+Wire Wire Line
+	5500 6550 5300 6550
+Wire Wire Line
+	4400 6150 4400 5800
+Wire Wire Line
+	4400 5800 5400 5800
+Wire Wire Line
+	5400 5800 5400 6250
+Connection ~ 4400 6150
+Wire Wire Line
+	4400 6150 4250 6150
+Connection ~ 5400 6250
+Wire Wire Line
+	5400 6250 5500 6250
+Wire Wire Line
+	5400 5800 5550 5800
+Connection ~ 5400 5800
+Wire Wire Line
+	4150 6250 4500 6250
+Wire Wire Line
+	4150 6550 4500 6550
+Wire Wire Line
+	5300 6350 5700 6350
+Wire Wire Line
+	5300 6650 5700 6650
+Wire Wire Line
+	4150 6350 4500 6350
+Wire Wire Line
+	4150 6650 4500 6650
+Wire Wire Line
+	5300 6750 5700 6750
+Wire Wire Line
+	5300 6450 5700 6450
+$Comp
+L Jumper:SolderJumper_2_Bridged JP1_n
+U 1 1 5F9B9FD8
+P 2250 3100
+F 0 "JP1_n" H 2000 3150 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 2250 3214 50  0001 C CNN
+F 2 "" H 2250 3100 50  0001 C CNN
+F 3 "~" H 2250 3100 50  0001 C CNN
+	1    2250 3100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2400 3100 2550 3100
+Text Label 1550 3100 2    50   ~ 0
+RST
+Wire Wire Line
+	1550 3100 2100 3100
+Text Label 1550 3200 2    50   ~ 0
+3v3_n
+$Comp
+L power:GND #PWR?
+U 1 1 5F9C38A2
+P 1550 3400
+F 0 "#PWR?" H 1550 3150 50  0001 C CNN
+F 1 "GND" V 1555 3272 50  0000 R CNN
+F 2 "" H 1550 3400 50  0001 C CNN
+F 3 "" H 1550 3400 50  0001 C CNN
+	1    1550 3400
+	0    1    1    0   
+$EndComp
+Text Label 1550 3500 2    50   ~ 0
+A0_n
+Text Label 1550 3600 2    50   ~ 0
+A1_n
+Text Label 1550 3700 2    50   ~ 0
+A2_n
+Text Label 1550 3800 2    50   ~ 0
+A3_n
+Text Label 4300 4550 0    50   ~ 0
+D2_n
+Text Label 4300 4450 0    50   ~ 0
+D3_n
+Text Label 4300 4350 0    50   ~ 0
+D5_n
+Text Label 4300 4250 0    50   ~ 0
+D6_n
+Text Label 4300 4150 0    50   ~ 0
+D9_n
+Text Label 4300 4050 0    50   ~ 0
+D10_n
+Text Label 4300 3950 0    50   ~ 0
+D11_n
+Text Label 4300 3850 0    50   ~ 0
+D12_n
+Text Label 4300 3750 0    50   ~ 0
+D13_n
+Wire Wire Line
+	1550 3400 2550 3400
+Wire Wire Line
+	2550 3500 1550 3500
+Wire Wire Line
+	1550 3600 2550 3600
+Wire Wire Line
+	1550 3700 2550 3700
+Wire Wire Line
+	1550 3800 2550 3800
+Wire Wire Line
+	3350 4550 4300 4550
+Wire Wire Line
+	3350 4450 4300 4450
+Wire Wire Line
+	3350 4350 4300 4350
+Wire Wire Line
+	3350 4250 4300 4250
+Wire Wire Line
+	3350 4150 4300 4150
+Wire Wire Line
+	3350 4050 4300 4050
+Wire Wire Line
+	3350 3950 4300 3950
+Wire Wire Line
+	3350 3850 4300 3850
+Wire Wire Line
+	3350 3750 4300 3750
+Wire Wire Line
+	1550 3200 2550 3200
+Text Label 5550 1450 3    50   ~ 0
+D2_n
+Text Label 5650 1450 3    50   ~ 0
+D3_n
+Text Label 5750 1450 3    50   ~ 0
+D5_n
+Text Label 5850 1450 3    50   ~ 0
+D6_n
+Text Label 5950 1450 3    50   ~ 0
+D9_n
+Text Label 6050 1450 3    50   ~ 0
+D10_n
+Text Label 6150 1450 3    50   ~ 0
+D11_n
+Text Label 6250 1450 3    50   ~ 0
+D12_n
+Text Label 6350 1450 3    50   ~ 0
+D13_n
+Text Label 1550 4400 2    50   ~ 0
+D0_n
+Text Label 1550 4500 2    50   ~ 0
+D1_n
+Text Label 1550 4600 2    50   ~ 0
+AUX_n
+Wire Wire Line
+	1550 4400 2550 4400
+Wire Wire Line
+	1550 4500 2550 4500
+Wire Wire Line
+	1550 4600 2550 4600
+Text Label 5250 1450 3    50   ~ 0
+D0_n
+Text Label 5350 1450 3    50   ~ 0
+D1_n
+Text Label 5450 1450 3    50   ~ 0
+AUX_n
+Text Label 4950 1450 3    50   ~ 0
+A1_n
+Text Label 5050 1450 3    50   ~ 0
+A2_n
+Text Label 5150 1450 3    50   ~ 0
+A3_n
+Text Label 4850 1450 3    50   ~ 0
+A0_n
+$Comp
+L power:GND #PWR?
+U 1 1 5FA13A11
+P 6500 1450
+F 0 "#PWR?" H 6500 1200 50  0001 C CNN
+F 1 "GND" H 6505 1277 50  0000 C CNN
+F 2 "" H 6500 1450 50  0001 C CNN
+F 3 "" H 6500 1450 50  0001 C CNN
+	1    6500 1450
+	1    0    0    -1  
+$EndComp
+Text Label 6700 1450 0    50   ~ 0
+3v3_n
+Wire Wire Line
+	6650 1300 6700 1300
+Wire Wire Line
+	6700 1300 6700 1450
+Connection ~ 6700 1300
+Wire Wire Line
+	6700 1300 6750 1300
+Wire Wire Line
+	6450 1300 6500 1300
+Wire Wire Line
+	6500 1300 6500 1450
+Connection ~ 6500 1300
+Wire Wire Line
+	6500 1300 6550 1300
+Wire Wire Line
+	6350 1450 6350 1300
+Wire Wire Line
+	6250 1300 6250 1450
+Wire Wire Line
+	6150 1300 6150 1450
+Wire Wire Line
+	6050 1300 6050 1450
+Wire Wire Line
+	5950 1300 5950 1450
+Wire Wire Line
+	5850 1300 5850 1450
+Wire Wire Line
+	5750 1300 5750 1450
+Wire Wire Line
+	5650 1300 5650 1450
+Wire Wire Line
+	5550 1300 5550 1450
+Wire Wire Line
+	5450 1300 5450 1450
+Wire Wire Line
+	5350 1300 5350 1450
+Wire Wire Line
+	5250 1300 5250 1450
+Wire Wire Line
+	5150 1300 5150 1450
+Wire Wire Line
+	5050 1300 5050 1450
+Wire Wire Line
+	4950 1300 4950 1450
+Wire Wire Line
+	4850 1300 4850 1450
+Text Notes 800  7300 0    50   ~ 0
+Flywires from SWD test pads are connected here
+Text Notes 1000 5650 0    50   ~ 0
+Edge debugger connector
+Text Notes 7550 3550 0    50   ~ 0
+TODO: PUT BLACK PILL FOOTPRINT HERE
+$Comp
+L Jumper:SolderJumper_2_Open JP5_n
+U 1 1 5FA6D558
+P 5800 2250
+F 0 "JP5_n" H 5800 2363 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 5800 2364 50  0001 C CNN
+F 2 "" H 5800 2250 50  0001 C CNN
+F 3 "~" H 5800 2250 50  0001 C CNN
+	1    5800 2250
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 5FA6E191
+P 6350 2250
+F 0 "#PWR?" H 6350 2100 50  0001 C CNN
+F 1 "+3V3" H 6365 2423 50  0000 C CNN
+F 2 "" H 6350 2250 50  0001 C CNN
+F 3 "" H 6350 2250 50  0001 C CNN
+	1    6350 2250
+	1    0    0    -1  
+$EndComp
+Text Label 5250 2250 2    50   ~ 0
+3v3_n
+Wire Wire Line
+	5250 2250 5650 2250
+Wire Wire Line
+	5950 2250 6350 2250
+Text Notes 4200 5600 0    50   ~ 0
+CARDn pins that go to the MCU\nCARDx pins that go to the common bus
+Text Notes 4850 2450 0    50   ~ 0
+Connect when supplying 3v3 bus power. Must set EN low
+Text Notes 4750 3650 0    50   ~ 0
+- Connect to share this battery with the whole bus\n- Connect when connecting JP5\n- Disconnect if BYO +5v0
+Text Notes 7400 7500 0    50   ~ 0
+Card Template n/m
+$EndSCHEMATC

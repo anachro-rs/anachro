@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name MiscellaneousDevices)(type Legacy)(uri ${KIPRJMOD}/KiCad-Libraries/symbols/MiscellaneousDevices.lib)(options "")(descr ""))
+  (lib (name stargazer)(type Legacy)(uri ${KIPRJMOD}/stargazer.lib)(options "")(descr ""))
+)
