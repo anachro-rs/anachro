@@ -876,7 +876,7 @@ COPIx
 Text Label 2350 3750 0    50   ~ 0
 CIPOx
 Text Label 2350 3850 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 3950 0    50   ~ 0
 GOn
 Text Label 2350 4500 0    50   ~ 0
@@ -886,7 +886,7 @@ COPIx
 Text Label 2350 4700 0    50   ~ 0
 CIPOx
 Text Label 2350 4800 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 4900 0    50   ~ 0
 GOn
 Text Label 2350 5450 0    50   ~ 0
@@ -896,7 +896,7 @@ COPIx
 Text Label 2350 5650 0    50   ~ 0
 CIPOx
 Text Label 2350 5750 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 5850 0    50   ~ 0
 GOn
 Text Label 2350 6350 0    50   ~ 0
@@ -906,7 +906,7 @@ COPIx
 Text Label 2350 6550 0    50   ~ 0
 CIPOx
 Text Label 2350 6650 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 6750 0    50   ~ 0
 GOn
 Text Label 5300 3550 0    50   ~ 0
@@ -916,7 +916,7 @@ COPIx
 Text Label 5300 3750 0    50   ~ 0
 CIPOx
 Text Label 5300 3850 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 3950 0    50   ~ 0
 GOn
 Text Label 5300 4500 0    50   ~ 0
@@ -926,7 +926,7 @@ COPIx
 Text Label 5300 4700 0    50   ~ 0
 CIPOx
 Text Label 5300 4800 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 4900 0    50   ~ 0
 GOn
 Text Label 5300 5450 0    50   ~ 0
@@ -936,7 +936,7 @@ COPIx
 Text Label 5300 5650 0    50   ~ 0
 CIPOx
 Text Label 5300 5750 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 5850 0    50   ~ 0
 GOn
 Text Label 5300 6350 0    50   ~ 0
@@ -946,7 +946,7 @@ COPIx
 Text Label 5300 6550 0    50   ~ 0
 CIPOx
 Text Label 5300 6650 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 6750 0    50   ~ 0
 GOn
 $EndSCHEMATC

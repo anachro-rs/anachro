@@ -690,10 +690,10 @@ F10 "SCKx" O R 5300 6650 50
 F12 "GOn" I R 5300 6750 50 
 $EndSheet
 $Comp
-L power:+5V #PWR?
+L power:+5V #PWR0101
 U 1 1 5F851683
 P 600 3300
-F 0 "#PWR?" H 600 3150 50  0001 C CNN
+F 0 "#PWR0101" H 600 3150 50  0001 C CNN
 F 1 "+5V" H 615 3473 50  0000 C CNN
 F 2 "" H 600 3300 50  0001 C CNN
 F 3 "" H 600 3300 50  0001 C CNN
@@ -701,10 +701,10 @@ F 3 "" H 600 3300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:+3V3 #PWR?
+L power:+3V3 #PWR0102
 U 1 1 5F8520D4
 P 750 3200
-F 0 "#PWR?" H 750 3050 50  0001 C CNN
+F 0 "#PWR0102" H 750 3050 50  0001 C CNN
 F 1 "+3V3" H 765 3373 50  0000 C CNN
 F 2 "" H 750 3200 50  0001 C CNN
 F 3 "" H 750 3200 50  0001 C CNN
@@ -712,10 +712,10 @@ F 3 "" H 750 3200 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR?
+L power:GND #PWR0103
 U 1 1 5F8533DF
 P 900 7500
-F 0 "#PWR?" H 900 7250 50  0001 C CNN
+F 0 "#PWR0103" H 900 7250 50  0001 C CNN
 F 1 "GND" H 905 7327 50  0000 C CNN
 F 2 "" H 900 7500 50  0001 C CNN
 F 3 "" H 900 7500 50  0001 C CNN
@@ -756,10 +756,10 @@ Wire Wire Line
 	900  5050 900  4100
 Connection ~ 900  5050
 $Comp
-L power:+5V #PWR?
+L power:+5V #PWR0104
 U 1 1 5F888B44
 P 3550 3300
-F 0 "#PWR?" H 3550 3150 50  0001 C CNN
+F 0 "#PWR0104" H 3550 3150 50  0001 C CNN
 F 1 "+5V" H 3565 3473 50  0000 C CNN
 F 2 "" H 3550 3300 50  0001 C CNN
 F 3 "" H 3550 3300 50  0001 C CNN
@@ -767,10 +767,10 @@ F 3 "" H 3550 3300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:+3V3 #PWR?
+L power:+3V3 #PWR0105
 U 1 1 5F888B4A
 P 3700 3200
-F 0 "#PWR?" H 3700 3050 50  0001 C CNN
+F 0 "#PWR0105" H 3700 3050 50  0001 C CNN
 F 1 "+3V3" H 3715 3373 50  0000 C CNN
 F 2 "" H 3700 3200 50  0001 C CNN
 F 3 "" H 3700 3200 50  0001 C CNN
@@ -778,10 +778,10 @@ F 3 "" H 3700 3200 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR?
+L power:GND #PWR0106
 U 1 1 5F888B50
 P 3850 7500
-F 0 "#PWR?" H 3850 7250 50  0001 C CNN
+F 0 "#PWR0106" H 3850 7250 50  0001 C CNN
 F 1 "GND" H 3855 7327 50  0000 C CNN
 F 2 "" H 3850 7500 50  0001 C CNN
 F 3 "" H 3850 7500 50  0001 C CNN
@@ -876,7 +876,7 @@ COPIx
 Text Label 2350 3750 0    50   ~ 0
 CIPOx
 Text Label 2350 3850 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 3950 0    50   ~ 0
 GOn
 Text Label 2350 4500 0    50   ~ 0
@@ -886,7 +886,7 @@ COPIx
 Text Label 2350 4700 0    50   ~ 0
 CIPOx
 Text Label 2350 4800 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 4900 0    50   ~ 0
 GOn
 Text Label 2350 5450 0    50   ~ 0
@@ -896,7 +896,7 @@ COPIx
 Text Label 2350 5650 0    50   ~ 0
 CIPOx
 Text Label 2350 5750 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 5850 0    50   ~ 0
 GOn
 Text Label 2350 6350 0    50   ~ 0
@@ -906,7 +906,7 @@ COPIx
 Text Label 2350 6550 0    50   ~ 0
 CIPOx
 Text Label 2350 6650 0    50   ~ 0
-SCKn
+SCKx
 Text Label 2350 6750 0    50   ~ 0
 GOn
 Text Label 5300 3550 0    50   ~ 0
@@ -916,7 +916,7 @@ COPIx
 Text Label 5300 3750 0    50   ~ 0
 CIPOx
 Text Label 5300 3850 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 3950 0    50   ~ 0
 GOn
 Text Label 5300 4500 0    50   ~ 0
@@ -926,7 +926,7 @@ COPIx
 Text Label 5300 4700 0    50   ~ 0
 CIPOx
 Text Label 5300 4800 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 4900 0    50   ~ 0
 GOn
 Text Label 5300 5450 0    50   ~ 0
@@ -936,7 +936,7 @@ COPIx
 Text Label 5300 5650 0    50   ~ 0
 CIPOx
 Text Label 5300 5750 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 5850 0    50   ~ 0
 GOn
 Text Label 5300 6350 0    50   ~ 0
@@ -946,7 +946,7 @@ COPIx
 Text Label 5300 6550 0    50   ~ 0
 CIPOx
 Text Label 5300 6650 0    50   ~ 0
-SCKn
+SCKx
 Text Label 5300 6750 0    50   ~ 0
 GOn
 $EndSCHEMATC
