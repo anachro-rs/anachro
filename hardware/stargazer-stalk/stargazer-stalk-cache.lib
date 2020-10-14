@@ -205,6 +205,54 @@ X SWDIO 9 400 50 100 L 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
+# stargazer-stalk_pmod-interface-type-2a-arb
+#
+DEF stargazer-stalk_pmod-interface-type-2a-arb U 0 40 Y Y 1 F N
+F0 "U" 0 400 50 H V C CNN
+F1 "stargazer-stalk_pmod-interface-type-2a-arb" 50 -400 50 H V C CNN
+F2 "" 0 400 50 H I C CNN
+F3 "" 0 400 50 H I C CNN
+DRAW
+S -300 350 300 -350 0 1 0 N
+X CSn 1 -400 250 100 R 50 50 1 1 I
+X SWCLK 10 400 -50 100 L 50 50 1 1 I
+X GND 11 400 -150 100 L 50 50 1 1 I
+X VCC 12 400 -250 100 L 50 50 1 1 I
+X COPI 2 -400 150 100 R 50 50 1 1 I
+X CIPO 3 -400 50 100 R 50 50 1 1 I
+X SCK 4 -400 -50 100 R 50 50 1 1 I
+X GND 5 -400 -150 100 R 50 50 1 1 I
+X VCC 6 -400 -250 100 R 50 50 1 1 I
+X MISC 7 400 250 100 L 50 50 1 1 I
+X RESET 8 400 150 100 L 50 50 1 1 I
+X SWDIO 9 400 50 100 L 50 50 1 1 I
+ENDDRAW
+ENDDEF
+#
+# stargazer-stalk_pmod-interface-type-6a-arb
+#
+DEF stargazer-stalk_pmod-interface-type-6a-arb U 0 40 Y Y 1 F N
+F0 "U" 0 400 50 H V C CNN
+F1 "stargazer-stalk_pmod-interface-type-6a-arb" 50 -400 50 H V C CNN
+F2 "" 0 400 50 H I C CNN
+F3 "" 0 400 50 H I C CNN
+DRAW
+S -300 350 300 -350 0 1 0 N
+X +3v3 1 -400 250 100 R 50 50 1 1 I
+X SCK 10 400 -50 100 L 50 50 1 1 I
+X GND 11 400 -150 100 L 50 50 1 1 I
+X VCC 12 400 -250 100 L 50 50 1 1 I
+X +3v3 2 -400 150 100 R 50 50 1 1 I
+X SCL 3 -400 50 100 R 50 50 1 1 I
+X SDA 4 -400 -50 100 R 50 50 1 1 I
+X GND 5 -400 -150 100 R 50 50 1 1 I
+X VCC 6 -400 -250 100 R 50 50 1 1 I
+X CSn 7 400 250 100 L 50 50 1 1 I
+X COPI 8 400 150 100 L 50 50 1 1 I
+X CIPO 9 400 50 100 L 50 50 1 1 I
+ENDDRAW
+ENDDEF
+#
 # stargazer-stalk_swd-basic
 #
 DEF stargazer-stalk_swd-basic J 0 40 Y Y 1 F N
