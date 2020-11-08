@@ -667,10 +667,10 @@ Wire Wire Line
 Wire Wire Line
 	2950 2700 2950 3750
 $Comp
-L Jumper:SolderJumper_2_Open JP1
+L Jumper:SolderJumper_2_Open CIPO1
 U 1 1 5F8D38A7
 P 2450 3750
-F 0 "JP1" H 2450 3863 50  0000 C CNN
+F 0 "CIPO1" H 2450 3863 50  0000 C CNN
 F 1 "SolderJumper_2_Open" H 2450 3864 50  0001 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 2450 3750 50  0001 C CNN
 F 3 "~" H 2450 3750 50  0001 C CNN
@@ -678,10 +678,10 @@ F 3 "~" H 2450 3750 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP2
+L Jumper:SolderJumper_2_Open COPI1
 U 1 1 5F8D9CA7
 P 2450 3950
-F 0 "JP2" H 2450 4063 50  0000 C CNN
+F 0 "COPI1" H 2450 4063 50  0000 C CNN
 F 1 "SolderJumper_2_Open" H 2450 4064 50  0001 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 2450 3950 50  0001 C CNN
 F 3 "~" H 2450 3950 50  0001 C CNN
@@ -689,10 +689,10 @@ F 3 "~" H 2450 3950 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP3
+L Jumper:SolderJumper_2_Open SCK1
 U 1 1 5F8DD529
 P 2450 4150
-F 0 "JP3" H 2450 4263 50  0000 C CNN
+F 0 "SCK1" H 2450 4263 50  0000 C CNN
 F 1 "SolderJumper_2_Open" H 2450 4264 50  0001 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 2450 4150 50  0001 C CNN
 F 3 "~" H 2450 4150 50  0001 C CNN
@@ -700,10 +700,10 @@ F 3 "~" H 2450 4150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP4
+L Jumper:SolderJumper_2_Open A5/CSn1
 U 1 1 5F8E0F1F
 P 2450 4350
-F 0 "JP4" H 2450 4463 50  0000 C CNN
+F 0 "A5/CSn1" H 2450 4463 50  0000 C CNN
 F 1 "SolderJumper_2_Open" H 2450 4464 50  0001 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 2450 4350 50  0001 C CNN
 F 3 "~" H 2450 4350 50  0001 C CNN
@@ -711,10 +711,10 @@ F 3 "~" H 2450 4350 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP5
+L Jumper:SolderJumper_2_Open A4/GO1
 U 1 1 5F8F4C89
 P 2450 4550
-F 0 "JP5" H 2450 4663 50  0000 C CNN
+F 0 "A4/GO1" H 2450 4663 50  0000 C CNN
 F 1 "SolderJumper_2_Open" H 2450 4664 50  0001 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 2450 4550 50  0001 C CNN
 F 3 "~" H 2450 4550 50  0001 C CNN

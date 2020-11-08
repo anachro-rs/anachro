@@ -1,0 +1,1176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="D">
+  <design>
+    <source>/home/james/anachro/hardware/backplane-feather-arbitrator/backplane-feather-arbitrator.sch</source>
+    <date>Mon 19 Oct 2020 04:01:26 AM CEST</date>
+    <tool>Eeschema 5.1.6</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company/>
+        <rev/>
+        <date/>
+        <source>backplane-feather-arbitrator.sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="U1">
+      <value>ADAFRUIT_FEATHER</value>
+      <footprint>Modules:ADAFRUIT_FEATHER</footprint>
+      <libsource lib="stargazer-backplane" part="ADAFRUIT_FEATHER" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8B49F7</tstamp>
+    </comp>
+    <comp ref="U6">
+      <value>PCF8574</value>
+      <footprint>stargazer-stalk:SOIC127P1032X265-16N</footprint>
+      <datasheet>http://www.nxp.com/documents/data_sheet/PCF8574_PCF8574A.pdf</datasheet>
+      <libsource lib="Interface_Expansion" part="PCF8574" description="8 Bit Port/Expander to I2C Bus, DIP/SOIC-16"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8BB276</tstamp>
+    </comp>
+    <comp ref="J3">
+      <value>card-header</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x40_P2.54mm_Horizontal</footprint>
+      <libsource lib="stargazer-backplane" part="card-header" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8BC735</tstamp>
+    </comp>
+    <comp ref="J1">
+      <value>jumper</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <libsource lib="stargazer-backplane" part="jumper" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8C6ED4</tstamp>
+    </comp>
+    <comp ref="J2">
+      <value>card-programming-header-arb</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <libsource lib="stargazer-backplane" part="card-programming-header-arb" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8CB4F2</tstamp>
+    </comp>
+    <comp ref="JP4">
+      <value>Jumper_3_Bridged12</value>
+      <footprint>Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Jumper" part="Jumper_3_Bridged12" description="Jumper, 3-pole, pins 1+2 closed/bridged"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F904DEA</tstamp>
+    </comp>
+    <comp ref="JP2">
+      <value>Jumper_3_Bridged12</value>
+      <footprint>Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Jumper" part="Jumper_3_Bridged12" description="Jumper, 3-pole, pins 1+2 closed/bridged"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F9053DB</tstamp>
+    </comp>
+    <comp ref="U5">
+      <value>PCF8574</value>
+      <footprint>stargazer-stalk:SOIC127P1032X265-16N</footprint>
+      <datasheet>http://www.nxp.com/documents/data_sheet/PCF8574_PCF8574A.pdf</datasheet>
+      <libsource lib="Interface_Expansion" part="PCF8574" description="8 Bit Port/Expander to I2C Bus, DIP/SOIC-16"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F927564</tstamp>
+    </comp>
+    <comp ref="JP3">
+      <value>Jumper_3_Bridged12</value>
+      <footprint>Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Jumper" part="Jumper_3_Bridged12" description="Jumper, 3-pole, pins 1+2 closed/bridged"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F927572</tstamp>
+    </comp>
+    <comp ref="JP1">
+      <value>Jumper_3_Bridged12</value>
+      <footprint>Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Jumper" part="Jumper_3_Bridged12" description="Jumper, 3-pole, pins 1+2 closed/bridged"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F927578</tstamp>
+    </comp>
+    <comp ref="C1">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F9275A2</tstamp>
+    </comp>
+    <comp ref="D1">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F953C5F</tstamp>
+    </comp>
+    <comp ref="R1">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F935D25</tstamp>
+    </comp>
+    <comp ref="D8">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F92BD39</tstamp>
+    </comp>
+    <comp ref="D2">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98A5B7</tstamp>
+    </comp>
+    <comp ref="D3">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98B766</tstamp>
+    </comp>
+    <comp ref="D4">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98C6BB</tstamp>
+    </comp>
+    <comp ref="D5">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98FF70</tstamp>
+    </comp>
+    <comp ref="D6">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98FF76</tstamp>
+    </comp>
+    <comp ref="D7">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98FF7C</tstamp>
+    </comp>
+    <comp ref="D9">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98FF82</tstamp>
+    </comp>
+    <comp ref="C3">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F9988F1</tstamp>
+    </comp>
+    <comp ref="D14">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F9F52B7</tstamp>
+    </comp>
+    <comp ref="D13">
+      <value>D</value>
+      <footprint>Diode_SMD:D_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="D" description="Diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F9F9CBD</tstamp>
+    </comp>
+    <comp ref="R9">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FA6ABA6</tstamp>
+    </comp>
+    <comp ref="R2">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAA2FE5</tstamp>
+    </comp>
+    <comp ref="R3">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAA50C9</tstamp>
+    </comp>
+    <comp ref="R4">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAA7289</tstamp>
+    </comp>
+    <comp ref="R5">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAA9323</tstamp>
+    </comp>
+    <comp ref="R6">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAAB7D6</tstamp>
+    </comp>
+    <comp ref="R7">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAAD77A</tstamp>
+    </comp>
+    <comp ref="R8">
+      <value>R</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAAF842</tstamp>
+    </comp>
+    <comp ref="D10">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FABB8A9</tstamp>
+    </comp>
+    <comp ref="D11">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FABDEFE</tstamp>
+    </comp>
+    <comp ref="D12">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAC0590</tstamp>
+    </comp>
+    <comp ref="D15">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAC4E79</tstamp>
+    </comp>
+    <comp ref="D16">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAC4E7F</tstamp>
+    </comp>
+    <comp ref="D17">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAC4E85</tstamp>
+    </comp>
+    <comp ref="D18">
+      <value>LED</value>
+      <footprint>LED_SMD:LED_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAC4E8B</tstamp>
+    </comp>
+    <comp ref="C10">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAD092F</tstamp>
+    </comp>
+    <comp ref="C4">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAD25E2</tstamp>
+    </comp>
+    <comp ref="C5">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAD410E</tstamp>
+    </comp>
+    <comp ref="C6">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAD5B6F</tstamp>
+    </comp>
+    <comp ref="C7">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAD7573</tstamp>
+    </comp>
+    <comp ref="C8">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FAD9187</tstamp>
+    </comp>
+    <comp ref="C9">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FADAE45</tstamp>
+    </comp>
+    <comp ref="C2">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FADD92B</tstamp>
+    </comp>
+    <comp ref="C11">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8FF338</tstamp>
+    </comp>
+    <comp ref="R10">
+      <value>4.7K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F95B683</tstamp>
+    </comp>
+    <comp ref="R11">
+      <value>4.7K</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F966FF3</tstamp>
+    </comp>
+    <comp ref="U2">
+      <value>pmod-interface-type-2a-qspi</value>
+      <footprint>stargazer-stalk:pmod-double</footprint>
+      <libsource lib="stargazer-stalk" part="pmod-interface-type-2a-qspi" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FA32A7B</tstamp>
+    </comp>
+    <comp ref="J4">
+      <value>jumper</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <libsource lib="stargazer-backplane" part="jumper" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FCA9178</tstamp>
+    </comp>
+    <comp ref="C12">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_4x5.3</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FCCD22E</tstamp>
+    </comp>
+    <comp ref="C13">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_4x5.3</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FCCF543</tstamp>
+    </comp>
+    <comp ref="C14">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_4x5.3</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FCD2832</tstamp>
+    </comp>
+    <comp ref="C15">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_4x5.3</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FCD5C2E</tstamp>
+    </comp>
+    <comp ref="C16">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_4x5.3</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5FD349FD</tstamp>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D">
+      <description>Diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="LED">
+      <description>Light emitting diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">LED</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Interface_Expansion" part="PCF8574">
+      <aliases>
+        <alias>PCF8574A</alias>
+      </aliases>
+      <description>8 Bit Port/Expander to I2C Bus, DIP/SOIC-16</description>
+      <docs>http://www.nxp.com/documents/data_sheet/PCF8574_PCF8574A.pdf</docs>
+      <footprints>
+        <fp>DIP*W7.62mm*</fp>
+        <fp>SOIC*7.5x10.3mm*P1.27mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">PCF8574</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A0" type="input"/>
+        <pin num="2" name="A1" type="input"/>
+        <pin num="3" name="A2" type="input"/>
+        <pin num="4" name="P0" type="BiDi"/>
+        <pin num="5" name="P1" type="BiDi"/>
+        <pin num="6" name="P2" type="BiDi"/>
+        <pin num="7" name="P3" type="BiDi"/>
+        <pin num="8" name="VSS" type="power_in"/>
+        <pin num="9" name="P4" type="BiDi"/>
+        <pin num="10" name="P5" type="BiDi"/>
+        <pin num="11" name="P6" type="BiDi"/>
+        <pin num="12" name="P7" type="BiDi"/>
+        <pin num="13" name="~INT~" type="openCol"/>
+        <pin num="14" name="SCL" type="input"/>
+        <pin num="15" name="SDA" type="BiDi"/>
+        <pin num="16" name="VDD" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Jumper" part="Jumper_3_Bridged12">
+      <description>Jumper, 3-pole, pins 1+2 closed/bridged</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Jumper*</fp>
+        <fp>TestPoint*3Pads*</fp>
+        <fp>TestPoint*Bridge*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">JP</field>
+        <field name="Value">Jumper_3_Bridged12</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A" type="passive"/>
+        <pin num="2" name="C" type="input"/>
+        <pin num="3" name="B" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="LED" part="WS2812B">
+      <description>RGB LED with integrated controller</description>
+      <docs>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</docs>
+      <footprints>
+        <fp>LED*WS2812*PLCC*5.0x5.0mm*P3.2mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">WS2812B</field>
+        <field name="Footprint">LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VDD" type="power_in"/>
+        <pin num="2" name="DOUT" type="output"/>
+        <pin num="3" name="VSS" type="power_in"/>
+        <pin num="4" name="DIN" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="stargazer-backplane" part="ADAFRUIT_FEATHER">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">ADAFRUIT_FEATHER</field>
+      </fields>
+      <pins>
+        <pin num="1" name="DIO1" type="input"/>
+        <pin num="2" name="1" type="input"/>
+        <pin num="3" name="0" type="input"/>
+        <pin num="4" name="MISO" type="input"/>
+        <pin num="5" name="MOSI" type="input"/>
+        <pin num="6" name="SCK" type="input"/>
+        <pin num="7" name="A5" type="input"/>
+        <pin num="8" name="A4" type="input"/>
+        <pin num="9" name="A3" type="input"/>
+        <pin num="10" name="A2" type="input"/>
+        <pin num="11" name="A1" type="input"/>
+        <pin num="12" name="A0" type="input"/>
+        <pin num="13" name="GND" type="input"/>
+        <pin num="14" name="AREF" type="input"/>
+        <pin num="15" name="+3V3" type="input"/>
+        <pin num="16" name="RST" type="input"/>
+        <pin num="17" name="VBAT" type="input"/>
+        <pin num="18" name="EN" type="input"/>
+        <pin num="19" name="VBUS" type="input"/>
+        <pin num="20" name="13" type="input"/>
+        <pin num="21" name="12" type="input"/>
+        <pin num="22" name="11" type="input"/>
+        <pin num="23" name="10" type="input"/>
+        <pin num="24" name="9" type="input"/>
+        <pin num="25" name="6" type="input"/>
+        <pin num="26" name="5" type="input"/>
+        <pin num="27" name="3" type="input"/>
+        <pin num="28" name="2" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="stargazer-backplane" part="card-header">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">card-header</field>
+      </fields>
+      <pins>
+        <pin num="1" name="CARD1-GO" type="input"/>
+        <pin num="2" name="CARD2-GO" type="input"/>
+        <pin num="3" name="CARD3-GO" type="input"/>
+        <pin num="4" name="CARD4-GO" type="input"/>
+        <pin num="5" name="CARD5-GO" type="input"/>
+        <pin num="6" name="CARD6-GO" type="input"/>
+        <pin num="7" name="CARD7-GO" type="input"/>
+        <pin num="8" name="CARD8-GO" type="input"/>
+        <pin num="9" name="CARDx-COPI" type="output"/>
+        <pin num="10" name="CARDx-SCK" type="output"/>
+        <pin num="11" name="CARDx-CSn" type="output"/>
+        <pin num="12" name="CARDx-CIPO" type="input"/>
+        <pin num="13" name="RESERVED-1" type="BiDi"/>
+        <pin num="14" name="RESERVED-2" type="BiDi"/>
+        <pin num="15" name="RESERVED-3" type="BiDi"/>
+        <pin num="16" name="RESERVED-4" type="BiDi"/>
+        <pin num="17" name="GND" type="power_in"/>
+        <pin num="18" name="+5v0" type="power_in"/>
+        <pin num="19" name="+3v3" type="power_in"/>
+        <pin num="20" name="Reset" type="input"/>
+        <pin num="21" name="SWDIO-1" type="BiDi"/>
+        <pin num="22" name="SWCLK-1" type="input"/>
+        <pin num="23" name="SWDIO-2" type="BiDi"/>
+        <pin num="24" name="SWCLK-2" type="input"/>
+        <pin num="25" name="SWDIO-3" type="BiDi"/>
+        <pin num="26" name="SWCLK-3" type="input"/>
+        <pin num="27" name="SWDIO-4" type="BiDi"/>
+        <pin num="28" name="SWCLK-4" type="input"/>
+        <pin num="29" name="SWDIO-5" type="BiDi"/>
+        <pin num="30" name="SWCLK-5" type="input"/>
+        <pin num="31" name="SWDIO-6" type="BiDi"/>
+        <pin num="32" name="SWCLK-6" type="input"/>
+        <pin num="33" name="SERIAL2-TX" type="input"/>
+        <pin num="34" name="SERIAL2-RX" type="output"/>
+        <pin num="35" name="SERIAL1-TX" type="input"/>
+        <pin num="36" name="SERIAL1-RX" type="output"/>
+        <pin num="37" name="SWDIO-7-KEY" type="BiDi"/>
+        <pin num="38" name="SWCLK-7-KEY" type="input"/>
+        <pin num="39" name="SWDIO-ARB" type="BiDi"/>
+        <pin num="40" name="SWCLK-ARB" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="stargazer-backplane" part="card-programming-header-arb">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">card-programming-header-arb</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+      </fields>
+      <pins>
+        <pin num="1" name="SWDIO-ARB" type="BiDi"/>
+        <pin num="2" name="SWCLK-ARB" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="stargazer-backplane" part="jumper">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">jumper</field>
+      </fields>
+      <pins>
+        <pin num="1" name="P1" type="input"/>
+        <pin num="2" name="P2" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="stargazer-stalk" part="pmod-interface-type-2a-qspi">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">pmod-interface-type-2a-qspi</field>
+      </fields>
+      <pins>
+        <pin num="1" name="CS" type="input"/>
+        <pin num="2" name="SIO0" type="input"/>
+        <pin num="3" name="SIO1" type="input"/>
+        <pin num="4" name="SCK" type="input"/>
+        <pin num="5" name="GND" type="input"/>
+        <pin num="6" name="+3v3" type="input"/>
+        <pin num="7" name="SIO2" type="input"/>
+        <pin num="8" name="SIO3" type="input"/>
+        <pin num="9" name="NC" type="input"/>
+        <pin num="10" name="NC" type="input"/>
+        <pin num="11" name="GND" type="input"/>
+        <pin num="12" name="+3v3" type="input"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Device">
+      <uri>/usr/share/kicad/library/Device.lib</uri>
+    </library>
+    <library logical="Interface_Expansion">
+      <uri>/usr/share/kicad/library/Interface_Expansion.lib</uri>
+    </library>
+    <library logical="Jumper">
+      <uri>/usr/share/kicad/library/Jumper.lib</uri>
+    </library>
+    <library logical="LED">
+      <uri>/usr/share/kicad/library/LED.lib</uri>
+    </library>
+    <library logical="stargazer-backplane">
+      <uri>/home/james/anachro/hardware/stargazer-backplane.lib</uri>
+    </library>
+    <library logical="stargazer-stalk">
+      <uri>/home/james/anachro/hardware/stargazer-stalk/stargazer-stalk.lib</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="Net-(D12-Pad2)">
+      <node ref="R4" pin="2"/>
+      <node ref="D12" pin="2"/>
+    </net>
+    <net code="2" name="Net-(D15-Pad2)">
+      <node ref="R5" pin="2"/>
+      <node ref="D15" pin="2"/>
+    </net>
+    <net code="3" name="Net-(D16-Pad2)">
+      <node ref="D16" pin="2"/>
+      <node ref="R6" pin="2"/>
+    </net>
+    <net code="4" name="Net-(D17-Pad2)">
+      <node ref="D17" pin="2"/>
+      <node ref="R7" pin="2"/>
+    </net>
+    <net code="5" name="Net-(D18-Pad2)">
+      <node ref="D18" pin="2"/>
+      <node ref="R8" pin="2"/>
+    </net>
+    <net code="6" name="/MISO-BUFFER">
+      <node ref="J3" pin="12"/>
+      <node ref="R9" pin="1"/>
+    </net>
+    <net code="7" name="/D13">
+      <node ref="U1" pin="20"/>
+      <node ref="D14" pin="4"/>
+    </net>
+    <net code="8" name="Net-(C11-Pad1)">
+      <node ref="C11" pin="1"/>
+      <node ref="D13" pin="1"/>
+      <node ref="D14" pin="1"/>
+    </net>
+    <net code="9" name="+5V">
+      <node ref="D5" pin="1"/>
+      <node ref="D3" pin="1"/>
+      <node ref="D4" pin="1"/>
+      <node ref="D6" pin="1"/>
+      <node ref="U1" pin="19"/>
+      <node ref="D9" pin="1"/>
+      <node ref="C16" pin="1"/>
+      <node ref="C3" pin="1"/>
+      <node ref="D7" pin="1"/>
+      <node ref="C7" pin="1"/>
+      <node ref="C8" pin="1"/>
+      <node ref="D2" pin="1"/>
+      <node ref="C9" pin="1"/>
+      <node ref="C6" pin="1"/>
+      <node ref="C5" pin="1"/>
+      <node ref="C4" pin="1"/>
+      <node ref="C10" pin="1"/>
+      <node ref="D1" pin="1"/>
+      <node ref="D13" pin="2"/>
+      <node ref="J3" pin="18"/>
+    </net>
+    <net code="10" name="GND">
+      <node ref="C11" pin="2"/>
+      <node ref="C14" pin="2"/>
+      <node ref="U6" pin="1"/>
+      <node ref="C16" pin="2"/>
+      <node ref="J4" pin="2"/>
+      <node ref="C12" pin="2"/>
+      <node ref="C13" pin="2"/>
+      <node ref="C15" pin="2"/>
+      <node ref="U2" pin="5"/>
+      <node ref="U2" pin="11"/>
+      <node ref="JP1" pin="1"/>
+      <node ref="J3" pin="17"/>
+      <node ref="U6" pin="8"/>
+      <node ref="U1" pin="13"/>
+      <node ref="JP2" pin="1"/>
+      <node ref="JP4" pin="1"/>
+      <node ref="C1" pin="2"/>
+      <node ref="D1" pin="3"/>
+      <node ref="JP3" pin="1"/>
+      <node ref="U5" pin="8"/>
+      <node ref="D4" pin="3"/>
+      <node ref="D2" pin="3"/>
+      <node ref="D3" pin="3"/>
+      <node ref="D5" pin="3"/>
+      <node ref="D6" pin="3"/>
+      <node ref="C9" pin="2"/>
+      <node ref="C3" pin="2"/>
+      <node ref="D9" pin="3"/>
+      <node ref="D7" pin="3"/>
+      <node ref="D14" pin="3"/>
+      <node ref="C2" pin="2"/>
+      <node ref="C8" pin="2"/>
+      <node ref="C7" pin="2"/>
+      <node ref="C6" pin="2"/>
+      <node ref="C5" pin="2"/>
+      <node ref="C4" pin="2"/>
+      <node ref="C10" pin="2"/>
+    </net>
+    <net code="11" name="/MISO">
+      <node ref="R9" pin="2"/>
+      <node ref="U1" pin="4"/>
+    </net>
+    <net code="12" name="Net-(D10-Pad2)">
+      <node ref="D10" pin="2"/>
+      <node ref="R2" pin="2"/>
+    </net>
+    <net code="13" name="Net-(D11-Pad2)">
+      <node ref="D11" pin="2"/>
+      <node ref="R3" pin="2"/>
+    </net>
+    <net code="14" name="Net-(D7-Pad2)">
+      <node ref="D7" pin="2"/>
+      <node ref="D9" pin="4"/>
+    </net>
+    <net code="15" name="Net-(D6-Pad2)">
+      <node ref="D6" pin="2"/>
+      <node ref="D7" pin="4"/>
+    </net>
+    <net code="16" name="Net-(D9-Pad2)">
+      <node ref="D9" pin="2"/>
+    </net>
+    <net code="17" name="Net-(D5-Pad2)">
+      <node ref="D6" pin="4"/>
+      <node ref="D5" pin="2"/>
+    </net>
+    <net code="18" name="Net-(D1-Pad2)">
+      <node ref="D1" pin="2"/>
+      <node ref="D2" pin="4"/>
+    </net>
+    <net code="19" name="Net-(D3-Pad2)">
+      <node ref="D3" pin="2"/>
+      <node ref="D4" pin="4"/>
+    </net>
+    <net code="20" name="Net-(D2-Pad2)">
+      <node ref="D2" pin="2"/>
+      <node ref="D3" pin="4"/>
+    </net>
+    <net code="21" name="Net-(D4-Pad2)">
+      <node ref="D4" pin="2"/>
+      <node ref="D5" pin="4"/>
+    </net>
+    <net code="22" name="/NEO-ACT">
+      <node ref="D1" pin="4"/>
+      <node ref="D14" pin="2"/>
+    </net>
+    <net code="23" name="/D6">
+      <node ref="U1" pin="25"/>
+      <node ref="U2" pin="3"/>
+    </net>
+    <net code="24" name="/D9">
+      <node ref="U2" pin="2"/>
+      <node ref="U1" pin="24"/>
+    </net>
+    <net code="25" name="/A2">
+      <node ref="U1" pin="10"/>
+      <node ref="U2" pin="10"/>
+      <node ref="U2" pin="4"/>
+    </net>
+    <net code="26" name="/A3">
+      <node ref="U1" pin="9"/>
+      <node ref="U2" pin="8"/>
+    </net>
+    <net code="27" name="/A4">
+      <node ref="U1" pin="8"/>
+      <node ref="U2" pin="7"/>
+    </net>
+    <net code="28" name="Net-(U2-Pad9)">
+      <node ref="U2" pin="9"/>
+    </net>
+    <net code="29" name="Net-(U5-Pad13)">
+      <node ref="U5" pin="13"/>
+    </net>
+    <net code="30" name="Net-(U6-Pad13)">
+      <node ref="U6" pin="13"/>
+    </net>
+    <net code="31" name="/EN">
+      <node ref="J4" pin="1"/>
+      <node ref="U1" pin="18"/>
+    </net>
+    <net code="32" name="+3V3">
+      <node ref="U6" pin="16"/>
+      <node ref="JP3" pin="3"/>
+      <node ref="U1" pin="15"/>
+      <node ref="JP1" pin="3"/>
+      <node ref="R4" pin="1"/>
+      <node ref="JP4" pin="3"/>
+      <node ref="JP2" pin="3"/>
+      <node ref="U5" pin="1"/>
+      <node ref="R8" pin="1"/>
+      <node ref="U5" pin="16"/>
+      <node ref="R1" pin="1"/>
+      <node ref="C1" pin="1"/>
+      <node ref="C2" pin="1"/>
+      <node ref="R5" pin="1"/>
+      <node ref="R6" pin="1"/>
+      <node ref="R3" pin="1"/>
+      <node ref="R7" pin="1"/>
+      <node ref="R2" pin="1"/>
+      <node ref="R10" pin="1"/>
+      <node ref="J1" pin="1"/>
+      <node ref="U2" pin="12"/>
+      <node ref="R11" pin="1"/>
+      <node ref="U2" pin="6"/>
+      <node ref="C15" pin="1"/>
+      <node ref="C14" pin="1"/>
+      <node ref="C13" pin="1"/>
+      <node ref="C12" pin="1"/>
+    </net>
+    <net code="33" name="/D3-SCL">
+      <node ref="U6" pin="14"/>
+      <node ref="U5" pin="14"/>
+      <node ref="R10" pin="2"/>
+      <node ref="U1" pin="27"/>
+    </net>
+    <net code="34" name="/D2-SDA">
+      <node ref="R11" pin="2"/>
+      <node ref="U6" pin="15"/>
+      <node ref="U1" pin="28"/>
+      <node ref="U5" pin="15"/>
+    </net>
+    <net code="35" name="/D10">
+      <node ref="U1" pin="23"/>
+      <node ref="U2" pin="1"/>
+    </net>
+    <net code="36" name="Net-(J3-Pad13)">
+      <node ref="J3" pin="13"/>
+    </net>
+    <net code="37" name="Net-(J3-Pad14)">
+      <node ref="J3" pin="14"/>
+    </net>
+    <net code="38" name="Net-(J3-Pad15)">
+      <node ref="J3" pin="15"/>
+    </net>
+    <net code="39" name="Net-(J3-Pad16)">
+      <node ref="J3" pin="16"/>
+    </net>
+    <net code="40" name="Net-(J1-Pad2)">
+      <node ref="J1" pin="2"/>
+      <node ref="J3" pin="19"/>
+    </net>
+    <net code="41" name="/CARD7-GO">
+      <node ref="U6" pin="11"/>
+      <node ref="J3" pin="7"/>
+    </net>
+    <net code="42" name="/D12">
+      <node ref="J3" pin="36"/>
+      <node ref="U1" pin="21"/>
+    </net>
+    <net code="43" name="Net-(J3-Pad37)">
+      <node ref="J3" pin="37"/>
+    </net>
+    <net code="44" name="Net-(J3-Pad38)">
+      <node ref="J3" pin="38"/>
+    </net>
+    <net code="45" name="/CARD4-GO">
+      <node ref="U6" pin="7"/>
+      <node ref="J3" pin="4"/>
+    </net>
+    <net code="46" name="/CARD5-GO">
+      <node ref="U6" pin="9"/>
+      <node ref="J3" pin="5"/>
+    </net>
+    <net code="47" name="/CARD6-GO">
+      <node ref="U6" pin="10"/>
+      <node ref="J3" pin="6"/>
+    </net>
+    <net code="48" name="/MOSI">
+      <node ref="U1" pin="5"/>
+      <node ref="J3" pin="9"/>
+    </net>
+    <net code="49" name="Net-(J3-Pad25)">
+      <node ref="J3" pin="25"/>
+    </net>
+    <net code="50" name="Net-(J3-Pad26)">
+      <node ref="J3" pin="26"/>
+    </net>
+    <net code="51" name="Net-(J3-Pad27)">
+      <node ref="J3" pin="27"/>
+    </net>
+    <net code="52" name="Net-(J3-Pad28)">
+      <node ref="J3" pin="28"/>
+    </net>
+    <net code="53" name="Net-(J3-Pad29)">
+      <node ref="J3" pin="29"/>
+    </net>
+    <net code="54" name="Net-(J3-Pad30)">
+      <node ref="J3" pin="30"/>
+    </net>
+    <net code="55" name="Net-(J3-Pad31)">
+      <node ref="J3" pin="31"/>
+    </net>
+    <net code="56" name="Net-(J3-Pad32)">
+      <node ref="J3" pin="32"/>
+    </net>
+    <net code="57" name="Net-(J3-Pad24)">
+      <node ref="J3" pin="24"/>
+    </net>
+    <net code="58" name="Net-(J2-Pad1)">
+      <node ref="J2" pin="1"/>
+      <node ref="J3" pin="39"/>
+    </net>
+    <net code="59" name="Net-(J2-Pad2)">
+      <node ref="J2" pin="2"/>
+      <node ref="J3" pin="40"/>
+    </net>
+    <net code="60" name="/D11">
+      <node ref="U1" pin="22"/>
+      <node ref="J3" pin="35"/>
+    </net>
+    <net code="61" name="Net-(J3-Pad21)">
+      <node ref="J3" pin="21"/>
+    </net>
+    <net code="62" name="Net-(J3-Pad22)">
+      <node ref="J3" pin="22"/>
+    </net>
+    <net code="63" name="Net-(J3-Pad23)">
+      <node ref="J3" pin="23"/>
+    </net>
+    <net code="64" name="/D5">
+      <node ref="U1" pin="26"/>
+    </net>
+    <net code="65" name="/CARD8-GO">
+      <node ref="J3" pin="8"/>
+      <node ref="U6" pin="12"/>
+    </net>
+    <net code="66" name="/D0">
+      <node ref="U1" pin="3"/>
+    </net>
+    <net code="67" name="/AREF">
+      <node ref="U1" pin="14"/>
+    </net>
+    <net code="68" name="/RST">
+      <node ref="U1" pin="16"/>
+      <node ref="J3" pin="20"/>
+    </net>
+    <net code="69" name="/D1">
+      <node ref="U1" pin="2"/>
+    </net>
+    <net code="70" name="/VBAT">
+      <node ref="U1" pin="17"/>
+    </net>
+    <net code="71" name="/CARD2-GO">
+      <node ref="U6" pin="5"/>
+      <node ref="J3" pin="2"/>
+    </net>
+    <net code="72" name="/CARD3-GO">
+      <node ref="U6" pin="6"/>
+      <node ref="J3" pin="3"/>
+    </net>
+    <net code="73" name="/A1">
+      <node ref="J3" pin="33"/>
+      <node ref="U1" pin="11"/>
+    </net>
+    <net code="74" name="/A0">
+      <node ref="J3" pin="34"/>
+      <node ref="U1" pin="12"/>
+    </net>
+    <net code="75" name="/SCK">
+      <node ref="J3" pin="10"/>
+      <node ref="U1" pin="6"/>
+    </net>
+    <net code="76" name="/CARD1-GO">
+      <node ref="U6" pin="4"/>
+      <node ref="J3" pin="1"/>
+    </net>
+    <net code="77" name="/A5">
+      <node ref="J3" pin="11"/>
+      <node ref="U1" pin="7"/>
+    </net>
+    <net code="78" name="Net-(JP1-Pad2)">
+      <node ref="JP1" pin="2"/>
+      <node ref="U5" pin="3"/>
+    </net>
+    <net code="79" name="Net-(JP3-Pad2)">
+      <node ref="JP3" pin="2"/>
+      <node ref="U5" pin="2"/>
+    </net>
+    <net code="80" name="/CARD2-ACT">
+      <node ref="D10" pin="1"/>
+      <node ref="U5" pin="5"/>
+    </net>
+    <net code="81" name="/CARD3-ACT">
+      <node ref="U5" pin="6"/>
+      <node ref="D11" pin="1"/>
+    </net>
+    <net code="82" name="/CARD4-ACT">
+      <node ref="D12" pin="1"/>
+      <node ref="U5" pin="7"/>
+    </net>
+    <net code="83" name="/CARD5-ACT">
+      <node ref="U5" pin="9"/>
+      <node ref="D15" pin="1"/>
+    </net>
+    <net code="84" name="Net-(D8-Pad2)">
+      <node ref="D8" pin="2"/>
+      <node ref="R1" pin="2"/>
+    </net>
+    <net code="85" name="/CARD1-ACT">
+      <node ref="U5" pin="4"/>
+      <node ref="D8" pin="1"/>
+    </net>
+    <net code="86" name="Net-(JP4-Pad2)">
+      <node ref="U6" pin="2"/>
+      <node ref="JP4" pin="2"/>
+    </net>
+    <net code="87" name="Net-(JP2-Pad2)">
+      <node ref="JP2" pin="2"/>
+      <node ref="U6" pin="3"/>
+    </net>
+    <net code="88" name="/CARD6-ACT">
+      <node ref="D16" pin="1"/>
+      <node ref="U5" pin="10"/>
+    </net>
+    <net code="89" name="/CARD7-ACT">
+      <node ref="D17" pin="1"/>
+      <node ref="U5" pin="11"/>
+    </net>
+    <net code="90" name="/CARD8-ACT">
+      <node ref="U5" pin="12"/>
+      <node ref="D18" pin="1"/>
+    </net>
+    <net code="91" name="/DIO1">
+      <node ref="U1" pin="1"/>
+    </net>
+  </nets>
+</export>

@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name 2020-10-20_00-26-54)(type KiCad)(uri /home/james/Downloads/ul_max3490eesaT/KiCAD/2020-10-20_00-26-54.pretty)(options "")(descr ""))
+  (lib (name usb-c-pill)(type KiCad)(uri /home/james/hardware/usb-c-pill.pretty)(options "")(descr ""))
+)

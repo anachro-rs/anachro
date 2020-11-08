@@ -1,0 +1,643 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="D">
+  <design>
+    <source>/home/james/anachro/hardware/anachro-rack-module/anachro-rack-module.sch</source>
+    <date>Tue 20 Oct 2020 02:10:59 AM CEST</date>
+    <tool>Eeschema 5.1.6</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company/>
+        <rev/>
+        <date/>
+        <source>anachro-rack-module.sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="U2">
+      <value>MAX3490E</value>
+      <footprint>Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.514x3.2mm</footprint>
+      <libsource lib="anachro-rack" part="MAX3490E" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8DE207</tstamp>
+    </comp>
+    <comp ref="R1">
+      <value>120Ohm</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8DF8EB</tstamp>
+    </comp>
+    <comp ref="R2">
+      <value>120Ohm</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E0A26</tstamp>
+    </comp>
+    <comp ref="JP1">
+      <value>Jumper_2_Open</value>
+      <footprint>Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Jumper" part="Jumper_2_Open" description="Jumper, 2-pole, open"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E0C65</tstamp>
+    </comp>
+    <comp ref="JP2">
+      <value>Jumper_2_Open</value>
+      <footprint>Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Jumper" part="Jumper_2_Open" description="Jumper, 2-pole, open"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E1BE2</tstamp>
+    </comp>
+    <comp ref="J3">
+      <value>8P8C</value>
+      <footprint>Connector_RJ:RJ45_Amphenol_54602-x08_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Connector" part="8P8C" description="RJ connector, 8P8C (8 positions 8 connected), RJ31/RJ32/RJ33/RJ34/RJ35/RJ41/RJ45/RJ49/RJ61"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E86C7</tstamp>
+    </comp>
+    <comp ref="J4">
+      <value>8P8C</value>
+      <footprint>Connector_RJ:RJ45_Amphenol_54602-x08_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Connector" part="8P8C" description="RJ connector, 8P8C (8 positions 8 connected), RJ31/RJ32/RJ33/RJ34/RJ35/RJ41/RJ45/RJ49/RJ61"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8F4B39</tstamp>
+    </comp>
+    <comp ref="J1">
+      <value>Screw_Terminal_01x18</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x18_P2.54mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Connector" part="Screw_Terminal_01x18" description="Generic screw terminal, single row, 01x18, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F9895F7</tstamp>
+    </comp>
+    <comp ref="J2">
+      <value>Screw_Terminal_01x18</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x18_P2.54mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Connector" part="Screw_Terminal_01x18" description="Generic screw terminal, single row, 01x18, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F98F609</tstamp>
+    </comp>
+    <comp ref="U1">
+      <value>weact-black-pill-nodebug</value>
+      <footprint>stargazer-motherboard:weact-blackpill-nodebug</footprint>
+      <libsource lib="stargazer" part="weact-black-pill-nodebug" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E2564</tstamp>
+    </comp>
+    <comp ref="C3">
+      <value>C</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E1FD9</tstamp>
+    </comp>
+    <comp ref="C2">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_4x5.3</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E4CB1</tstamp>
+    </comp>
+    <comp ref="C1">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8E5527</tstamp>
+    </comp>
+    <comp ref="C5">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:CP_Elec_4x5.3</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8F951F</tstamp>
+    </comp>
+    <comp ref="C4">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8F9525</tstamp>
+    </comp>
+    <comp ref="D1">
+      <value>D</value>
+      <footprint>Diode_SMD:D_SOD-123</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Device" part="D" description="Diode"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8F9B27</tstamp>
+    </comp>
+    <comp ref="D2">
+      <value>WS2812B</value>
+      <footprint>LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</footprint>
+      <datasheet>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</datasheet>
+      <libsource lib="LED" part="WS2812B" description="RGB LED with integrated controller"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F8FAD19</tstamp>
+    </comp>
+    <comp ref="TP1">
+      <value>TestPoint</value>
+      <footprint>Connector_PinSocket_2.54mm:PinSocket_1x01_P2.54mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5F903101</tstamp>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Connector" part="8P8C">
+      <aliases>
+        <alias>RJ31</alias>
+        <alias>RJ32</alias>
+        <alias>RJ33</alias>
+        <alias>RJ34</alias>
+        <alias>RJ35</alias>
+        <alias>RJ41</alias>
+        <alias>RJ45</alias>
+        <alias>RJ49</alias>
+        <alias>RJ61</alias>
+      </aliases>
+      <description>RJ connector, 8P8C (8 positions 8 connected), RJ31/RJ32/RJ33/RJ34/RJ35/RJ41/RJ45/RJ49/RJ61</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>8P8C*</fp>
+        <fp>RJ31*</fp>
+        <fp>RJ32*</fp>
+        <fp>RJ33*</fp>
+        <fp>RJ34*</fp>
+        <fp>RJ35*</fp>
+        <fp>RJ41*</fp>
+        <fp>RJ45*</fp>
+        <fp>RJ49*</fp>
+        <fp>RJ61*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">8P8C</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+        <pin num="3" name="~" type="passive"/>
+        <pin num="4" name="~" type="passive"/>
+        <pin num="5" name="~" type="passive"/>
+        <pin num="6" name="~" type="passive"/>
+        <pin num="7" name="~" type="passive"/>
+        <pin num="8" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Screw_Terminal_01x18">
+      <description>Generic screw terminal, single row, 01x18, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TerminalBlock*:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Screw_Terminal_01x18</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+        <pin num="10" name="Pin_10" type="passive"/>
+        <pin num="11" name="Pin_11" type="passive"/>
+        <pin num="12" name="Pin_12" type="passive"/>
+        <pin num="13" name="Pin_13" type="passive"/>
+        <pin num="14" name="Pin_14" type="passive"/>
+        <pin num="15" name="Pin_15" type="passive"/>
+        <pin num="16" name="Pin_16" type="passive"/>
+        <pin num="17" name="Pin_17" type="passive"/>
+        <pin num="18" name="Pin_18" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="TestPoint">
+      <description>test point</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Pin*</fp>
+        <fp>Test*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">TP</field>
+        <field name="Value">TestPoint</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D">
+      <description>Diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Jumper" part="Jumper_2_Open">
+      <description>Jumper, 2-pole, open</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Jumper*</fp>
+        <fp>TestPoint*2Pads*</fp>
+        <fp>TestPoint*Bridge*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">JP</field>
+        <field name="Value">Jumper_2_Open</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A" type="passive"/>
+        <pin num="2" name="B" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="LED" part="WS2812B">
+      <description>RGB LED with integrated controller</description>
+      <docs>https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf</docs>
+      <footprints>
+        <fp>LED*WS2812*PLCC*5.0x5.0mm*P3.2mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">WS2812B</field>
+        <field name="Footprint">LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VDD" type="power_in"/>
+        <pin num="2" name="DOUT" type="output"/>
+        <pin num="3" name="VSS" type="power_in"/>
+        <pin num="4" name="DIN" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="anachro-rack" part="MAX3490E">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MAX3490E</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="power_in"/>
+        <pin num="2" name="RO" type="output"/>
+        <pin num="3" name="DI" type="input"/>
+        <pin num="4" name="GND" type="power_in"/>
+        <pin num="5" name="Y" type="input"/>
+        <pin num="6" name="Z" type="input"/>
+        <pin num="7" name="B" type="output"/>
+        <pin num="8" name="A" type="output"/>
+      </pins>
+    </libpart>
+    <libpart lib="stargazer" part="weact-black-pill-nodebug">
+      <fields>
+        <field name="Reference">U?</field>
+        <field name="Value">weact-black-pill-nodebug</field>
+        <field name="Footprint">stargazer-motherboard:weact-blackpill</field>
+      </fields>
+      <pins>
+        <pin num="1" name="B12" type="BiDi"/>
+        <pin num="2" name="B13" type="BiDi"/>
+        <pin num="3" name="B14" type="BiDi"/>
+        <pin num="4" name="B15" type="BiDi"/>
+        <pin num="5" name="A8" type="BiDi"/>
+        <pin num="6" name="A9" type="BiDi"/>
+        <pin num="7" name="A10" type="BiDi"/>
+        <pin num="8" name="A11" type="BiDi"/>
+        <pin num="9" name="A12" type="BiDi"/>
+        <pin num="10" name="A15" type="BiDi"/>
+        <pin num="11" name="B3" type="BiDi"/>
+        <pin num="12" name="B4" type="BiDi"/>
+        <pin num="13" name="B5" type="BiDi"/>
+        <pin num="14" name="B6" type="BiDi"/>
+        <pin num="15" name="B7" type="BiDi"/>
+        <pin num="16" name="B8" type="BiDi"/>
+        <pin num="17" name="B9" type="BiDi"/>
+        <pin num="18" name="+5v0" type="power_in"/>
+        <pin num="19" name="GND" type="power_in"/>
+        <pin num="20" name="+3v3" type="power_out"/>
+        <pin num="21" name="VB" type="power_in"/>
+        <pin num="22" name="C13" type="BiDi"/>
+        <pin num="23" name="C14" type="BiDi"/>
+        <pin num="24" name="C15" type="BiDi"/>
+        <pin num="25" name="NRST" type="input"/>
+        <pin num="26" name="A0" type="BiDi"/>
+        <pin num="27" name="A1" type="BiDi"/>
+        <pin num="28" name="A2" type="BiDi"/>
+        <pin num="29" name="A3" type="BiDi"/>
+        <pin num="30" name="A4" type="BiDi"/>
+        <pin num="31" name="A5" type="BiDi"/>
+        <pin num="32" name="A6" type="BiDi"/>
+        <pin num="33" name="A7" type="BiDi"/>
+        <pin num="34" name="B0" type="BiDi"/>
+        <pin num="35" name="B1" type="BiDi"/>
+        <pin num="36" name="B2" type="BiDi"/>
+        <pin num="37" name="B10" type="BiDi"/>
+        <pin num="38" name="+3v3" type="power_out"/>
+        <pin num="39" name="GND" type="power_in"/>
+        <pin num="40" name="+5v0" type="power_in"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Connector">
+      <uri>/usr/share/kicad/library/Connector.lib</uri>
+    </library>
+    <library logical="Device">
+      <uri>/usr/share/kicad/library/Device.lib</uri>
+    </library>
+    <library logical="Jumper">
+      <uri>/usr/share/kicad/library/Jumper.lib</uri>
+    </library>
+    <library logical="LED">
+      <uri>/usr/share/kicad/library/LED.lib</uri>
+    </library>
+    <library logical="anachro-rack">
+      <uri>/home/james/anachro/hardware/anachro-rack-module/anachro-rack.lib</uri>
+    </library>
+    <library logical="stargazer">
+      <uri>/home/james/anachro/hardware/stargazer-motherboard/stargazer.lib</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="Net-(U1-Pad21)">
+      <node ref="U1" pin="21"/>
+    </net>
+    <net code="2" name="Net-(U1-Pad25)">
+      <node ref="U1" pin="25"/>
+    </net>
+    <net code="3" name="Net-(J2-Pad18)">
+      <node ref="J2" pin="18"/>
+      <node ref="U1" pin="22"/>
+    </net>
+    <net code="4" name="Net-(J2-Pad17)">
+      <node ref="J2" pin="17"/>
+      <node ref="U1" pin="23"/>
+    </net>
+    <net code="5" name="Net-(J2-Pad16)">
+      <node ref="U1" pin="24"/>
+      <node ref="J2" pin="16"/>
+    </net>
+    <net code="6" name="Net-(J1-Pad18)">
+      <node ref="U1" pin="20"/>
+      <node ref="J1" pin="18"/>
+    </net>
+    <net code="7" name="Net-(J1-Pad1)">
+      <node ref="J1" pin="1"/>
+      <node ref="U1" pin="1"/>
+    </net>
+    <net code="8" name="Net-(J1-Pad6)">
+      <node ref="J1" pin="6"/>
+      <node ref="U1" pin="6"/>
+    </net>
+    <net code="9" name="Net-(J1-Pad9)">
+      <node ref="U1" pin="11"/>
+      <node ref="J1" pin="9"/>
+    </net>
+    <net code="10" name="Net-(J1-Pad8)">
+      <node ref="J1" pin="8"/>
+      <node ref="U1" pin="9"/>
+    </net>
+    <net code="11" name="Net-(J1-Pad7)">
+      <node ref="U1" pin="8"/>
+      <node ref="J1" pin="7"/>
+    </net>
+    <net code="12" name="Net-(J1-Pad5)">
+      <node ref="J1" pin="5"/>
+      <node ref="U1" pin="5"/>
+    </net>
+    <net code="13" name="Net-(J1-Pad4)">
+      <node ref="U1" pin="4"/>
+      <node ref="J1" pin="4"/>
+    </net>
+    <net code="14" name="Net-(J1-Pad3)">
+      <node ref="J1" pin="3"/>
+      <node ref="U1" pin="3"/>
+    </net>
+    <net code="15" name="Net-(J1-Pad2)">
+      <node ref="J1" pin="2"/>
+      <node ref="U1" pin="2"/>
+    </net>
+    <net code="16" name="Net-(J1-Pad13)">
+      <node ref="U1" pin="15"/>
+      <node ref="J1" pin="13"/>
+    </net>
+    <net code="17" name="Net-(J1-Pad15)">
+      <node ref="U1" pin="17"/>
+      <node ref="J1" pin="15"/>
+    </net>
+    <net code="18" name="Net-(J1-Pad14)">
+      <node ref="J1" pin="14"/>
+      <node ref="U1" pin="16"/>
+    </net>
+    <net code="19" name="Net-(J1-Pad12)">
+      <node ref="U1" pin="14"/>
+      <node ref="J1" pin="12"/>
+    </net>
+    <net code="20" name="Net-(J1-Pad11)">
+      <node ref="J1" pin="11"/>
+      <node ref="U1" pin="13"/>
+    </net>
+    <net code="21" name="Net-(J1-Pad10)">
+      <node ref="U1" pin="12"/>
+      <node ref="J1" pin="10"/>
+    </net>
+    <net code="22" name="GND">
+      <node ref="J3" pin="3"/>
+      <node ref="C4" pin="2"/>
+      <node ref="U2" pin="4"/>
+      <node ref="J4" pin="3"/>
+      <node ref="C3" pin="2"/>
+      <node ref="U1" pin="39"/>
+      <node ref="C5" pin="2"/>
+      <node ref="U1" pin="19"/>
+      <node ref="J1" pin="17"/>
+      <node ref="J3" pin="6"/>
+      <node ref="J4" pin="6"/>
+      <node ref="D2" pin="3"/>
+      <node ref="J2" pin="2"/>
+      <node ref="C2" pin="2"/>
+      <node ref="C1" pin="2"/>
+    </net>
+    <net code="23" name="+5V">
+      <node ref="J2" pin="1"/>
+      <node ref="J4" pin="5"/>
+      <node ref="J4" pin="4"/>
+      <node ref="J1" pin="16"/>
+      <node ref="C1" pin="1"/>
+      <node ref="C5" pin="1"/>
+      <node ref="C2" pin="1"/>
+      <node ref="D1" pin="2"/>
+      <node ref="C4" pin="1"/>
+      <node ref="U1" pin="18"/>
+      <node ref="U1" pin="40"/>
+      <node ref="J3" pin="4"/>
+      <node ref="J3" pin="5"/>
+    </net>
+    <net code="24" name="+3V3">
+      <node ref="J2" pin="3"/>
+      <node ref="U2" pin="1"/>
+      <node ref="C3" pin="1"/>
+      <node ref="U1" pin="38"/>
+    </net>
+    <net code="25" name="Net-(D1-Pad1)">
+      <node ref="D2" pin="1"/>
+      <node ref="D1" pin="1"/>
+    </net>
+    <net code="26" name="Net-(D2-Pad4)">
+      <node ref="TP1" pin="1"/>
+      <node ref="D2" pin="4"/>
+    </net>
+    <net code="27" name="Net-(D2-Pad2)">
+      <node ref="D2" pin="2"/>
+    </net>
+    <net code="28" name="Net-(J2-Pad12)">
+      <node ref="J2" pin="12"/>
+      <node ref="U1" pin="29"/>
+    </net>
+    <net code="29" name="Net-(J2-Pad13)">
+      <node ref="J2" pin="13"/>
+      <node ref="U1" pin="28"/>
+    </net>
+    <net code="30" name="Net-(J2-Pad14)">
+      <node ref="J2" pin="14"/>
+      <node ref="U1" pin="27"/>
+    </net>
+    <net code="31" name="Net-(J2-Pad15)">
+      <node ref="J2" pin="15"/>
+      <node ref="U1" pin="26"/>
+    </net>
+    <net code="32" name="Net-(J2-Pad5)">
+      <node ref="U1" pin="36"/>
+      <node ref="J2" pin="5"/>
+    </net>
+    <net code="33" name="Net-(J2-Pad6)">
+      <node ref="J2" pin="6"/>
+      <node ref="U1" pin="35"/>
+    </net>
+    <net code="34" name="Net-(J2-Pad7)">
+      <node ref="J2" pin="7"/>
+      <node ref="U1" pin="34"/>
+    </net>
+    <net code="35" name="Net-(J2-Pad8)">
+      <node ref="U1" pin="33"/>
+      <node ref="J2" pin="8"/>
+    </net>
+    <net code="36" name="Net-(J2-Pad9)">
+      <node ref="J2" pin="9"/>
+      <node ref="U1" pin="32"/>
+    </net>
+    <net code="37" name="Net-(J2-Pad10)">
+      <node ref="J2" pin="10"/>
+      <node ref="U1" pin="31"/>
+    </net>
+    <net code="38" name="Net-(J2-Pad11)">
+      <node ref="J2" pin="11"/>
+      <node ref="U1" pin="30"/>
+    </net>
+    <net code="39" name="/A_OUT">
+      <node ref="J3" pin="1"/>
+      <node ref="J4" pin="1"/>
+      <node ref="U2" pin="8"/>
+      <node ref="JP1" pin="1"/>
+    </net>
+    <net code="40" name="Net-(JP1-Pad2)">
+      <node ref="JP1" pin="2"/>
+      <node ref="R1" pin="1"/>
+    </net>
+    <net code="41" name="/Z_OUT">
+      <node ref="U2" pin="6"/>
+      <node ref="R2" pin="1"/>
+      <node ref="J3" pin="7"/>
+      <node ref="J4" pin="7"/>
+    </net>
+    <net code="42" name="/USART1-TX">
+      <node ref="U2" pin="3"/>
+      <node ref="U1" pin="10"/>
+    </net>
+    <net code="43" name="/USART1-RX">
+      <node ref="U1" pin="7"/>
+      <node ref="U2" pin="2"/>
+    </net>
+    <net code="44" name="/Y_OUT">
+      <node ref="J4" pin="8"/>
+      <node ref="J3" pin="8"/>
+      <node ref="U2" pin="5"/>
+      <node ref="JP2" pin="2"/>
+    </net>
+    <net code="45" name="/B_OUT">
+      <node ref="J4" pin="2"/>
+      <node ref="J3" pin="2"/>
+      <node ref="U2" pin="7"/>
+      <node ref="R1" pin="2"/>
+    </net>
+    <net code="46" name="Net-(JP2-Pad1)">
+      <node ref="R2" pin="2"/>
+      <node ref="JP2" pin="1"/>
+    </net>
+    <net code="47" name="Net-(J2-Pad4)">
+      <node ref="U1" pin="37"/>
+      <node ref="J2" pin="4"/>
+    </net>
+  </nets>
+</export>

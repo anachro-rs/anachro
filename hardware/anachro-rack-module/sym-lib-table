@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name anachro-rack)(type Legacy)(uri ${KIPRJMOD}/anachro-rack.lib)(options "")(descr ""))
+  (lib (name usb-c-pill)(type Legacy)(uri /home/james/hardware/usb-c-pill.lib)(options "")(descr ""))
+)

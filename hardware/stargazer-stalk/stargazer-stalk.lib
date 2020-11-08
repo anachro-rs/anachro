@@ -73,6 +73,30 @@ X SWDIO 9 400 50 100 L 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
+# pmod-interface-type-2a-qspi
+#
+DEF pmod-interface-type-2a-qspi U 0 40 Y Y 1 F N
+F0 "U" 0 400 50 H V C CNN
+F1 "pmod-interface-type-2a-qspi" 50 -400 50 H V C CNN
+F2 "" 0 400 50 H I C CNN
+F3 "" 0 400 50 H I C CNN
+DRAW
+S -300 350 300 -350 0 1 0 N
+X CS 1 -400 250 100 R 50 50 1 1 I
+X NC 10 400 -50 100 L 50 50 1 1 I
+X GND 11 400 -150 100 L 50 50 1 1 I
+X +3v3 12 400 -250 100 L 50 50 1 1 I
+X SIO0 2 -400 150 100 R 50 50 1 1 I
+X SIO1 3 -400 50 100 R 50 50 1 1 I
+X SCK 4 -400 -50 100 R 50 50 1 1 I
+X GND 5 -400 -150 100 R 50 50 1 1 I
+X +3v3 6 -400 -250 100 R 50 50 1 1 I
+X SIO2 7 400 250 100 L 50 50 1 1 I
+X SIO3 8 400 150 100 L 50 50 1 1 I
+X NC 9 400 50 100 L 50 50 1 1 I
+ENDDRAW
+ENDDEF
+#
 # pmod-interface-type-6a-arb
 #
 DEF pmod-interface-type-6a-arb U 0 40 Y Y 1 F N

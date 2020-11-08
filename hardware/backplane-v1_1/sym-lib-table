@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name backplane-feather-card-cache)(type Legacy)(uri /home/james/anachro/hardware/backplane-feather-card/backplane-feather-card-cache.lib)(options "")(descr ""))
+  (lib (name stargazer-backplane)(type Legacy)(uri /home/james/anachro/hardware/stargazer-backplane.lib)(options "")(descr ""))
+)

@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name stargazer-stalk)(type KiCad)(uri /home/james/anachro/hardware/stargazer-stalk/stargazer-stalk.pretty)(options "")(descr ""))
+)
