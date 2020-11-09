@@ -380,7 +380,7 @@ FPGA-CIPO
 Text Label 5600 7500 0    50   ~ 0
 FPGA-COPI
 Text Label 2800 7500 2    50   ~ 0
-~FPGA-CRESET
+FPGA-CLK
 Text Label 5150 7150 2    50   ~ 0
 GPIO3
 Text Label 5150 7700 2    50   ~ 0
@@ -388,7 +388,7 @@ GPIO4
 Text Label 3450 7500 0    50   ~ 0
 GPIO5
 Text Label 2800 7700 2    50   ~ 0
-FPGA-CDONE
+~FPGA-RST
 Text Label 2800 7600 2    50   ~ 0
 ~FPGA-IRQ
 Text Label 3450 7600 0    50   ~ 0
@@ -1191,12 +1191,8 @@ F 3 "" H 5650 1650 50  0001 C CNN
 $EndComp
 Text Label 5650 1100 2    50   ~ 0
 ~FPGA-CS
-Text Label 5650 1500 2    50   ~ 0
-~FPGA-CRESET
 Text Label 5650 2050 2    50   ~ 0
 ~FPGA-IRQ
-Text Label 5650 2150 2    50   ~ 0
-FPGA-CDONE
 Text Label 5650 1300 2    50   ~ 0
 FPGA-CIPO
 Text Label 5650 1400 2    50   ~ 0
@@ -1485,11 +1481,6 @@ Connection ~ 8000 1200
 Text Notes 7700 2150 2    50   ~ 0
 NXP AN10441
 Wire Wire Line
-	7700 1200 7500 1200
-Wire Wire Line
-	7500 1200 7500 1400
-Connection ~ 7700 1200
-Wire Wire Line
 	7250 1700 7300 1700
 Connection ~ 7300 1700
 Wire Wire Line
@@ -1718,4 +1709,57 @@ Wire Wire Line
 	8950 1200 10050 1200
 Wire Wire Line
 	8950 2400 10050 2400
+Text Label 5650 1500 2    50   ~ 0
+FPGA-CLK
+Text Label 5650 2150 2    50   ~ 0
+~FPGA-RST
+$Comp
+L Connector:TestPoint TP2
+U 1 1 5FAA8618
+P 8300 2300
+F 0 "TP2" V 8400 2450 50  0000 C CNN
+F 1 "TestPoint" V 8200 2550 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x01_P2.54mm_Vertical" H 8500 2300 50  0001 C CNN
+F 3 "~" H 8500 2300 50  0001 C CNN
+	1    8300 2300
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:TestPoint TP3
+U 1 1 5FAAFFFB
+P 8300 2600
+F 0 "TP3" V 8400 2750 50  0000 C CNN
+F 1 "TestPoint" V 8200 2850 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x01_P2.54mm_Vertical" H 8500 2600 50  0001 C CNN
+F 3 "~" H 8500 2600 50  0001 C CNN
+	1    8300 2600
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR0137
+U 1 1 5FAB8A71
+P 8300 2300
+F 0 "#PWR0137" H 8300 2050 50  0001 C CNN
+F 1 "GND" H 8305 2127 50  0000 C CNN
+F 2 "" H 8300 2300 50  0001 C CNN
+F 3 "" H 8300 2300 50  0001 C CNN
+	1    8300 2300
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+5V #PWR0138
+U 1 1 5FAC2096
+P 8300 2600
+F 0 "#PWR0138" H 8300 2450 50  0001 C CNN
+F 1 "+5V" H 8315 2773 50  0000 C CNN
+F 2 "" H 8300 2600 50  0001 C CNN
+F 3 "" H 8300 2600 50  0001 C CNN
+	1    8300 2600
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	7500 1400 7500 1200
+Wire Wire Line
+	7500 1200 7300 1200
+Connection ~ 7300 1200
 $EndSCHEMATC

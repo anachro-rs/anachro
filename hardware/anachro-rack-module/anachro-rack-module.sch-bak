@@ -380,7 +380,7 @@ FPGA-CIPO
 Text Label 5600 7500 0    50   ~ 0
 FPGA-COPI
 Text Label 2800 7500 2    50   ~ 0
-~FPGA-CRESET
+FPGA-CLK
 Text Label 5150 7150 2    50   ~ 0
 GPIO3
 Text Label 5150 7700 2    50   ~ 0
@@ -388,7 +388,7 @@ GPIO4
 Text Label 3450 7500 0    50   ~ 0
 GPIO5
 Text Label 2800 7700 2    50   ~ 0
-FPGA-CDONE
+~FPGA-RST
 Text Label 2800 7600 2    50   ~ 0
 ~FPGA-IRQ
 Text Label 3450 7600 0    50   ~ 0
@@ -882,17 +882,6 @@ F 3 "~" H 9650 1000 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R12
-U 1 1 5FE5FCC5
-P 9650 1200
-F 0 "R12" V 9550 1200 50  0000 C CNN
-F 1 "0" V 9650 1200 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 9580 1200 50  0001 C CNN
-F 3 "~" H 9650 1200 50  0001 C CNN
-	1    9650 1200
-	0    1    1    0   
-$EndComp
-$Comp
 L Device:R R13
 U 1 1 5FE62921
 P 9650 2200
@@ -903,29 +892,10 @@ F 3 "~" H 9650 2200 50  0001 C CNN
 	1    9650 2200
 	0    1    1    0   
 $EndComp
-$Comp
-L Device:R R14
-U 1 1 5FE65227
-P 9650 2400
-F 0 "R14" V 9550 2400 50  0000 C CNN
-F 1 "0" V 9650 2400 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 9580 2400 50  0001 C CNN
-F 3 "~" H 9650 2400 50  0001 C CNN
-	1    9650 2400
-	0    1    1    0   
-$EndComp
-Wire Wire Line
-	8950 1200 9500 1200
-Wire Wire Line
-	8950 2400 9500 2400
 Wire Wire Line
 	9800 2200 10250 2200
 Connection ~ 10250 2200
-Wire Wire Line
-	9800 2400 10050 2400
 Connection ~ 10050 2400
-Wire Wire Line
-	9800 1200 10050 1200
 Connection ~ 10050 1200
 Wire Wire Line
 	9800 1000 10250 1000
@@ -1221,12 +1191,8 @@ F 3 "" H 5650 1650 50  0001 C CNN
 $EndComp
 Text Label 5650 1100 2    50   ~ 0
 ~FPGA-CS
-Text Label 5650 1500 2    50   ~ 0
-~FPGA-CRESET
 Text Label 5650 2050 2    50   ~ 0
 ~FPGA-IRQ
-Text Label 5650 2150 2    50   ~ 0
-FPGA-CDONE
 Text Label 5650 1300 2    50   ~ 0
 FPGA-CIPO
 Text Label 5650 1400 2    50   ~ 0
@@ -1744,4 +1710,12 @@ F 3 "" H 4000 5650 50  0001 C CNN
 	1    4000 5650
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	8950 1200 10050 1200
+Wire Wire Line
+	8950 2400 10050 2400
+Text Label 5650 1500 2    50   ~ 0
+FPGA-CLK
+Text Label 5650 2150 2    50   ~ 0
+~FPGA-RST
 $EndSCHEMATC
