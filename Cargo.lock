@@ -115,7 +115,7 @@ dependencies = [
  "defmt",
  "embedded-dma",
  "embedded-hal",
- "nrf52840-hal",
+ "nrf52840-hal 0.11.1",
 ]
 
 [[package]]
@@ -358,7 +358,7 @@ dependencies = [
  "generic-array 0.13.2",
  "nrf52810-hal",
  "nrf52832-hal",
- "nrf52840-hal",
+ "nrf52840-hal 0.11.1",
  "postcard",
  "rtt-target",
  "serde",
@@ -415,11 +415,11 @@ checksum = "6a062150ca10007e710aa3a7b106196d2adf93dc978a6f98e86e69bd7299c6af"
 
 [[package]]
 name = "groundhog-nrf52"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "cortex-m-rtic",
  "groundhog 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "nrf52840-hal",
+ "nrf52840-hal 0.12.0",
 ]
 
 [[package]]
@@ -563,13 +563,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "nrf-hal-common"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "675eee40228591a1991eade1d4adc1a23fd7ff750b5c895ca068b9c2f0878b72"
+dependencies = [
+ "cast",
+ "cfg-if",
+ "cortex-m",
+ "embedded-dma",
+ "embedded-hal",
+ "fixed",
+ "nb 1.0.0",
+ "nrf52840-pac",
+ "rand_core",
+ "void",
+]
+
+[[package]]
 name = "nrf52810-hal"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9146d4843c58de8c43089b646194bb9b6871f80b129e038108e11ceb692d39ac"
 dependencies = [
  "embedded-hal",
- "nrf-hal-common",
+ "nrf-hal-common 0.11.1",
  "nrf52810-pac",
 ]
 
@@ -592,7 +610,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fd1764acdf1f9da9803b00867586de13a2c23ab2b1231a3cf1ae4fc2cfbb403"
 dependencies = [
  "embedded-hal",
- "nrf-hal-common",
+ "nrf-hal-common 0.11.1",
  "nrf52832-pac",
 ]
 
@@ -613,7 +631,18 @@ name = "nrf52840-hal"
 version = "0.11.1"
 dependencies = [
  "embedded-hal",
- "nrf-hal-common",
+ "nrf-hal-common 0.11.1",
+ "nrf52840-pac",
+]
+
+[[package]]
+name = "nrf52840-hal"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1f9e382ab941f46db0e2f086fa64f54faf3473eddb16a0e350c0a5b37febba2"
+dependencies = [
+ "embedded-hal",
+ "nrf-hal-common 0.12.0",
  "nrf52840-pac",
 ]
 

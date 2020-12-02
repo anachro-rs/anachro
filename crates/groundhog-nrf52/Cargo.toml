@@ -1,6 +1,6 @@
 [package]
 name = "groundhog-nrf52"
-version = "0.2.0"
+version = "0.2.1"
 description = "A rolling timer abstraction for the nrf52"
 repository = "https://github.com/jamesmunns/anachro"
 authors = ["James Munns <james.munns@ferrous-systems.com>"]
