@@ -1,10 +1,16 @@
 [package]
 name = "groundhog-nrf52"
 version = "0.1.0"
+description = "A rolling timer abstraction for the nrf52"
+repository = "https://github.com/jamesmunns/anachro"
 authors = ["James Munns <james.munns@ferrous-systems.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+categories = [
+    "embedded",
+    "no-std",
+]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 groundhog = "0.1"
