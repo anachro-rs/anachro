@@ -7,3 +7,6 @@
 [submodule "vendor/postcard"]
 	path = vendor/postcard
 	url = https://github.com/jamesmunns/postcard.git
+[submodule "hardware/stargazer-motherboard/KiCad-Libraries"]
+	path = hardware/stargazer-motherboard/KiCad-Libraries
+	url = https://github.com/imciner2/KiCad-Libraries.git

@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name KiCad-Libraries)(type KiCad)(uri ${KIPRJMOD}/KiCad-Libraries)(options "")(descr ""))
+  (lib (name stargazer-motherboard)(type KiCad)(uri ${KIPRJMOD}/stargazer-motherboard.pretty)(options "")(descr ""))
+)
