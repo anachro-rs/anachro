@@ -1,21 +1,21 @@
 //! Contains a nrf52-compatible implementation of the `RollingTimer` trait.
-//! 
+//!
 //! The `GlobalRollingTimer` is especially helpful if you are running RTIC on
 //! a nrf52 board. The built-in cycle counter (`CYCCNT`) which is commonly used
 //! as a monotonic counter will not work when the debugger is not attached, which
 //! in turn will make scheduling operations not work as expected.
-//! 
+//!
 //! # Usage
 //!
 //! To use the the `GlobalRollingTimer` with RTIC, it first needs to be selected
 //! as the monotonic timer (here on top of the nrf52840 hal):
-//! 
+//!
 //! ```
 //! #[rtic::app(device = nrf52840_hal::pac, peripherals = true, monotonic = groundhog_nrf52::GlobalRollingTimer)]
 //! ```
-//! 
+//!
 //! During the init phase it needs to be initialized with a concrete timer implementation:
-//! 
+//!
 //! ```
 //! #[init]
 //! fn init(ctx: init::Context) -> init::LateResources {
@@ -24,9 +24,9 @@
 //!     // ...
 //! }
 //! ```
-//! 
+//!
 //! Then, you can specify the schedule interval in microseconds as part of your task:
-//! 
+//!
 //! ```
 //! #[task]
 //! fn my_task(ctx: my_task::Context) {
@@ -36,7 +36,7 @@
 //! }
 //! ```
 //! In this case the task will be scheduled again one second later.
-//! 
+//!
 #![no_std]
 
 use groundhog::RollingTimer;
@@ -44,6 +44,10 @@ use nrf52840_hal::{pac::timer0::RegisterBlock as RegBlock0, timer::Instance};
 use rtic::{Fraction, Monotonic};
 
 use core::sync::atomic::{AtomicPtr, Ordering};
+
+use nrf52840_hal::pac;
+
+pub mod drivers;
 
 static TIMER_PTR: AtomicPtr<RegBlock0> = AtomicPtr::new(core::ptr::null_mut());
 
@@ -101,5 +105,9 @@ impl RollingTimer for GlobalRollingTimer {
         } else {
             0
         }
+    }
+
+    fn is_initialized(&self) -> bool {
+        TIMER_PTR.load(Ordering::SeqCst) != core::ptr::null_mut()
     }
 }

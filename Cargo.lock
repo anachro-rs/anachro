@@ -104,7 +104,7 @@ dependencies = [
  "anachro-server",
  "bbqueue",
  "defmt",
- "groundhog 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "groundhog 0.1.0",
 ]
 
 [[package]]
@@ -216,6 +216,12 @@ name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
+
+[[package]]
+name = "cfg-if"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "component-spi-tcp"
@@ -398,14 +404,10 @@ version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc587bc0ec293155d5bfa6b9891ec18a1e330c234f896ea47fbada4cadbe47e6"
 dependencies = [
- "cfg-if",
+ "cfg-if 0.1.10",
  "libc",
  "wasi",
 ]
-
-[[package]]
-name = "groundhog"
-version = "0.1.0"
 
 [[package]]
 name = "groundhog"
@@ -414,12 +416,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a062150ca10007e710aa3a7b106196d2adf93dc978a6f98e86e69bd7299c6af"
 
 [[package]]
+name = "groundhog"
+version = "0.2.0"
+
+[[package]]
 name = "groundhog-nrf52"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "cortex-m-rtic",
- "groundhog 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "nrf52840-hal 0.12.0",
+ "embedded-hal",
+ "groundhog 0.2.0",
+ "nrf52840-hal 0.12.1",
 ]
 
 [[package]]
@@ -539,7 +546,7 @@ checksum = "6c722bee1037d430d0f8e687bbdbf222f27cc6e4e68d5caf630857bb2b6dbdce"
 dependencies = [
  "bitflags",
  "cc",
- "cfg-if",
+ "cfg-if 0.1.10",
  "libc",
  "void",
 ]
@@ -549,7 +556,7 @@ name = "nrf-hal-common"
 version = "0.11.1"
 dependencies = [
  "cast",
- "cfg-if",
+ "cfg-if 0.1.10",
  "cortex-m",
  "embedded-dma",
  "embedded-hal",
@@ -564,12 +571,12 @@ dependencies = [
 
 [[package]]
 name = "nrf-hal-common"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "675eee40228591a1991eade1d4adc1a23fd7ff750b5c895ca068b9c2f0878b72"
+checksum = "4e3ce1e61f6222645cf43103bb3c2ad2cbf5227496586aaeab299c79b03c5730"
 dependencies = [
  "cast",
- "cfg-if",
+ "cfg-if 1.0.0",
  "cortex-m",
  "embedded-dma",
  "embedded-hal",
@@ -637,12 +644,12 @@ dependencies = [
 
 [[package]]
 name = "nrf52840-hal"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1f9e382ab941f46db0e2f086fa64f54faf3473eddb16a0e350c0a5b37febba2"
+checksum = "cc4324000cdeb61b5e95b9cd5a1ce73f1cafa532fcedd63ea8d07685f21b001c"
 dependencies = [
  "embedded-hal",
- "nrf-hal-common 0.12.0",
+ "nrf-hal-common 0.12.1",
  "nrf52840-pac",
 ]
 
@@ -883,7 +890,7 @@ dependencies = [
  "CoreFoundation-sys",
  "IOKit-sys",
  "bitflags",
- "cfg-if",
+ "cfg-if 0.1.10",
  "libudev",
  "mach 0.2.3",
  "nix",
