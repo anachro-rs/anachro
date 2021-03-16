@@ -17,9 +17,15 @@ pub trait RollingTimer {
     /// Get the current tick
     fn get_ticks(&self) -> Self::Tick;
 
+    /// Determine if the timer is initialized
+    fn is_initialized(&self) -> bool;
+
     /// Get the number of ticks since the other measurement
     ///
     /// Make sure the old value isn't too stale.
+    ///
+    /// NOTE: if the timer is not initialized, the timer may
+    /// return a tick value of `0` until it has been initialized.
     fn ticks_since(&self, rhs: Self::Tick) -> Self::Tick {
         self.get_ticks().since(rhs)
     }
