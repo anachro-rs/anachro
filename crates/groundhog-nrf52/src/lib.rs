@@ -42,6 +42,7 @@
 use groundhog::RollingTimer;
 use nrf52840_hal::{pac::timer0::RegisterBlock as RegBlock0, timer::Instance};
 use rtic::{Fraction, Monotonic};
+use embedded_hal::blocking::delay::{DelayUs, DelayMs};
 
 use core::sync::atomic::{AtomicPtr, Ordering};
 
@@ -109,5 +110,20 @@ impl RollingTimer for GlobalRollingTimer {
 
     fn is_initialized(&self) -> bool {
         TIMER_PTR.load(Ordering::SeqCst) != core::ptr::null_mut()
+    }
+}
+
+impl DelayUs<u32> for GlobalRollingTimer {
+    fn delay_us(&mut self, us: u32) {
+        let start = self.get_ticks();
+        while self.ticks_since(start) < us { }
+    }
+}
+
+impl DelayMs<u32> for GlobalRollingTimer {
+    fn delay_ms(&mut self, ms: u32) {
+        for _ in 0..ms {
+            self.delay_us(1000)
+        }
     }
 }
