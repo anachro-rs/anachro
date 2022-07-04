@@ -10,7 +10,7 @@ The name "Anachro" comes from the word ["Anachronism"](https://en.wiktionary.org
 
 The Anachro-PC was first described in [a blog post by James Munns](https://jamesmunns.com/blog/anachro-pc-001/), which described some of the original ideas, including the physical network topology used by Anachro PC, and parts of the Anachro Network Protocol.
 
-The Anachro Protocol and first Anachro PC were showcased at [RustLab 2020](https://www.rustlab.it/agenda/session/330791), on Oct. 14th, 2020.
+The Anachro Protocol and first Anachro PC were showcased at [RustLab 2020](https://rustlab.it/previous-editions/agenda-rustlab-edition-2020/), on Oct. 14th, 2020.
 
 ## Get Started
 
